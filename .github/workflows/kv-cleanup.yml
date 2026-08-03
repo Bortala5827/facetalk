@@ -1,0 +1,27 @@
+name: KV 定时清理（面试搭子）
+
+# 替代 Cloudflare Pages 后台 Cron Triggers（Git 部署的 Pages 在仪表盘常不显示 Cron 入口）。
+# 每天 UTC 04:23 自动调用站点的 /api/cleanup 清理已结束的 KV 会话（与 CF cron 表达式 "23 4 * * *" 一致）。
+# 注意：GitHub Actions 定时任务在仓库 60 天无活动后会自动暂停；恢复推送即重新启用。
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch: {}   # 允许在 Actions 页面手动点 "Run workflow" 立即测试
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 调用清理接口（带重试）
+        run: |
+          KEY="MAABa_kecoPJAKmqIKDwhUSC"
+          URL="https://ms.955827.xyz/api/cleanup"
+          for i in 1 2 3 4 5; do
+            echo "尝试 $i ..."
+            code=$(curl -sS -o /tmp/cleanup.json -w "%{http_code}" -X POST "$URL" -H "x-cleanup-key: $KEY" --max-time 30)
+            echo "HTTP $code"
+            cat /tmp/cleanup.json; echo
+            if [ "$code" = "200" ]; then echo "清理成功"; exit 0; fi
+            sleep 10
+          done
+          echo "多次重试仍失败，请检查站点/接口"; exit 1

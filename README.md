@@ -46,7 +46,11 @@
 - **惰性清理**：每次 GET 意图列表时，顺手 `delete` 掉 `status !== 'open'` 的意图（已匹配/已关闭），不依赖定时任务也能逐步收敛。
 - **每日定时清理**（`functions/__scheduled.js` 导出 `scheduled`）：主动删「已关闭/已匹配的意图」「已拒绝/已接受的申请」+ TTL 到期边缘残留的空 key。
 
-**启用定时任务**（本机无 CF 凭证，需你在控制台做）：`mianshi-dazi` → **Settings → Functions → Cron Triggers → Add** → 填 `23 4 * * *`（或任意每天一次的表达式），保存后 CF 每天触发一次清理。若 Pages 项目不支持 Cron Trigger（极少），惰性清理 + TTL 已能维持不堆积，不影响功能。
+**启用定时任务（推荐：GitHub Actions 方式，无需碰 CF 后台）**：Git 部署的 Pages 项目在 CF 仪表盘常不显示 Cron Triggers 入口，故改用仓库自带的定时工作流——`.github/workflows/kv-cleanup.yml` 每天 UTC `04:23` 自动 `POST https://ms.955827.xyz/api/cleanup`（带 `x-cleanup-key` 校验），触发与 CF Cron 完全等效的清理。密钥写在接口与 workflow 里（`CLEANUP_KEY` 环境变量可覆盖）。你也可以在 Actions 页面手动点 `Run workflow` 立即测试。
+
+**备用：CF 后台 Cron（若你的项目能看到入口）**：`mianshi-dazi` → **Settings → Functions → Cron Triggers → Add** → 填 `23 4 * * *`，保存后会自动调用 `functions/__scheduled.js`。两种方式二选一即可，逻辑共用 `functions/_cleanup.js`。
+
+无论哪种方式，惰性清理 + TTL 已能维持不堆积，定时任务只是让已结束的会话更早消失。
 
 ## PWA / APK
 
