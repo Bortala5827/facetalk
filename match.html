@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>面试搭子 · 匹配页</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231e88e5'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E搭%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container bar-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark">搭</span>
+        <span class="brand-text">面试搭子</span>
+      </a>
+      <a class="brand-tag" href="/">+ 我也发一条</a>
+    </div>
+  </header>
+
+  <!-- 微信内打开提示 -->
+  <div id="wx-tip" class="wx-tip" hidden>
+    如页面打不开或功能受限，请点右上角 ⋯ 选择「在浏览器打开」体验完整功能。
+  </div>
+
+  <main class="container">
+    <section id="match-card" class="card match-card" hidden>
+      <div class="match-head">
+        <span class="match-badge" id="m-role">岗位</span>
+        <span class="match-status">招募面试搭子中</span>
+      </div>
+      <h1 class="match-title">🤝 一起练面试</h1>
+      <ul class="match-info">
+        <li><span class="mi-k">城市</span><span class="mi-v" id="m-city">—</span></li>
+        <li><span class="mi-k">可约时间</span><span class="mi-v" id="m-time">—</span></li>
+        <li><span class="mi-k">备注</span><span class="mi-v" id="m-note">—</span></li>
+      </ul>
+
+      <div class="match-actions">
+        <a id="m-join" class="btn-primary" href="#" target="_blank" rel="noopener">一键入会 →</a>
+        <button id="m-copy" class="btn-copy" type="button">复制联系方式</button>
+      </div>
+
+      <div id="m-contact" class="match-contact" hidden>
+        <span class="mc-type" id="m-contact-type">微信</span>
+        <span class="mc-value" id="m-contact-value">—</span>
+      </div>
+
+      <p class="match-foot">点「一键入会」进入腾讯会议 / 飞书会议，和搭子连麦互练、互相点评。</p>
+    </section>
+
+    <section id="match-empty" class="card empty" hidden>
+      <div class="empty-mark">🔗</div>
+      <p class="empty-title">链接不完整</p>
+      <p class="empty-desc">这条面试搭子链接缺少信息，可能已损坏。<br />去首页重新生成一条吧。</p>
+      <a class="btn-ghost" href="/">返回首页生成 →</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="muted">面试搭子 · RCJ9527 · 纯静态原型</p>
+    </div>
+  </footer>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
