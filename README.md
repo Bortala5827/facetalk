@@ -13,12 +13,29 @@
 - 账号体系、会话、评价
 - 独立域名 / 小程序
 
-## 相关仓库 / 站点矩阵
+## 相关仓库 / 站点矩阵（RCJ 模块化架构）
 
-- `rcj-hub`（RCJ 品牌枢纽页，域 `955827.xyz`，「项目」页已展示本 MVP）
-- `rcj-exam-bank`（综合公职真题库主站）
-- `aux-police-exam`（辅警刷题站）
-- `xf-firefighter-exam`（消防员题库）
+- `rcj-hub`（`955827.xyz`）—— RCJ 品牌枢纽，展示并跳转本模块
+- `rcj-exam-bank`（`exam.955827.xyz`）—— 综合公职真题库
+- `aux-police-exam`（`fj.rcj9527.dpdns.org`）—— 辅警刷题站，面试对练直接复用本模块
+- `xf-firefighter-exam`（`xf.955827.xyz`）—— 消防员题库，面试对练直接复用本模块
+
+> 本仓库是「面试搭子」独立模块：辅警 / 消防 / 公考的面试对练统一调它，各站无需重复造轮子。
+
+## 模块化调用（深链参数）
+
+来源站可用 URL 参数直接调起对应岗位、并带「返回来源」上下文：
+
+| 参数 | 取值 | 作用 |
+| --- | --- | --- |
+| `?role=` | `辅警` / `消防员` / `公务员` / `教师` / `其他` | 预选岗位下拉框（`消防`→`消防员`、`警察`/`公安`→`辅警` 自动归一） |
+| `?from=` | `hub` / `fj` / `xf` | 顶栏显示「返回 RCJ Hub / 辅警站 / 消防站」 |
+
+示例：
+- 辅警站入口：`https://<部署域名>/?role=辅警&from=fj`
+- 消防站入口：`https://<部署域名>/?role=消防员&from=xf`
+- 生成的匹配页会自动带上 `?from=`，同伴点开也能一键回到来源站。
 
 ## 部署
-Cloudflare Pages 连 GitHub `ZHOUQIANG5827/mianshi-dazi` main，输出目录 `/`。
+Cloudflare Pages 连 GitHub `ZHOUQIANG5827/mianshi-dazi` main，框架选 `None`，构建命令留空，输出目录 `/`。
+可选自定义域：`mianshi.955827.xyz`（Pages 项目 Settings → Custom domains 添加，CF 自动配 DNS）。

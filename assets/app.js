@@ -4,6 +4,44 @@
 
   var isWeChat = /micromessenger/i.test(navigator.userAgent);
 
+  // 读取 URL 查询参数（模块化调用：?role=辅警 / ?from=fj）
+  function getParam(name) {
+    var m = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search);
+    return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+  }
+
+  // 上下文返回链接：让辅警 / 消防 / Hub 站调起后仍能一键回到来源
+  var CTX = {
+    hub: ['返回 RCJ Hub', 'https://955827.xyz'],
+    fj:  ['返回辅警站', 'https://fj.rcj9527.dpdns.org'],
+    xf:  ['返回消防站', 'https://xf.955827.xyz']
+  };
+  var ctxBack = document.getElementById('ctx-back');
+  if (ctxBack) {
+    var fromP = getParam('from');
+    if (CTX[fromP]) {
+      ctxBack.textContent = '← ' + CTX[fromP][0];
+      ctxBack.href = CTX[fromP][1];
+      ctxBack.hidden = false;
+    }
+  }
+
+  // 岗位预选：来源站用 ?role= 直接调起对应岗位
+  var roleParam = getParam('role');
+  if (roleParam) {
+    var roleSel = document.getElementById('role');
+    if (roleSel) {
+      var norm = { '消防': '消防员', '消防员': '消防员', '警察': '辅警', '公安': '辅警', '辅警': '辅警' };
+      var rv = norm[roleParam] || roleParam;
+      var exists = Array.prototype.some.call(roleSel.options, function (o) { return o.value === rv; });
+      if (exists) {
+        roleSel.value = rv;
+        var rh = document.getElementById('role-hint');
+        if (rh) { rh.textContent = '已按来源预选：' + rv; rh.className = 'field-hint ok'; }
+      }
+    }
+  }
+
   function encode(data) {
     try {
       return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
@@ -63,13 +101,15 @@
         contact: document.getElementById('contact').value.trim(),
         note: document.getElementById('note').value.trim()
       };
-      var url = location.origin + '/match.html#d=' + encode(data);
+      var fromQ = getParam('from');
+      var matchBase = '/match.html' + (fromQ ? ('?from=' + encodeURIComponent(fromQ)) : '');
+      var url = location.origin + matchBase + '#d=' + encode(data);
 
       var result = document.getElementById('result');
       var resultUrl = document.getElementById('result-url');
       var previewLink = document.getElementById('preview-link');
       resultUrl.value = url;
-      previewLink.href = '/match.html#d=' + encode(data);
+      previewLink.href = matchBase + '#d=' + encode(data);
       result.hidden = false;
       result.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
