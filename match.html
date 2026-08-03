@@ -52,17 +52,25 @@
       <h1 class="match-title">🤝 一起练面试</h1>
       <ul class="match-info">
         <li><span class="mi-k">城市</span><span class="mi-v" id="m-city">—</span></li>
+        <li id="m-topic-li" hidden><span class="mi-k">题型</span><span class="mi-v" id="m-topic">—</span></li>
         <li><span class="mi-k">可约时间</span><span class="mi-v" id="m-time">—</span></li>
+        <li id="m-mid-li" hidden><span class="mi-k">会议号</span><span class="mi-v" id="m-mid">—</span></li>
         <li id="m-when-li" hidden><span class="mi-k">开练倒计时</span><span class="mi-v countdown" id="m-countdown">—</span></li>
-        <li><span class="mi-k">备注</span><span class="mi-v" id="m-note">—</span></li>
+        <li><span class="mi-k">留言</span><span class="mi-v" id="m-note">—</span></li>
       </ul>
 
       <div class="match-actions">
         <a id="m-join" class="btn-primary" href="#" target="_blank" rel="noopener">一键入会 →</a>
         <button id="m-cal" class="btn-copy" type="button" hidden>📅 加日历</button>
+        <button id="m-copymid" class="btn-copy" type="button" hidden>复制会议号</button>
         <button id="m-copy" class="btn-copy" type="button">复制联系方式</button>
         <button id="m-fb" class="btn-ghost" type="button">📝 写互评</button>
         <button id="m-rec" class="btn-ghost" type="button">🎙 录音复盘</button>
+      </div>
+
+      <div id="m-qr" class="match-qr" hidden>
+        <div class="qr-box" id="qr-box"></div>
+        <p class="qr-tip">手机扫码直接入会（微信 / 相机均可拉起会议 App）</p>
       </div>
 
       <div id="m-contact" class="match-contact" hidden>
@@ -125,6 +133,7 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <script src="/assets/app.js"></script>
 </body>
 </html>

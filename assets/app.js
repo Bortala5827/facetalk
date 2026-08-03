@@ -65,6 +65,37 @@
     return '';
   }
 
+  // 从会议链接解析会议号（供「复制会议号」与展示）
+  function meetingId(url) {
+    var m;
+    if ((m = /meeting\.tencent\.com\/(?:dm\/)?([\w-]+)/i.exec(url))) return m[1];
+    if ((m = /feishu\.cn\/j\/([\w-]+)/i.exec(url))) return m[1];
+    if ((m = /vc\.feishu\.cn\/j\/([\w-]+)/i.exec(url))) return m[1];
+    return '';
+  }
+
+  // 生成入会二维码（手机扫直接拉起会议 App）；库未加载则优雅降级
+  function renderQR(text) {
+    var box = document.getElementById('qr-box');
+    var wrap = document.getElementById('m-qr');
+    if (!box || !wrap) return;
+    if (typeof window.qrcode === 'undefined') {
+      box.innerHTML = '<p class="qr-fallback">二维码组件未加载，请复制链接或会议号入会。</p>';
+      wrap.hidden = false;
+      return;
+    }
+    try {
+      var qr = window.qrcode(0, 'M');
+      qr.addData(text);
+      qr.make();
+      box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+      wrap.hidden = false;
+    } catch (e) {
+      box.innerHTML = '<p class="qr-fallback">二维码生成失败，请复制链接入会。</p>';
+      wrap.hidden = false;
+    }
+  }
+
   // ---------- 生成器（首页） ----------
   var form = document.getElementById('gen-form');
   if (form) {
@@ -96,6 +127,7 @@
         meeting: meeting,
         type: meetingType(meeting),
         role: document.getElementById('role').value,
+        topic: document.getElementById('topic').value,
         city: document.getElementById('city').value.trim(),
         time: document.getElementById('time').value.trim(),
         when: document.getElementById('when').value,
@@ -163,6 +195,26 @@
       document.getElementById('m-city').textContent = d.city || '待定';
       document.getElementById('m-time').textContent = d.time || '待定';
       document.getElementById('m-note').textContent = d.note || '—';
+
+      // 题型展示
+      if (d.topic) {
+        document.getElementById('m-topic').textContent = d.topic;
+        document.getElementById('m-topic-li').hidden = false;
+      }
+
+      // 会议号展示 + 复制
+      var mid = meetingId(d.meeting);
+      if (mid) {
+        document.getElementById('m-mid').textContent = mid;
+        document.getElementById('m-mid-li').hidden = false;
+        document.getElementById('m-copymid').hidden = false;
+        document.getElementById('m-copymid').addEventListener('click', function () {
+          copyText(mid, this, '复制');
+        });
+      }
+
+      // 入会二维码
+      renderQR(d.meeting);
       var join = document.getElementById('m-join');
       join.href = d.meeting;
       join.textContent = (d.type ? d.type : '会议') + ' 一键入会 →';

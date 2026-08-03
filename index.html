@@ -63,6 +63,16 @@
         </label>
 
         <label class="field">
+          <span class="field-label">题型（选填）</span>
+          <select id="topic">
+            <option value="">不限 / 综合</option>
+            <option value="结构化">结构化面试</option>
+            <option value="无领导">无领导小组讨论</option>
+            <option value="专业题">专业题 / 业务题</option>
+          </select>
+        </label>
+
+        <label class="field">
           <span class="field-label">开练时间（选填）</span>
           <input id="when" type="datetime-local" />
           <span class="field-hint">填了可生成倒计时与「添加到日历」提醒，不填也能正常用</span>
@@ -84,8 +94,8 @@
         </div>
 
         <label class="field">
-          <span class="field-label">备注（选填）</span>
-          <textarea id="note" rows="2" placeholder="如：专练结构化面试 / 互相点评 / 模拟无领导"></textarea>
+          <span class="field-label">留言（选填）</span>
+          <textarea id="note" rows="2" placeholder="如：今晚 20:00 开练，腾讯会议号 955 827 9527，专练结构化 / 互相点评"></textarea>
         </label>
 
         <button type="submit" class="btn-primary">生成面试搭子页 →</button>
