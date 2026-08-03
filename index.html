@@ -19,6 +19,7 @@
         <span class="brand-text">FaceTalk</span>
       </a>
       <div class="bar-right">
+        <a class="nav-link" href="https://exam.955827.xyz/" target="_blank" rel="noopener">真题库</a>
         <a class="brand-back" id="ctx-back" href="https://955827.xyz" hidden>← 返回</a>
         <span class="brand-tag">双向互选 · 面试搭子</span>
       </div>
@@ -150,12 +151,27 @@
   <footer class="site-footer">
     <div class="container">
       <p class="muted">FaceTalk · RCJ9527 · 双向互选面试搭子</p>
+      <p class="foot-links">
+        <a href="https://exam.955827.xyz/" target="_blank" rel="noopener">真题库</a>
+        <span class="sep">·</span>
+        <a href="https://955827.xyz/" target="_blank" rel="noopener">RCJ 主页</a>
+      </p>
       <p class="install-tip">📲 手机浏览器打开 → 点「⋯」→「添加到主屏幕」，即可变身 FaceTalk App。</p>
     </div>
   </footer>
 
   <script src="/assets/app.js"></script>
   <script>
+    // 从 RCJ 任一站点（955827.xyz 任意子域）进来时，显示「← 返回」并跳回来源页，形成产品矩阵闭环
+    (function () {
+      try {
+        var r = document.referrer || '';
+        if (r.indexOf('955827.xyz') !== -1) {
+          var back = document.getElementById('ctx-back');
+          if (back) { back.href = r; back.hidden = false; }
+        }
+      } catch (e) {}
+    })();
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('/sw.js').catch(function () {});
