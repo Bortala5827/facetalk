@@ -13,5 +13,12 @@
 - 账号体系、会话、评价
 - 独立域名 / 小程序
 
+## 相关仓库 / 站点矩阵
+
+- `rcj-hub`（RCJ 品牌枢纽页，域 `955827.xyz`，「项目」页已展示本 MVP）
+- `rcj-exam-bank`（综合公职真题库主站）
+- `aux-police-exam`（辅警刷题站）
+- `xf-firefighter-exam`（消防员题库）
+
 ## 部署
 Cloudflare Pages 连 GitHub `ZHOUQIANG5827/mianshi-dazi` main，输出目录 `/`。
