@@ -50,7 +50,9 @@ export async function onRequest(context) {
         const raw = await kv.get(name);
         if (!raw) continue;
         const it = JSON.parse(raw);
-        if (it.status !== 'open' || it.owner === r.id) continue;
+        // 已关闭/已匹配的意图提前清掉（不占 24h，也不污染列表）
+        if (it.status !== 'open') { await kv.delete(name).catch(() => {}); continue; }
+        if (it.owner === r.id) continue;
         const owner = await kv.get('u:' + it.owner);
         const rep = owner ? JSON.parse(owner).rep : 50;
         out.push({ id: it.id, role: it.role, city: it.city, mode: it.mode, note: it.note, rep, created: it.created });

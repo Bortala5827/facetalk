@@ -38,6 +38,16 @@
 - **建议开启 Cloudflare 免费版 Bot Fight Mode**（控制台 → 站点 → Security → Bots），在边缘拦爬虫，零代码。配合 WAF 可封异常 IP。
 - 频率限制为 KV 计数器（小流量够用，非强一致）；量大可升级 Durable Objects。
 
+## 定时清理 KV（防堆积）
+
+所有会话级 key 都已设 `expirationTtl` 自动过期：用户 `u:` 24h、意图 `intent:` 24h、申请/收件箱 24h、搭子房间 `pair:`/`mypair:` 30min、举报 `report:` 7天。不会无限堆积。
+
+额外两层兜底：
+- **惰性清理**：每次 GET 意图列表时，顺手 `delete` 掉 `status !== 'open'` 的意图（已匹配/已关闭），不依赖定时任务也能逐步收敛。
+- **每日定时清理**（`functions/__scheduled.js` 导出 `scheduled`）：主动删「已关闭/已匹配的意图」「已拒绝/已接受的申请」+ TTL 到期边缘残留的空 key。
+
+**启用定时任务**（本机无 CF 凭证，需你在控制台做）：`mianshi-dazi` → **Settings → Functions → Cron Triggers → Add** → 填 `23 4 * * *`（或任意每天一次的表达式），保存后 CF 每天触发一次清理。若 Pages 项目不支持 Cron Trigger（极少），惰性清理 + TTL 已能维持不堆积，不影响功能。
+
 ## PWA / APK
 
 - `manifest.webmanifest` + `sw.js`：手机浏览器「添加到主屏幕」即成 App。
