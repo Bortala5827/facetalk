@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>面试搭子 · 一键组队</title>
-  <meta name="description" content="粘贴腾讯会议 / 飞书会议链接，一键生成面试搭子匹配页，按岗位 / 城市 / 时间找同伴组队练面试。" />
+  <title>面试搭子 · 找搭子一起练面试</title>
+  <meta name="description" content="发布你的腾讯会议室，或留言找面试搭子。按岗位 / 城市匹配，一键跳转到腾讯会议 App 连麦互练。免费、免登录。" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231e88e5'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E搭%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="/assets/style.css" />
 </head>
@@ -17,31 +17,37 @@
       </a>
       <div class="bar-right">
         <a class="brand-back" id="ctx-back" href="https://955827.xyz" hidden>← 返回</a>
-        <span class="brand-tag">MVP · 纯前端</span>
+        <span class="brand-tag">面试匹配系统</span>
       </div>
     </div>
   </header>
 
+  <!-- 微信内打开提示 -->
+  <div id="wx-tip" class="wx-tip" hidden>
+    如按钮无法跳转到腾讯会议，请点右上角 ⋯ 选择「在浏览器打开」，或复制会议号手动入会。
+  </div>
+
   <main class="container">
     <section class="hero">
-      <p class="eyebrow">一键组队练面试</p>
-      <h1>粘贴会议链接<br />生成你的面试搭子页</h1>
-      <p class="lede">把腾讯会议 / 飞书会议链接贴进来，填一下岗位、城市、可约时间，立刻得到一张<strong>可分享的匹配页</strong>。发给备考同伴，点开就能一键入会组队互练。</p>
+      <p class="eyebrow">面试匹配系统</p>
+      <h1>找搭子，一起练面试</h1>
+      <p class="lede">发一间<strong>腾讯会议室</strong>，或留句话找同伴。按岗位 / 城市匹配，点开就能一键跳到腾讯会议 App 连麦互练。免费、免登录、匿名发布。</p>
     </section>
 
-    <!-- 生成器 -->
+    <!-- 发布腾讯会议室 -->
     <section class="card form-card">
-      <form id="gen-form" autocomplete="off">
+      <h2 class="sec-title">📡 发布腾讯会议室</h2>
+      <form id="meet-form" autocomplete="off">
         <label class="field">
-          <span class="field-label">会议链接 <em>*</em></span>
-          <input id="meeting" type="text" inputmode="url" placeholder="https://meeting.tencent.com/dm/xxxx 或 https://vc.feishu.cn/j/xxxx" />
-          <span class="field-hint" id="meeting-hint">支持腾讯会议 / 飞书会议链接</span>
+          <span class="field-label">腾讯会议链接 / 会议号 <em>*</em></span>
+          <input id="m-meeting" type="text" inputmode="text" placeholder="https://meeting.tencent.com/p/... 或直接填 9–11 位会议号" />
+          <span class="field-hint" id="m-meeting-hint">仅支持腾讯会议（飞书等请在下方留言板说明）</span>
         </label>
 
         <div class="field-row">
           <label class="field">
             <span class="field-label">岗位</span>
-            <select id="role">
+            <select id="m-role">
               <option value="辅警">辅警 / 民辅警</option>
               <option value="消防员">专职 / 政府消防员</option>
               <option value="公务员">公务员 / 省考 / 国考</option>
@@ -49,76 +55,99 @@
               <option value="教师">教师招考</option>
               <option value="其他">其他</option>
             </select>
-            <span class="field-hint" id="role-hint"></span>
           </label>
           <label class="field">
             <span class="field-label">城市</span>
-            <input id="city" type="text" placeholder="如：深圳 / 武汉" />
+            <input id="m-city" type="text" placeholder="如：深圳 / 武汉" />
           </label>
         </div>
 
         <label class="field">
-          <span class="field-label">可约时间</span>
-          <input id="time" type="text" placeholder="如：每晚 20:00–22:00 / 周末全天" />
-        </label>
-
-        <label class="field">
-          <span class="field-label">题型（选填）</span>
-          <select id="topic">
-            <option value="">不限 / 综合</option>
-            <option value="结构化">结构化面试</option>
-            <option value="无领导">无领导小组讨论</option>
-            <option value="专业题">专业题 / 业务题</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span class="field-label">开练时间（选填）</span>
-          <input id="when" type="datetime-local" />
-          <span class="field-hint">填了可生成倒计时与「添加到日历」提醒，不填也能正常用</span>
+          <span class="field-label">留言（选填）</span>
+          <input id="m-note" type="text" placeholder="如：今晚 20:00 开练，专练结构化 / 互相点评" />
         </label>
 
         <div class="field-row">
           <label class="field">
             <span class="field-label">联系方式类型</span>
-            <select id="contactType">
+            <select id="m-contactType">
               <option value="微信">微信</option>
               <option value="QQ">QQ</option>
               <option value="手机号">手机号</option>
             </select>
           </label>
           <label class="field">
-            <span class="field-label">联系方式</span>
-            <input id="contact" type="text" placeholder="如：RCJ9527" />
+            <span class="field-label">联系方式（选填）</span>
+            <input id="m-contact" type="text" placeholder="如：RCJ9527" />
           </label>
         </div>
 
-        <label class="field">
-          <span class="field-label">留言（选填）</span>
-          <textarea id="note" rows="2" placeholder="如：今晚 20:00 开练，腾讯会议号 955 827 9527，专练结构化 / 互相点评"></textarea>
-        </label>
-
-        <button type="submit" class="btn-primary">生成面试搭子页 →</button>
+        <button type="submit" class="btn-primary">发布会议室 →</button>
+        <p class="form-msg" id="m-msg" hidden></p>
       </form>
-
-      <!-- 结果 -->
-      <div id="result" class="result" hidden>
-        <p class="result-title">✅ 你的专属页已生成</p>
-        <p class="result-desc">复制下面的链接发出去，同伴点开即可一键入会：</p>
-        <div class="result-row">
-          <input id="result-url" type="text" readonly />
-          <button id="copy-btn" type="button" class="btn-copy">复制</button>
-        </div>
-        <a id="preview-link" class="result-preview" href="#" target="_blank" rel="noopener">预览匹配页 ↗</a>
-      </div>
     </section>
 
-    <p class="foot-note">MVP 为纯前端演示：数据编码在链接里，不发任何服务器。真正的「智能匹配 + 后台撮合」将在独立产品版实现。</p>
+    <!-- 留言板 -->
+    <section class="card form-card">
+      <h2 class="sec-title">💬 留言板 <span class="sec-sub">保留 3 天</span></h2>
+      <form id="msg-form" autocomplete="off">
+        <label class="field">
+          <span class="field-label">留言内容 <em>*</em></span>
+          <textarea id="msg-text" rows="2" maxlength="280" placeholder="如：求一个深圳辅警结构化搭子，今晚连麦；或留飞书会议号方便组队"></textarea>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">岗位（选填）</span>
+            <select id="msg-role">
+              <option value="">不限 / 综合</option>
+              <option value="辅警">辅警 / 民辅警</option>
+              <option value="消防员">专职 / 政府消防员</option>
+              <option value="公务员">公务员 / 省考 / 国考</option>
+              <option value="事业单位">事业单位</option>
+              <option value="教师">教师招考</option>
+              <option value="其他">其他</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">城市（选填）</span>
+            <input id="msg-city" type="text" placeholder="如：武汉" />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">联系方式（选填）</span>
+          <input id="msg-contact" type="text" placeholder="如：微信 RCJ9527" />
+        </label>
+        <button type="submit" class="btn-primary">发布留言 →</button>
+        <p class="form-msg" id="msg-msg" hidden></p>
+      </form>
+    </section>
+
+    <!-- 会议室列表 -->
+    <section class="board">
+      <div class="board-head">
+        <h2 class="sec-title">🟢 进行中的腾讯会议室</h2>
+        <span class="board-count" id="meet-count">0</span>
+      </div>
+      <div id="meet-list" class="list"></div>
+      <p class="list-empty" id="meet-empty">还没有人发布会议室，来当第一个 🎉</p>
+    </section>
+
+    <!-- 留言列表 -->
+    <section class="board">
+      <div class="board-head">
+        <h2 class="sec-title">💬 最新留言</h2>
+        <span class="board-count" id="msg-count">0</span>
+      </div>
+      <div id="msg-list" class="list"></div>
+      <p class="list-empty" id="msg-empty">留言板空空如也，抢个沙发？</p>
+    </section>
+
+    <p class="foot-note">所有内容由用户自发发布，会议室 24 小时 / 留言 3 天后自动清理。请注意保护个人隐私，勿留身份证、住址等敏感信息。</p>
   </main>
 
   <footer class="site-footer">
     <div class="container">
-      <p class="muted">面试搭子 · RCJ9527 · 纯静态原型</p>
+      <p class="muted">面试搭子 · RCJ9527 · 面试匹配系统</p>
     </div>
   </footer>
 
