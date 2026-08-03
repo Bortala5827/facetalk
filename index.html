@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>面试搭子 · 找搭子一起练面试</title>
-  <meta name="description" content="发布你的腾讯会议室，或留言找面试搭子。按岗位 / 城市匹配，一键跳转到腾讯会议 App 连麦互练。免费、免登录。" />
+  <title>FaceTalk · 双向互选面试搭子</title>
+  <meta name="description" content="FaceTalk 面试搭子：双向互选，双方都同意才成为搭子。发布意图 → 申请 → 同意 → 语音优先互练 → 互评。信誉风控，防割韭菜。" />
   <meta name="theme-color" content="#1e88e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/assets/icon-192.png" />
@@ -16,41 +16,37 @@
     <div class="container bar-inner">
       <a class="brand" href="/">
         <span class="brand-mark">搭</span>
-        <span class="brand-text">面试搭子</span>
+        <span class="brand-text">FaceTalk</span>
       </a>
       <div class="bar-right">
         <a class="brand-back" id="ctx-back" href="https://955827.xyz" hidden>← 返回</a>
-        <span class="brand-tag">面试匹配系统</span>
+        <span class="brand-tag">双向互选 · 面试搭子</span>
       </div>
     </div>
   </header>
 
-  <!-- 微信内打开提示 -->
   <div id="wx-tip" class="wx-tip" hidden>
     如按钮无法跳转到腾讯会议，请点右上角 ⋯ 选择「在浏览器打开」，或复制会议号手动入会。
   </div>
 
   <main class="container">
     <section class="hero">
-      <p class="eyebrow">面试匹配系统</p>
-      <h1>找搭子，一起练面试</h1>
-      <p class="lede">发一间<strong>腾讯会议室</strong>，或留句话找同伴。按岗位 / 城市匹配，点开就能一键跳到腾讯会议 App 连麦互练。免费、免登录、匿名发布。</p>
+      <p class="eyebrow">双向互选 · 面试匹配系统</p>
+      <h1>找搭子，先互选</h1>
+      <p class="lede">发个意图，别人来申请，<strong>只有双方都同意</strong>才成为搭子。语音优先、限时互练、结束互评——机构割不动你，瞎搞的会被封。免费、匿名、免登录。</p>
     </section>
 
-    <!-- 发布腾讯会议室 -->
-    <section class="card form-card">
-      <h2 class="sec-title">📡 发布腾讯会议室</h2>
-      <form id="meet-form" autocomplete="off">
-        <label class="field">
-          <span class="field-label">腾讯会议链接 / 会议号 <em>*</em></span>
-          <input id="m-meeting" type="text" inputmode="text" placeholder="https://meeting.tencent.com/p/... 或直接填 9–11 位会议号" />
-          <span class="field-hint" id="m-meeting-hint">仅支持腾讯会议（飞书等请在下方留言板说明）</span>
-        </label>
+    <!-- 我的信誉 -->
+    <p class="me-bar">我的信誉 <span class="rep-star">⭐</span> <strong id="my-rep">--</strong> · 匿名身份，仅本地保存</p>
 
+    <!-- 发布意图 -->
+    <section class="card form-card">
+      <h2 class="sec-title">📋 发布找搭子意图</h2>
+      <form id="intent-form" autocomplete="off">
         <div class="field-row">
           <label class="field">
             <span class="field-label">岗位</span>
-            <select id="m-role">
+            <select id="i-role">
               <option value="辅警">辅警 / 民辅警</option>
               <option value="消防员">专职 / 政府消防员</option>
               <option value="公务员">公务员 / 省考 / 国考</option>
@@ -61,97 +57,100 @@
           </label>
           <label class="field">
             <span class="field-label">城市</span>
-            <input id="m-city" type="text" placeholder="如：深圳 / 武汉" />
+            <input id="i-city" type="text" placeholder="如：深圳 / 武汉" />
           </label>
         </div>
-
-        <label class="field">
-          <span class="field-label">留言（选填）</span>
-          <input id="m-note" type="text" placeholder="如：今晚 20:00 开练，专练结构化 / 互相点评" />
-        </label>
-
         <div class="field-row">
           <label class="field">
-            <span class="field-label">联系方式类型</span>
-            <select id="m-contactType">
-              <option value="微信">微信</option>
-              <option value="QQ">QQ</option>
-              <option value="手机号">手机号</option>
+            <span class="field-label">模式</span>
+            <select id="i-mode">
+              <option value="voice">🎙 语音优先（推荐）</option>
+              <option value="video">📹 视频</option>
             </select>
           </label>
           <label class="field">
-            <span class="field-label">联系方式（选填）</span>
-            <input id="m-contact" type="text" placeholder="如：RCJ9527" />
-          </label>
-        </div>
-
-        <button type="submit" class="btn-primary">发布会议室 →</button>
-        <p class="form-msg" id="m-msg" hidden></p>
-      </form>
-    </section>
-
-    <!-- 留言板 -->
-    <section class="card form-card">
-      <h2 class="sec-title">💬 留言板 <span class="sec-sub">保留 3 天</span></h2>
-      <form id="msg-form" autocomplete="off">
-        <label class="field">
-          <span class="field-label">留言内容 <em>*</em></span>
-          <textarea id="msg-text" rows="2" maxlength="280" placeholder="如：求一个深圳辅警结构化搭子，今晚连麦；或留飞书会议号方便组队"></textarea>
-        </label>
-        <div class="field-row">
-          <label class="field">
-            <span class="field-label">岗位（选填）</span>
-            <select id="msg-role">
-              <option value="">不限 / 综合</option>
-              <option value="辅警">辅警 / 民辅警</option>
-              <option value="消防员">专职 / 政府消防员</option>
-              <option value="公务员">公务员 / 省考 / 国考</option>
-              <option value="事业单位">事业单位</option>
-              <option value="教师">教师招考</option>
-              <option value="其他">其他</option>
-            </select>
-          </label>
-          <label class="field">
-            <span class="field-label">城市（选填）</span>
-            <input id="msg-city" type="text" placeholder="如：武汉" />
+            <span class="field-label">会议链接（选填）</span>
+            <input id="i-meet" type="text" placeholder="腾讯会议链接，留空则房间内交换" />
           </label>
         </div>
         <label class="field">
-          <span class="field-label">联系方式（选填）</span>
-          <input id="msg-contact" type="text" placeholder="如：微信 RCJ9527" />
+          <span class="field-label">一句话（选填）</span>
+          <input id="i-note" type="text" maxlength="140" placeholder="如：今晚想练结构化，互评互改" />
         </label>
-        <button type="submit" class="btn-primary">发布留言 →</button>
-        <p class="form-msg" id="msg-msg" hidden></p>
+        <button type="submit" class="btn-primary">发布意图 →</button>
+        <p class="form-msg" id="i-msg" hidden></p>
       </form>
     </section>
 
-    <!-- 会议室列表 -->
+    <!-- 浏览搭子 -->
     <section class="board">
       <div class="board-head">
-        <h2 class="sec-title">🟢 进行中的腾讯会议室</h2>
-        <span class="board-count" id="meet-count">0</span>
+        <h2 class="sec-title">🔍 找搭子（他人开放意图）</h2>
+        <button class="btn-mini" id="browse-refresh">刷新</button>
       </div>
-      <div id="meet-list" class="list"></div>
-      <p class="list-empty" id="meet-empty">还没有人发布会议室，来当第一个 🎉</p>
+      <div id="browse-list" class="list"></div>
+      <p class="list-empty" id="browse-empty">还没有人发布意图，去发一个？</p>
     </section>
 
-    <!-- 留言列表 -->
+    <!-- 我的邀约：收到 -->
     <section class="board">
       <div class="board-head">
-        <h2 class="sec-title">💬 最新留言</h2>
-        <span class="board-count" id="msg-count">0</span>
+        <h2 class="sec-title">📨 收到的申请</h2>
       </div>
-      <div id="msg-list" class="list"></div>
-      <p class="list-empty" id="msg-empty">留言板空空如也，抢个沙发？</p>
+      <div id="inbox-list" class="list"></div>
+      <p class="list-empty" id="inbox-empty">暂无人申请你，发布意图后等搭子来。</p>
     </section>
 
-    <p class="foot-note">所有内容由用户自发发布，会议室 24 小时 / 留言 3 天后自动清理。请注意保护个人隐私，勿留身份证、住址等敏感信息。</p>
+    <!-- 我的邀约：发出 -->
+    <section class="board">
+      <div class="board-head">
+        <h2 class="sec-title">📤 我发出的申请</h2>
+      </div>
+      <div id="out-list" class="list"></div>
+      <p class="list-empty" id="out-empty">还没申请过别人。</p>
+    </section>
+
+    <!-- 搭子房间 -->
+    <section class="card" id="room-card" hidden>
+      <h2 class="sec-title">🤝 搭子已匹配！</h2>
+      <p class="muted">双方已互选成功，进入 1:1 房间开始互练。</p>
+      <a class="btn-primary" id="room-enter" href="#">进入搭子房间 →</a>
+    </section>
+
+    <!-- 互评 -->
+    <section class="card form-card" id="rate-card" hidden>
+      <h2 class="sec-title">⭐ 本次互练评价</h2>
+      <p class="muted">互评完成、且双方都愿意，才能解锁「再约一次」。</p>
+      <form id="rate-form" autocomplete="off">
+        <label class="field">
+          <span class="field-label">给搭子打分 <em>*</em></span>
+          <select id="r-score">
+            <option value="5">5 · 很赞，守时专业</option>
+            <option value="4">4 · 不错</option>
+            <option value="3">3 · 一般</option>
+            <option value="2">2 · 不太行</option>
+            <option value="1">1 · 割韭菜/瞎搞</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">标签（选填，逗号分隔）</span>
+          <input id="r-tags" type="text" placeholder="如：守时,点评到位,声音清晰" />
+        </label>
+        <label class="field check">
+          <input id="r-next" type="checkbox" /> <span>愿意再约一次</span>
+        </label>
+        <button type="submit" class="btn-primary">提交评价 →</button>
+        <p class="form-msg" id="r-msg" hidden></p>
+      </form>
+    </section>
+
+    <p class="foot-note">单次互练限时 30 分钟（到点房间失效）。每场结束互评，评分构成信誉；被多人举报将自动封禁。请注意隐私，勿留身份证、住址等敏感信息。本工具仅做匹配，实际连麦走腾讯会议。</p>
   </main>
 
   <footer class="site-footer">
     <div class="container">
-      <p class="muted">面试搭子 · RCJ9527 · 面试匹配系统</p>
-      <p class="install-tip">📲 手机浏览器打开 → 点「⋯」→「添加到主屏幕」，即可变身 FaceTalk App，离线也能看板。</p>
+      <p class="muted">FaceTalk · RCJ9527 · 双向互选面试搭子</p>
+      <p class="install-tip">📲 手机浏览器打开 → 点「⋯」→「添加到主屏幕」，即可变身 FaceTalk App。</p>
     </div>
   </footer>
 

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FaceTalk · 搭子房间</title>
+  <meta name="theme-color" content="#1e88e5" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/assets/icon-192.png" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container bar-inner">
+      <a class="brand" href="/"><span class="brand-mark">搭</span><span class="brand-text">FaceTalk</span></a>
+      <span class="brand-tag">搭子房间 · 1:1</span>
+    </div>
+  </header>
+
+  <div id="wx-tip" class="wx-tip" hidden>如按钮无法跳转到腾讯会议，请点右上角 ⋯「在浏览器打开」。</div>
+
+  <main class="container">
+    <section class="card" id="room">
+      <h2 class="sec-title">🤝 搭子房间</h2>
+      <p class="muted">双方已互选成功。语音优先、限时互练，结束互评。</p>
+
+      <div class="room-meta">
+        <div><span class="muted">对方信誉</span> <strong id="other-rep">--</strong></div>
+        <div><span class="muted">模式</span> <strong id="room-mode">--</strong></div>
+        <div><span class="muted">剩余时间</span> <strong id="timer" class="timer">--:--</strong></div>
+      </div>
+
+      <div id="meet-box" class="meet-box"></div>
+
+      <p class="voice-tip">🎙 <strong>语音优先</strong>：先连麦互练结构、互相点评；熟了再开摄像头。点上方按钮即可在腾讯会议里通话。</p>
+
+      <div class="room-actions">
+        <button class="btn-mini no" id="report-btn">⚠ 举报对方</button>
+      </div>
+    </section>
+
+    <section class="card form-card" id="rate-card" hidden>
+      <h2 class="sec-title">⭐ 本次互练评价</h2>
+      <p class="muted">互评完成、且双方都愿意，才能解锁「再约一次」。</p>
+      <form id="rate-form" autocomplete="off">
+        <label class="field">
+          <span class="field-label">给搭子打分 <em>*</em></span>
+          <select id="r-score">
+            <option value="5">5 · 很赞，守时专业</option>
+            <option value="4">4 · 不错</option>
+            <option value="3">3 · 一般</option>
+            <option value="2">2 · 不太行</option>
+            <option value="1">1 · 割韭菜/瞎搞</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">标签（选填，逗号分隔）</span>
+          <input id="r-tags" type="text" placeholder="如：守时,点评到位,声音清晰" />
+        </label>
+        <label class="field check"><input id="r-next" type="checkbox" /> <span>愿意再约一次</span></label>
+        <button type="submit" class="btn-primary">提交评价 →</button>
+        <p class="form-msg" id="r-msg" hidden></p>
+      </form>
+    </section>
+
+    <p id="expired" class="foot-note" hidden>⏰ 本次互练时间已到，房间失效。去首页重新发布意图约下一位搭子吧。</p>
+  </main>
+
+  <script>
+  (function () {
+    var me = localStorage.getItem('ft_me');
+    var params = new URL(location.href).searchParams;
+    var pairId = params.get('pair');
+    if (!me) { location.href = '/'; return; }
+    if (!pairId) { document.getElementById('room').innerHTML = '<p class="muted">缺少房间参数。</p>'; return; }
+
+    function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+    function toast(m, e){var d=document.createElement('div');d.className='toast'+(e?' toast-err':'');d.textContent=m;document.body.appendChild(d);setTimeout(function(){d.classList.add('show');},10);setTimeout(function(){d.classList.remove('show');setTimeout(function(){d.remove();},300);},2600);}
+    function api(method, body){
+      var url=new URL('/api/pair',location.origin); if(method==='GET')url.searchParams.set('me',me);
+      var opt={method:method,headers:{}};
+      if(body){opt.headers['content-type']='application/json';opt.body=JSON.stringify(Object.assign({me:me},body));}
+      return fetch(url,opt).then(function(r){return r.json().catch(function(){return{};}).then(function(d){return{status:r.status,data:d};});});
+    }
+
+    var remain = 0, timer = null;
+
+    function render(p){
+      if(!p || p.pairId !== pairId){ document.getElementById('room').innerHTML='<p class="muted">无权限或房间已失效。</p>'; return; }
+      document.getElementById('other-rep').textContent = p.otherRep != null ? p.otherRep : '--';
+      document.getElementById('room-mode').textContent = p.mode === 'video' ? '📹 视频' : '🎙 语音优先';
+      remain = p.remaining || 0;
+      tick();
+      if(timer) clearInterval(timer);
+      timer = setInterval(tick, 1000);
+
+      var mb = document.getElementById('meet-box');
+      if(p.meet){
+        var link = esc(p.meet);
+        if(p.meet.indexOf('meeting.tencent.com') >= 0){
+          mb.innerHTML = '<a class="btn-primary" href="'+link+'" target="_blank" rel="noopener">▶ 一键入会（腾讯会议）</a>' +
+            '<button class="btn-mini" id="copy-meet">复制会议链接</button>';
+        } else {
+          mb.innerHTML = '<p class="li-note">对方会议：'+link+'</p><button class="btn-mini" id="copy-meet">复制</button>';
+        }
+        var cb = document.getElementById('copy-meet');
+        if(cb) cb.addEventListener('click', function(){ navigator.clipboard.writeText(p.meet).then(function(){toast('已复制');}); });
+      } else {
+        mb.innerHTML = '<p class="muted">对方未留会议链接，可在腾讯会议里互加后开房，再把链接粘贴给对方。</p>';
+      }
+
+      if(p.status === 'done' && !p.rated){ document.getElementById('rate-card').hidden = false; }
+      else { document.getElementById('rate-card').hidden = true; }
+    }
+
+    function tick(){
+      if(remain <= 0){ document.getElementById('timer').textContent='00:00'; document.getElementById('expired').hidden=false; if(timer)clearInterval(timer); return; }
+      var m = Math.floor(remain/60), s = remain%60;
+      document.getElementById('timer').textContent = (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+      remain--;
+    }
+
+    document.getElementById('report-btn').addEventListener('click', async function(){
+      if(!confirm('确认举报对方？多人举报将自动封禁。')) return;
+      var r = await api('POST',{action:'report',pairId:pairId});
+      if(r.status===200){ toast(r.data.banned?'已举报，对方已被封禁':'已举报，感谢反馈'); }
+      else toast('举报失败', true);
+    });
+
+    document.getElementById('rate-form').addEventListener('submit', async function(e){
+      e.preventDefault();
+      var r = await api('POST',{action:'rate',pairId:pairId,score:parseInt(document.getElementById('r-score').value,10),
+        tags:document.getElementById('r-tags').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean).slice(0,5),
+        next:document.getElementById('r-next').checked});
+      if(r.status===200&&r.data.ok){ toast('评价已提交 ⭐'); document.getElementById('rate-card').hidden=true; }
+      else toast('评价失败：'+(r.data.error||r.status), true);
+    });
+
+    api('GET').then(function(r){ render(r.data.pair); });
+    setInterval(function(){ api('GET').then(function(r){ if(r.data.pair) render(r.data.pair); }); }, 15000);
+  })();
+  </script>
+</body>
+</html>

@@ -1,57 +1,63 @@
-# 面试搭子 · 面试匹配系统
+# FaceTalk · 双向互选面试搭子
 
-发一间**腾讯会议室**，或留句话找同伴。按岗位 / 城市匹配，点开就能一键跳到腾讯会议 App 连麦互练。免费、免登录、匿名发布，数据用 Cloudflare KV 暂存。
+双向互选的面试搭子匹配系统：**只有双方都同意，才成为搭子**。发布意图 → 别人申请 → 你同意 → 语音优先限时互练 → 结束互评。信誉风控防机构割韭菜，举报自动封禁防瞎搞。免费、匿名、免登录，数据用 Cloudflare KV 暂存。
 
-## 当前形态（v2 · KV 后端）
+## 交互闭环（核心）
 
-- **共享看板**（不再是每人一条私密链接）：所有人发布的腾讯会议室 + 留言实时可见
-- 后端：**Cloudflare Pages Functions + KV**，零服务器、免费额度够用
-  - `POST /api/meetings` 发布腾讯会议室（链接或 9–11 位会议号）→ 自动归一化为 `https://meeting.tencent.com/p/<id>` 深链，手机点击直接拉起腾讯会议 App
-  - `POST /api/messages` 发布留言（自由文本，可说明飞书等其它组队方式），**保留 3 天**
-  - `GET /api/meetings`、`GET /api/messages` 取列表，前端每 20 秒自动刷新
-  - 会议室 24 小时自动过期；留言 3 天自动过期（KV `expirationTtl`）
-- 仅支持**腾讯会议**作为结构化入会入口；飞书 / Zoom 等在留言板自由说明
-- 防刷：每 IP 每分钟最多 10 次提交；输入做了长度上限与 HTML 转义
-- `?role=` / `?from=` 模块化深链参数保留（辅警 / 消防 / Hub 站可直接调起）
+1. **发匿名身份**：首次打开自动领取一次性匿名 token（存 KV 24h），本地也存一份，无需注册。
+2. **发布意图**：选岗位 / 城市 / 模式（默认🎙语音优先）/ 选填会议链接。每人同时只有一个开放意图。
+3. **浏览 + 申请**：看他人开放意图（已随机打散、不含身份 ID），点「申请组队」。
+4. **双向互选**：意图 owner 收到申请 → **同意 / 拒绝**；只有**同意**才会生成 1:1 搭子房间。
+5. **限时互练**：房间带 30 分钟软上限（KV TTL）。语音优先，熟了再开摄像头；实际连麦走腾讯会议深链。
+6. **互评 + 再约门槛**：结束双方互评（1–5 分 + 标签）。信誉分据此增减；**双方都打分 ≥3 且都勾选「再约」**，才解锁下一轮。单向拒绝/不评即断开。
+7. **风控**：每操作过 KV 频率限制（IP + 用户维度）；被 3 人举报自动封禁；管理员可手动封禁。
 
-## ⚠️ 部署必做：绑定 KV 命名空间
+## 后端（Cloudflare Pages Functions + KV）
 
-本机无 Cloudflare 凭证，无法用 API 建绑定。代码里引用的是变量名 **`DAZI_KV`**，需你在 CF 控制台手动加一次：
+| 接口 | 方法 | 作用 |
+| --- | --- | --- |
+| `/api/identity` | POST / GET | 发匿名 token / 查信誉·封禁状态 |
+| `/api/intents` | POST / GET | 发布意图（语音优先）/ 浏览他人开放意图（token 门禁、随机打散） |
+| `/api/apply` | POST / GET | 申请组队 / 收件箱（收到 `in`、发出 `out`） |
+| `/api/pair` | POST / GET | 决定（同意→房间/拒绝）、配对状态、互评、举报 |
+| `/api/admin` | POST | 手动封禁（需 `ADMIN_KEY`） |
 
-1. 登录 Cloudflare → 左侧 **Workers & Pages** → 选 `mianshi-dazi` 项目 → **Settings → Functions → KV namespace bindings**
-2. 点 **Add binding**，Variable name 填 `DAZI_KV`，再 **Create namespace**（随便起名，如 `mianshi-dazi`）
-3. 保存。Functions 在下次请求时即生效（API 未绑定时会返回 `KV_NOT_BOUND`，前端提示「后端存储正在初始化」）
+数据键：`u:<id>`(身份/信誉/封禁)、`intent:<id>`(意图)、`app:<id>`(申请)、`pair:<id>`(配对房间)、`inbox:<uid>`/`out:<uid>`(收件箱)、`mypair:<uid>`(我的当前房间)、`report:<uid>`(举报计数)、`rl:*`(频率限制)。
 
-> 自定义域可选：`ms.955827.xyz` 已在用；也可绑 `mianshi.955827.xyz`（Settings → Custom domains）。
+## ⚠️ 部署必做：绑定 KV + 环境变量
+
+本机无 Cloudflare 凭证，无法用 API 建绑定。代码引用以下变量名，需你在 CF 控制台手动加：
+
+1. **KV 命名空间**（必需）：Cloudflare → **Workers & Pages** → `mianshi-dazi` → **Settings → Functions → KV namespace bindings** → **Add binding**，Variable name 填 `DAZI_KV`，**Create namespace**。未绑定时 API 返回 `KV_NOT_BOUND`，前端提示「后端存储正在初始化」。
+2. **管理员密钥**（可选，用于手动封禁）：**Settings → Environment variables** 加 `ADMIN_KEY`（任意强随机串）。然后 `POST /api/admin` 带 `{admin, target, action:'ban'|'unban'}` 即可封禁某身份。
+
+## 防爬 / 安全说明
+
+- 所有写接口必须带有效 token；列表接口也需 token（爬虫需先领 token，受 IP 频率限制）。
+- 列表随机打散、不暴露用户 ID，仅展示信誉分。
+- **建议开启 Cloudflare 免费版 Bot Fight Mode**（控制台 → 站点 → Security → Bots），在边缘拦爬虫，零代码。配合 WAF 可封异常 IP。
+- 频率限制为 KV 计数器（小流量够用，非强一致）；量大可升级 Durable Objects。
+
+## PWA / APK
+
+- `manifest.webmanifest` + `sw.js`：手机浏览器「添加到主屏幕」即成 App。
+- `android/` 为极薄 WebView 外壳；`.github/workflows/build-apk.yml` 在 push 时自动用 GitHub Actions 编译 `app-debug.apk` 并发布到仓库 Releases（APK 分发走 GitHub Releases，避开 `.xyz` 在微信/QQ 被拦）。
 
 ## 目录结构
 
 ```
-index.html            面试搭子看板（发布 + 列表）
-match.html            历史链接重定向到 /
-assets/app.js         前端逻辑（提交 / 渲染 / 自动刷新 / 复制）
+index.html            v2 互选看板（发布/浏览/邀约/房间入口/互评）
+pair.html             1:1 搭子房间页（token 门禁、倒计时、举报、互评）
+assets/app.js         前端逻辑
 assets/style.css      样式
-functions/api/meetings.js  会议室接口（GET/POST）
-functions/api/messages.js  留言接口（GET/POST）
-_headers             根与静态资源不缓存
+assets/icon-*.png     PWA / App 图标
+functions/_shared.js  后端共享助手（token/限流/封禁）
+functions/api/*.js    身份/意图/申请/配对/管理员 接口
+manifest.webmanifest  PWA 清单
+sw.js                 Service Worker（仅缓存静态壳，/api/* 走网络）
+_headers              根与静态资源不缓存 + MIME
+android/              WebView APK 工程
+.github/workflows/    APK 自动打包
 ```
 
-## 模块化调用（深链参数）
-
-| 参数 | 取值 | 作用 |
-| --- | --- | --- |
-| `?role=` | `辅警` / `消防员` / `公务员` / `教师` / `其他` | 预选岗位下拉框（`消防`→`消防员`、`警察`/`公安`→`辅警` 自动归一） |
-| `?from=` | `hub` / `fj` / `xf` | 顶栏显示「返回 RCJ Hub / 辅警站 / 消防站」 |
-
-示例：
-- 辅警站入口：`https://ms.955827.xyz/?role=辅警&from=fj`
-- 消防站入口：`https://ms.955827.xyz/?role=消防员&from=xf`
-
-## 相关站点矩阵（RCJ 模块化架构）
-
-- `rcj-hub`（`955827.xyz`）—— RCJ 品牌枢纽，展示并跳转本模块
-- `rcj-exam-bank`（`exam.955827.xyz`）—— 综合公职真题库
-- `aux-police-exam`（`fj.rcj9527.dpdns.org`）—— 辅警刷题站
-- `xf-firefighter-exam`（`xf.955827.xyz`）—— 消防员题库
-
-> 本仓库是「面试搭子」独立模块：辅警 / 消防 / 公考的面试对练统一调它，各站无需重复造轮子。
+> 早期 `meetings`/`messages` 接口已不再被前端使用，保留为可复用的自由发布能力，新版以 `intents`/`apply`/`pair` 互选闭环为主。

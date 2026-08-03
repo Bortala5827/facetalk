@@ -1,238 +1,197 @@
-// 面试搭子 · 面试匹配系统（前端）
-// 纯静态 + Cloudflare Pages Functions(KV)。数据走 /api/*，不发任何第三方。
+// FaceTalk v2 前端：双向互选流程
 (function () {
   'use strict';
+  var me = null;
 
-  const isWeChat = /micromessenger/i.test(navigator.userAgent);
-  if (isWeChat) {
-    const wt = document.getElementById('wx-tip');
-    if (wt) wt.hidden = false;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  }); }
+  function modeLabel(m) { return m === 'video' ? '📹 视频' : '🎙 语音优先'; }
+
+  function toast(msg, isErr) {
+    var el = document.createElement('div');
+    el.className = 'toast' + (isErr ? ' toast-err' : '');
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { el.classList.add('show'); }, 10);
+    setTimeout(function () { el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2600);
   }
 
-  // 读取 URL 查询参数（模块化调用：?role=辅警 / ?from=fj）
-  function getParam(name) {
-    const m = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search);
-    return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+  async function rawGet(path) {
+    var res = await fetch(path, { method: 'GET' });
+    var d = {}; try { d = await res.json(); } catch (e) {}
+    return { status: res.status, data: d };
   }
 
-  // 上下文返回链接：让辅警 / 消防 / Hub 站调起后仍能一键回到来源
-  const CTX = {
-    hub: ['返回 RCJ Hub', 'https://955827.xyz'],
-    fj: ['返回辅警站', 'https://fj.rcj9527.dpdns.org'],
-    xf: ['返回消防站', 'https://xf.955827.xyz']
-  };
-  const ctxBack = document.getElementById('ctx-back');
-  if (ctxBack) {
-    const fromP = getParam('from');
-    if (CTX[fromP]) {
-      ctxBack.textContent = '← ' + CTX[fromP][0];
-      ctxBack.href = CTX[fromP][1];
-      ctxBack.hidden = false;
+  // 带 token 的 API；GET 走 query，POST 走 body
+  async function api(method, path, body) {
+    var url = new URL(path, location.origin);
+    if (method === 'GET') url.searchParams.set('me', me);
+    var opt = { method: method, headers: {} };
+    if (body) { opt.headers['content-type'] = 'application/json'; opt.body = JSON.stringify(Object.assign({ me: me }, body)); }
+    var res = await fetch(url, opt);
+    var d = {}; try { d = await res.json(); } catch (e) {}
+    if (res.status === 503 && d.error === 'KV_NOT_BOUND') toast('后端存储正在初始化：请在 Cloudflare 绑定 KV（变量名 DAZI_KV）', true);
+    else if (res.status === 403 && d.error === 'BANNED') toast('该身份已被封禁', true);
+    else if (res.status === 401 && d.error === 'BAD_TOKEN') { localStorage.removeItem('ft_me'); location.reload(); }
+    return { status: res.status, data: d };
+  }
+
+  async function ensureToken() {
+    me = localStorage.getItem('ft_me');
+    if (me) {
+      var r = await rawGet('/api/identity?id=' + encodeURIComponent(me));
+      if (r.status === 200 && !r.data.banned) return;
     }
+    var res = await fetch('/api/identity', { method: 'POST' });
+    var d = {}; try { d = await res.json(); } catch (e) {}
+    me = d.id;
+    localStorage.setItem('ft_me', me);
   }
 
-  // 岗位预选：来源站用 ?role= 直接调起对应岗位
-  const roleParam = getParam('role');
-  if (roleParam) {
-    const norm = { '消防': '消防员', '消防员': '消防员', '警察': '辅警', '公安': '辅警', '辅警': '辅警' };
-    const rv = norm[roleParam] || roleParam;
-    ['m-role', 'msg-role'].forEach(function (id) {
-      const sel = document.getElementById(id);
-      if (!sel) return;
-      const exists = Array.prototype.some.call(sel.options, function (o) { return o.value === rv; });
-      if (exists) sel.value = rv;
+  function renderRep() {
+    if (!me) return;
+    rawGet('/api/identity?id=' + encodeURIComponent(me)).then(function (r) {
+      if (r.status === 200) $('my-rep').textContent = r.data.rep;
     });
   }
 
-  function esc(s) {
-    return (s || '').replace(/[&<>"]/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-    });
-  }
-  function timeAgo(ts) {
-    const d = Math.floor((Date.now() - (ts || 0)) / 1000);
-    if (d < 60) return '刚刚';
-    if (d < 3600) return Math.floor(d / 60) + ' 分钟前';
-    if (d < 86400) return Math.floor(d / 3600) + ' 小时前';
-    return Math.floor(d / 86400) + ' 天前';
-  }
-  function tag(text, cls) {
-    return text ? '<span class="tag ' + cls + '">' + esc(text) + '</span>' : '';
-  }
-  function showMsg(el, text, ok) {
-    el.textContent = text;
-    el.className = 'form-msg ' + (ok ? 'ok' : 'err');
-    el.hidden = false;
-  }
-
-  // ---------- 通用复制 ----------
-  function copyText(text, btn) {
-    const done = function () {
-      const old = btn.textContent;
-      btn.textContent = '已复制 ✓';
-      setTimeout(function () { btn.textContent = old; }, 1500);
+  // 发布意图
+  $('intent-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var body = {
+      role: $('i-role').value, city: $('i-city').value.trim(),
+      mode: $('i-mode').value, meet: $('i-meet').value.trim(), note: $('i-note').value.trim(),
     };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text, done); });
+    var r = await api('POST', '/api/intents', body);
+    if (r.status === 200 && r.data.ok) {
+      toast('意图已发布，等搭子来申请 🎉');
+      $('i-city').value = ''; $('i-meet').value = ''; $('i-note').value = '';
+      loadBrowse(); loadInbox();
     } else {
-      fallbackCopy(text, done);
+      toast('发布失败：' + (r.data.error || r.status), true);
+    }
+  });
+
+  // 浏览
+  async function loadBrowse() {
+    var r = await api('GET', '/api/intents');
+    var box = $('browse-list'); box.innerHTML = '';
+    if (r.status === 200 && r.data.list && r.data.list.length) {
+      $('browse-empty').hidden = true;
+      r.data.list.forEach(function (it) {
+        var div = document.createElement('div'); div.className = 'li';
+        div.innerHTML = '<div class="li-main"><span class="tag">' + esc(it.role) + '</span>' +
+          (it.city ? ' <span class="muted">' + esc(it.city) + '</span>' : '') +
+          ' <span class="mode">' + modeLabel(it.mode) + '</span></div>' +
+          (it.note ? '<p class="li-note">' + esc(it.note) + '</p>' : '') +
+          '<div class="li-foot"><span class="rep">⭐ ' + (it.rep != null ? it.rep : '50') + '</span>' +
+          '<button class="btn-mini" data-apply="' + esc(it.id) + '">申请组队</button></div>';
+        box.appendChild(div);
+      });
+      box.querySelectorAll('[data-apply]').forEach(function (b) {
+        b.addEventListener('click', async function () {
+          var rr = await api('POST', '/api/apply', { intentId: b.getAttribute('data-apply') });
+          if (rr.status === 200 && rr.data.ok) toast('已申请，等对方同意 ⏳');
+          else toast('申请失败：' + (rr.data.error || rr.status), true);
+          loadOut();
+        });
+      });
+    } else { $('browse-empty').hidden = false; }
+  }
+
+  // 收到申请
+  async function loadInbox() {
+    var r = await api('GET', '/api/apply?box=in');
+    var box = $('inbox-list'); box.innerHTML = '';
+    if (r.status === 200 && r.data.list && r.data.list.length) {
+      $('inbox-empty').hidden = true;
+      r.data.list.forEach(function (a) {
+        var div = document.createElement('div'); div.className = 'li';
+        var decide = a.status === 'pending'
+          ? '<button class="btn-mini ok" data-acc="' + esc(a.appId) + '">同意</button>' +
+            '<button class="btn-mini no" data-rej="' + esc(a.appId) + '">拒绝</button>'
+          : '<span class="muted">' + (a.status === 'accepted' ? '已同意' : '已拒绝') + '</span>';
+        div.innerHTML = '<div class="li-main"><span class="tag">' + esc(a.role) + '</span>' +
+          (a.city ? ' <span class="muted">' + esc(a.city) + '</span>' : '') +
+          ' <span class="mode">' + modeLabel(a.mode) + '</span> <span class="rep">⭐' + (a.rep != null ? a.rep : '50') + '</span></div>' +
+          (a.note ? '<p class="li-note">' + esc(a.note) + '</p>' : '') +
+          '<div class="li-foot">' + decide + '</div>';
+        box.appendChild(div);
+      });
+      box.querySelectorAll('[data-acc]').forEach(function (b) {
+        b.addEventListener('click', function () { decide(b.getAttribute('data-acc'), 'accept'); });
+      });
+      box.querySelectorAll('[data-rej]').forEach(function (b) {
+        b.addEventListener('click', function () { decide(b.getAttribute('data-rej'), 'reject'); });
+      });
+    } else { $('inbox-empty').hidden = false; }
+  }
+
+  async function decide(appId, decision) {
+    var r = await api('POST', '/api/pair', { action: 'decide', appId: appId, decision: decision });
+    if (r.status === 200 && r.data.ok) {
+      toast(decision === 'accept' ? '已同意，搭子匹配成功 🤝' : '已拒绝');
+      loadInbox(); checkPair();
+    } else toast('操作失败：' + (r.data.error || r.status), true);
+  }
+
+  // 发出申请
+  async function loadOut() {
+    var r = await api('GET', '/api/apply?box=out');
+    var box = $('out-list'); box.innerHTML = '';
+    if (r.status === 200 && r.data.list && r.data.list.length) {
+      $('out-empty').hidden = true;
+      r.data.list.forEach(function (o) {
+        var s = o.status === 'pending' ? '待对方同意' : (o.status === 'accepted' ? '已同意 ✓' : '已拒绝');
+        var div = document.createElement('div'); div.className = 'li';
+        div.innerHTML = '<div class="li-main"><span class="muted">申请 ' + esc(o.intentId) + '</span></div>' +
+          '<div class="li-foot"><span class="muted">' + s + '</span></div>';
+        box.appendChild(div);
+      });
+    } else { $('out-empty').hidden = false; }
+  }
+
+  // 配对状态
+  async function checkPair() {
+    var r = await api('GET', '/api/pair');
+    var p = r.status === 200 ? r.data.pair : null;
+    var rated = p && p.rated;
+    if (p && !rated) {
+      $('room-card').hidden = false;
+      $('room-enter').href = '/pair.html?pair=' + encodeURIComponent(p.pairId);
+      if (p.status === 'done' && !rated) $('rate-card').hidden = false; else $('rate-card').hidden = true;
+    } else {
+      $('room-card').hidden = true; $('rate-card').hidden = true;
     }
   }
-  function fallbackCopy(text, done) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); done(); } catch (e) {}
-    document.body.removeChild(ta);
-  }
 
-  // ---------- 提交：发布腾讯会议室 ----------
-  const meetForm = document.getElementById('meet-form');
-  const meetMsg = document.getElementById('m-msg');
-  if (meetForm) {
-    const mInput = document.getElementById('m-meeting');
-    const mHint = document.getElementById('m-meeting-hint');
-    mInput.addEventListener('input', function () {
-      const v = mInput.value.trim();
-      if (/meeting\.tencent\.com/i.test(v)) { mHint.textContent = '已识别：腾讯会议'; mHint.className = 'field-hint ok'; }
-      else if (/feishu|larksuite|zoom/i.test(v)) { mHint.textContent = '本版仅支持腾讯会议，飞书请在留言板说明'; mHint.className = 'field-hint warn'; }
-      else if (v.replace(/[^0-9]/g, '').length >= 9) { mHint.textContent = '将作为腾讯会议号发布'; mHint.className = 'field-hint ok'; }
-      else if (v) { mHint.textContent = '仅支持腾讯会议链接或 9–11 位会议号'; mHint.className = 'field-hint warn'; }
-      else { mHint.textContent = '仅支持腾讯会议（飞书等请在下方留言板说明）'; mHint.className = 'field-hint'; }
+  // 互评
+  $('rate-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var p = (await api('GET', '/api/pair')).data.pair;
+    if (!p) return;
+    var r = await api('POST', '/api/pair', {
+      action: 'rate', pairId: p.pairId,
+      score: parseInt($('r-score').value, 10),
+      tags: $('r-tags').value.split(/[,，]/).map(function (s) { return s.trim(); }).filter(Boolean).slice(0, 5),
+      next: $('r-next').checked,
     });
+    if (r.status === 200 && r.data.ok) {
+      toast('评价已提交，感谢互评 ⭐');
+      $('rate-card').hidden = true;
+      renderRep();
+    } else toast('评价失败：' + (r.data.error || r.status), true);
+  });
 
-    meetForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      const meeting = mInput.value.trim();
-      if (!meeting) { showMsg(meetMsg, '请填写腾讯会议链接或会议号', false); return; }
-      const payload = {
-        meeting: meeting,
-        role: document.getElementById('m-role').value,
-        city: document.getElementById('m-city').value.trim(),
-        note: document.getElementById('m-note').value.trim(),
-        contactType: document.getElementById('m-contactType').value,
-        contact: document.getElementById('m-contact').value.trim()
-      };
-      postJSON('/api/meetings', payload, meetMsg, meetForm);
-    });
+  $('browse-refresh').addEventListener('click', loadBrowse);
+
+  async function boot() {
+    try { await ensureToken(); } catch (e) { toast('无法获取身份，请稍后重试', true); }
+    renderRep();
+    loadBrowse(); loadInbox(); loadOut(); checkPair();
+    setInterval(function () { loadBrowse(); loadInbox(); loadOut(); checkPair(); renderRep(); }, 15000);
   }
-
-  // ---------- 提交：留言板 ----------
-  const msgForm = document.getElementById('msg-form');
-  const msgMsg = document.getElementById('msg-msg');
-  if (msgForm) {
-    msgForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      const text = document.getElementById('msg-text').value.trim();
-      if (!text) { showMsg(msgMsg, '留言内容不能为空', false); return; }
-      const payload = {
-        text: text,
-        role: document.getElementById('msg-role').value,
-        city: document.getElementById('msg-city').value.trim(),
-        contact: document.getElementById('msg-contact').value.trim()
-      };
-      postJSON('/api/messages', payload, msgMsg, msgForm);
-    });
-  }
-
-  function postJSON(url, payload, msgEl, form) {
-    showMsg(msgEl, '发布中…', true);
-    fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-      .then(function (res) {
-        if (res.ok && res.d.ok) {
-          showMsg(msgEl, '✅ 已发布，已显示在下方列表', true);
-          form.reset();
-          // 保留 ?role 预选
-          if (roleParam) {
-            const norm = { '消防': '消防员', '消防员': '消防员', '警察': '辅警', '公安': '辅警', '辅警': '辅警' };
-            const rv = norm[roleParam] || roleParam;
-            ['m-role', 'msg-role'].forEach(function (id) {
-              const sel = document.getElementById(id);
-              if (sel && Array.prototype.some.call(sel.options, function (o) { return o.value === rv; })) sel.value = rv;
-            });
-          }
-          refresh();
-        } else {
-          showMsg(msgEl, '❌ ' + ((res.d && res.d.message) || '发布失败，请重试'), false);
-        }
-      })
-      .catch(function () { showMsg(msgEl, '❌ 网络异常，请稍后重试', false); });
-  }
-
-  // ---------- 渲染列表 ----------
-  function renderMeetings(items) {
-    const list = document.getElementById('meet-list');
-    const empty = document.getElementById('meet-empty');
-    const count = document.getElementById('meet-count');
-    count.textContent = items.length;
-    if (!items.length) { list.innerHTML = ''; empty.hidden = false; return; }
-    empty.hidden = true;
-    list.innerHTML = items.map(function (it) {
-      const meta = tag(it.role, 'tag-role') + tag(it.city, 'tag-city');
-      const note = it.note ? '<p class="li-note">' + esc(it.note) + '</p>' : '';
-      const contact = it.contact ? '<span class="li-contact">' + esc(it.contactType || '联系') + '：' + esc(it.contact) + '</span>' : '';
-      return '<div class="li">' +
-        '<div class="li-main">' +
-          '<div class="li-top">' + meta + '<span class="li-time">' + timeAgo(it.created) + '</span></div>' +
-          note +
-          '<div class="li-actions">' +
-            '<a class="btn-join" href="' + esc(it.meeting) + '" target="_blank" rel="noopener">▶ 一键入会</a>' +
-            '<button class="btn-mini" data-copy="' + esc(it.raw || it.meeting) + '">复制会议号</button>' +
-            contact +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-    list.querySelectorAll('.btn-mini').forEach(function (b) {
-      b.addEventListener('click', function () { copyText(b.getAttribute('data-copy'), b); });
-    });
-  }
-
-  function renderMessages(items) {
-    const list = document.getElementById('msg-list');
-    const empty = document.getElementById('msg-empty');
-    const count = document.getElementById('msg-count');
-    count.textContent = items.length;
-    if (!items.length) { list.innerHTML = ''; empty.hidden = false; return; }
-    empty.hidden = true;
-    list.innerHTML = items.map(function (it) {
-      const meta = tag(it.role, 'tag-role') + tag(it.city, 'tag-city');
-      const contact = it.contact ? '<span class="li-contact">' + esc(it.contact) + '</span>' : '';
-      return '<div class="li li-msg"><div class="li-main">' +
-        '<div class="li-top">' + meta + '<span class="li-time">' + timeAgo(it.created) + '</span></div>' +
-        '<p class="li-text">' + esc(it.text) + '</p>' +
-        contact +
-      '</div></div>';
-    }).join('');
-  }
-
-  function refresh() {
-    Promise.all([
-      fetch('/api/meetings').then(function (r) { return r.json(); }),
-      fetch('/api/messages').then(function (r) { return r.json(); })
-    ]).then(function (res) {
-      const m = (res[0] && res[0].items) || [];
-      const s = (res[1] && res[1].items) || [];
-      renderMeetings(m);
-      renderMessages(s);
-      if ((res[0] && res[0].error === 'KV_NOT_BOUND') || (res[1] && res[1].error === 'KV_NOT_BOUND')) {
-        const em = document.getElementById('meet-empty');
-        if (em) { em.textContent = '后端存储正在初始化，刷新稍候…'; em.hidden = false; }
-        const sm = document.getElementById('msg-empty');
-        if (sm) { sm.textContent = '后端存储正在初始化，刷新稍候…'; sm.hidden = false; }
-      }
-    }).catch(function () {});
-  }
-
-  refresh();
-  setInterval(refresh, 20000);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(); });
+  boot();
 })();
