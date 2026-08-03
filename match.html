@@ -27,6 +27,23 @@
   </div>
 
   <main class="container">
+    <!-- 互评结果卡（#f=） -->
+    <section id="fb-result" class="card fb-result" hidden>
+      <div class="match-head">
+        <span class="match-badge" id="fb-role">互评</span>
+        <span class="match-status">搭子给你的评价</span>
+      </div>
+      <h1 class="match-title">📝 互评反馈卡</h1>
+      <p class="fb-by" id="fb-by">来自：—</p>
+      <ul class="fb-scores" id="fb-scores"></ul>
+      <div class="fb-suggest-box" id="fb-suggest-box" hidden>
+        <span class="mi-k">建议</span>
+        <p id="fb-suggest-text"></p>
+      </div>
+      <a class="btn-ghost" href="/">我也发一条面试搭子 →</a>
+    </section>
+
+    <!-- 匹配卡（#d=） -->
     <section id="match-card" class="card match-card" hidden>
       <div class="match-head">
         <span class="match-badge" id="m-role">岗位</span>
@@ -36,12 +53,16 @@
       <ul class="match-info">
         <li><span class="mi-k">城市</span><span class="mi-v" id="m-city">—</span></li>
         <li><span class="mi-k">可约时间</span><span class="mi-v" id="m-time">—</span></li>
+        <li id="m-when-li" hidden><span class="mi-k">开练倒计时</span><span class="mi-v countdown" id="m-countdown">—</span></li>
         <li><span class="mi-k">备注</span><span class="mi-v" id="m-note">—</span></li>
       </ul>
 
       <div class="match-actions">
         <a id="m-join" class="btn-primary" href="#" target="_blank" rel="noopener">一键入会 →</a>
+        <button id="m-cal" class="btn-copy" type="button" hidden>📅 加日历</button>
         <button id="m-copy" class="btn-copy" type="button">复制联系方式</button>
+        <button id="m-fb" class="btn-ghost" type="button">📝 写互评</button>
+        <button id="m-rec" class="btn-ghost" type="button">🎙 录音复盘</button>
       </div>
 
       <div id="m-contact" class="match-contact" hidden>
@@ -50,6 +71,44 @@
       </div>
 
       <p class="match-foot">点「一键入会」进入腾讯会议 / 飞书会议，和搭子连麦互练、互相点评。</p>
+
+      <!-- 互评表单 -->
+      <div id="fb-panel" class="sub-panel" hidden>
+        <h3 class="sub-title">给搭子写互评</h3>
+        <p class="sub-desc">按维度打分（1–5 星），写下建议，生成一张可分享的反馈卡发给对方。</p>
+        <div class="fb-dims">
+          <label class="fb-dim"><span>逻辑清晰</span>
+            <select data-dim="logic"><option>5</option><option selected>4</option><option>3</option><option>2</option><option>1</option></select></label>
+          <label class="fb-dim"><span>表达流畅</span>
+            <select data-dim="express"><option>5</option><option selected>4</option><option>3</option><option>2</option><option>1</option></select></label>
+          <label class="fb-dim"><span>仪态得体</span>
+            <select data-dim="manner"><option>5</option><option selected>4</option><option>3</option><option>2</option><option>1</option></select></label>
+          <label class="fb-dim"><span>内容充实</span>
+            <select data-dim="content"><option>5</option><option selected>4</option><option>3</option><option>2</option><option>1</option></select></label>
+        </div>
+        <label class="field"><span class="field-label">建议（选填）</span>
+          <textarea id="fb-suggest" rows="2" placeholder="如：举例可以更具体；眼神可以更稳；开头别太啰嗦"></textarea></label>
+        <label class="field"><span class="field-label">你的称呼（选填）</span>
+          <input id="fb-by" type="text" placeholder="如：深圳搭子" /></label>
+        <button id="fb-submit" class="btn-primary" type="button">生成反馈卡 →</button>
+        <div id="fb-out" class="result" hidden>
+          <p class="result-title">✅ 反馈卡已生成</p>
+          <p class="result-desc">复制链接发给搭子，对方点开即可看到你的评价：</p>
+          <div class="result-row">
+            <input id="fb-url" type="text" readonly />
+            <button id="fb-copy" type="button" class="btn-copy">复制</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 录音复盘 -->
+      <div id="rec-panel" class="sub-panel" hidden>
+        <h3 class="sub-title">🎙 录音复盘（口语分析）</h3>
+        <p class="sub-desc" id="rec-desc">点「开始录音」，对着麦克风答一道题，结束后自动分析语速与填充词（嗯 / 那个 / 然后 等）。</p>
+        <button id="rec-toggle" class="btn-primary" type="button">开始录音</button>
+        <div id="rec-live" class="rec-live" hidden></div>
+        <div id="rec-out" class="rec-out" hidden></div>
+      </div>
     </section>
 
     <section id="match-empty" class="card empty" hidden>
