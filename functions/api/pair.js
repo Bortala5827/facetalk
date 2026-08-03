@@ -1,11 +1,11 @@
-import { json, err, genId, requireToken, refreshUser, clampRep } from '../_shared.js';
+import { json, err, genId, requireToken, refreshUser, clampRep, getKV } from '../_shared.js';
 
 const SESSION_TTL = 1800; // 单次互练软上限 30 分钟
 
 // 配对：决定(同意/拒绝) / 状态 / 互评 / 举报
 export async function onRequest(context) {
   const { request, env } = context;
-  const kv = env.DAZI_KV;
+  const kv = getKV(env);
   if (!kv) return err('KV_NOT_BOUND', 503);
 
   if (request.method === 'GET') {

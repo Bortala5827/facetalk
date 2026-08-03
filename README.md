@@ -28,7 +28,7 @@
 
 本机无 Cloudflare 凭证，无法用 API 建绑定。代码引用以下变量名，需你在 CF 控制台手动加：
 
-1. **KV 命名空间**（必需）：Cloudflare → **Workers & Pages** → `mianshi-dazi` → **Settings → Functions → KV namespace bindings** → **Add binding**，Variable name 填 `DAZI_KV`，**Create namespace**。未绑定时 API 返回 `KV_NOT_BOUND`，前端提示「后端存储正在初始化」。
+1. **KV 命名空间**（必需）：Cloudflare → **Workers & Pages** → `mianshi-dazi` → **Settings → Functions → KV namespace bindings** → **Add binding**。**变量名不强制**：优先识别 `DAZI_KV`；若后台已有其它名字的 KV 空间、填了 `DAZI_KV` 却落回旧空间，代码会自动识别当前项目里实际绑定的任意 KV 命名空间（也可在 Environment variables 里加 `KV_BINDING_NAME` 强制指定）。只要有一个 KV 绑定存在即可用，无需叫特定名字。未绑定时 API 返回 `KV_NOT_BOUND`，前端提示「后端存储正在初始化」。
 2. **管理员密钥**（可选，用于手动封禁）：**Settings → Environment variables** 加 `ADMIN_KEY`（任意强随机串）。然后 `POST /api/admin` 带 `{admin, target, action:'ban'|'unban'}` 即可封禁某身份。
 
 ## 防爬 / 安全说明

@@ -1,9 +1,9 @@
-import { json, err, genId, requireToken, rateLimit, getIp } from '../_shared.js';
+import { json, err, genId, requireToken, rateLimit, getIp, getKV } from '../_shared.js';
 
 // 申请组队 + 收件箱
 export async function onRequest(context) {
   const { request, env } = context;
-  const kv = env.DAZI_KV;
+  const kv = getKV(env);
   if (!kv) return err('KV_NOT_BOUND', 503);
   const ip = getIp(request);
 

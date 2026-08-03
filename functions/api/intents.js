@@ -1,11 +1,11 @@
-import { json, err, genId, requireToken, rateLimit, getIp, refreshUser } from '../_shared.js';
+import { json, err, genId, requireToken, rateLimit, getIp, refreshUser, getKV } from '../_shared.js';
 
 const MODES = ['voice', 'video'];
 
 // 意图：POST 发布（语音优先）；GET 浏览他人开放意图
 export async function onRequest(context) {
   const { request, env } = context;
-  const kv = env.DAZI_KV;
+  const kv = getKV(env);
   if (!kv) return err('KV_NOT_BOUND', 503);
   const ip = getIp(request);
 

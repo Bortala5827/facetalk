@@ -1,6 +1,8 @@
 // 面试搭子 · 留言板 API（Cloudflare Pages Functions + KV）
-// 绑定要求：CF Pages 控制台 → Settings → Functions → KV namespace bindings → 变量名 DAZI_KV
+// KV 绑定名不限：优先 DAZI_KV，其次环境变量 KV_BINDING_NAME，再退化自动识别任意 KV 命名空间绑定。
 //
+import { getKV } from '../_shared.js';
+
 // GET  /api/messages -> { items: [ {id, text, role, city, contact, created} ] }
 // POST /api/messages -> body { text, role?, city?, contact? } -> { ok, id }
 //
@@ -42,7 +44,7 @@ async function rateLimited(kv, ip) {
 }
 
 export async function onRequestGet(ctx) {
-  const kv = ctx.env.DAZI_KV;
+  const kv = getKV(ctx.env);
   if (!kv) return json({ error: 'KV_NOT_BOUND', message: '后端存储未配置，请联系站长' }, 500);
   try {
     const list = await kv.list({ prefix: 'msg:' });
@@ -61,7 +63,7 @@ export async function onRequestGet(ctx) {
 }
 
 export async function onRequestPost(ctx) {
-  const kv = ctx.env.DAZI_KV;
+  const kv = getKV(ctx.env);
   if (!kv) return json({ error: 'KV_NOT_BOUND', message: '后端存储未配置，请联系站长' }, 500);
 
   const ip = clientIp(ctx.request);

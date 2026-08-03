@@ -1,10 +1,10 @@
-import { json, err, refreshUser } from '../_shared.js';
+import { json, err, refreshUser, getKV } from '../_shared.js';
 
 // 手动封禁（管理员）：POST {admin, target, action:'ban'|'unban'}
 // admin 为 CF 环境变量 ADMIN_KEY（用户在控制台设置）
 export async function onRequest(context) {
   const { request, env } = context;
-  const kv = env.DAZI_KV;
+  const kv = getKV(env);
   if (!kv) return err('KV_NOT_BOUND', 503);
   if (request.method !== 'POST') return err('method', 405);
 
