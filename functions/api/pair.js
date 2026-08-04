@@ -19,8 +19,8 @@ export async function onRequest(context) {
       if (!p) return json({ ok: true, pair: null });
       const ratings = safeParse(p.ratings);
       // 从 ratings JSON 的 at 时间推算兜底计时：即使 dissolve_at/closed_at 列未 ALTER 也能自动结算
-      const leftAt = (ratings.a && ratings.a.left ? (ratings.a.at || 0) : 0) || (ratings.b && ratings.b.left ? (ratings.b.at || 0) : 0);
-      const ratedAt = (ratings.a && ratings.a.at && ratings.b && ratings.b.at) ? Math.max(ratings.a.at, ratings.b.at) : 0;
+      const leftAt = (ratings[p.a] && ratings[p.a].left ? (ratings[p.a].at || 0) : 0) || (ratings[p.b] && ratings[p.b].left ? (ratings[p.b].at || 0) : 0);
+      const ratedAt = (ratings[p.a] && ratings[p.a].at && ratings[p.b] && ratings[p.b].at) ? Math.max(ratings[p.a].at, ratings[p.b].at) : 0;
       // 服务端兜底：任意一次轮询命中过期时间即直接关房，不依赖某一方还开着页面
       // 退出 60s / 双方互评完 5 分钟两个时机；列存在优先用列，列缺失回退用 ratings.at
       const exitDue = p.status === 'dissolving' && ((p.dissolve_at || 0) > 0 ? now >= p.dissolve_at : leftAt > 0 && now >= leftAt + 60);
