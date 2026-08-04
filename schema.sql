@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS reports (
   created INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target);
+-- 同一举报者对同一目标只算 1 次（防恶意举报凑数；应用层 INSERT OR IGNORE 兜底）
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reports_by_target ON reports(by, target);
 
 -- 互评明细（pairs.ratings 里也有，这里单独建表便于统计/查询）
 CREATE TABLE IF NOT EXISTS ratings (

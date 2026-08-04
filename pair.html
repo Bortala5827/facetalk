@@ -252,10 +252,19 @@
     });
 
     document.getElementById('report-btn').addEventListener('click', async function(){
-      if(!confirm('确认举报对方？多人举报将自动封禁。')) return;
-      var r = await api('POST',{action:'report',pairId:pairId});
-      if(r.status===200){ toast(r.data.banned?'已举报，对方已被封禁':'已举报，感谢反馈'); }
-      else toast('举报失败', true);
+      if(!confirm('举报需说明原因（≥5 字），且你必须真的和对方搭过、留过联机信息。确认继续？')) return;
+      var reason = (prompt('请说明举报原因（至少 5 个字）') || '').trim();
+      if (reason.length < 5) { toast('请填写至少 5 个字的原因', true); return; }
+      var r = await api('POST',{action:'report', pairId:pairId, reason:reason});
+      if(r.status===200){
+        if (r.data.dup) toast('你已经举报过对方，本次不重复计数');
+        else toast(r.data.banned ? ('已举报，累计 '+r.data.reports+'/3 个不同举报人，已封禁') : ('已举报（累计 '+r.data.reports+'/3 个不同举报人）'));
+      }
+      else if (r.data && r.data.error === 'need_contact_first') toast('请先在「联机信息」里填写你的联系方式（证明你真的搭过）', true);
+      else if (r.data && r.data.error === 'pair_not_active') toast('双方未完成配对，无法举报', true);
+      else if (r.data && r.data.error === 'reason_too_short') toast('请填写至少 5 个字的原因', true);
+      else if (r.data && r.data.error === 'rate_limited') toast('操作太频繁，1 分钟后再试', true);
+      else toast('举报失败：' + (r.data && r.data.error ? r.data.error : r.status), true);
     });
 
     document.getElementById('rate-form').addEventListener('submit', async function(e){

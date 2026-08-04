@@ -151,18 +151,36 @@ export async function onRequest(context) {
       const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
       if (!p) return err('pair_gone', 404);
       if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
+
+      // ─── 反恶意举报 5 重门槛 ───
+      // 1) 必须有有效配对（双方均接受 → status matched/done），禁止未配对就举报
+      if (p.status !== 'matched' && p.status !== 'done') return err('pair_not_active', 409);
+      // 2) 举报方必须实际填过联机信息（证明确实"聊过"，防注册即举报）
+      const myCol = r.id === p.a ? 'info_a' : 'info_b';
+      const myInfo = (p[myCol] || '').trim();
+      if (myInfo.length < 4) return err('need_contact_first', 409);
+      // 3) 理由必填且 ≥5 字符（防误点 / 无脑举报）
+      const reason = String(body.reason || '').trim();
+      if (reason.length < 5) return err('reason_too_short', 400);
+      // 4) 同 IP 60s 限流 1 次（防脚本刷）
+      if (!await rateLimit(db, 'rl:report:' + getIp(request), 1, 60)) return err('rate_limited', 429);
+      // 5) (by, target) 去重：UNIQUE 索引 + INSERT OR IGNORE 双重兜底
+      try { await db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_reports_by_target ON reports(by, target)`); } catch (e) { /* 历史数据偶发重复，忽略 */ }
+
       const other = r.id === p.a ? p.b : p.a;
       const now = nowSec();
-      await db.prepare(`INSERT INTO reports (id, target, by, reason, created) VALUES (?, ?, ?, ?, ?)`)
-        .bind('rep_' + genId(12), other, r.id, String(body.reason || '').slice(0, 100), now).run();
-      const cntRow = await db.prepare('SELECT COUNT(*) AS c FROM reports WHERE target=?').bind(other).first();
+      const ins = await db.prepare(`INSERT OR IGNORE INTO reports (id, target, by, reason, created) VALUES (?, ?, ?, ?, ?)`)
+        .bind('rep_' + genId(12), other, r.id, reason.slice(0, 200), now).run();
+      const inserted = !!(ins && ins.meta && ins.meta.changes > 0);
+      // 计数改为不同举报人数（防同一举报者反复凑数 → 需 3 个不同人举报才封禁）
+      const cntRow = await db.prepare('SELECT COUNT(DISTINCT by) AS c FROM reports WHERE target=?').bind(other).first();
       const cnt = cntRow ? cntRow.c : 0;
       let banned = false;
       if (cnt >= 3) {
         await db.prepare('UPDATE users SET banned=1 WHERE id=?').bind(other).run();
         banned = true;
       }
-      return json({ ok: true, banned, reports: cnt });
+      return json({ ok: true, banned, reports: cnt, dup: !inserted });
     }
 
     return err('unknown_action', 400);
