@@ -2,6 +2,22 @@
 (function () {
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var BASE = '';
+  var prevSig = ''; // 上一次列表签名，轮询无变化时跳过重绘，避免每 30s 闪动
+
+  function avatarFor(name) {
+    var s = (name || '匿').trim();
+    var ch = s ? s.charAt(0) : '匿';
+    var grads = [
+      'linear-gradient(135deg,#1e88e5,#42a5f5)',
+      'linear-gradient(135deg,#06b6d4,#22d3ee)',
+      'linear-gradient(135deg,#7c3aed,#a78bfa)',
+      'linear-gradient(135deg,#10b981,#34d399)',
+      'linear-gradient(135deg,#f59e0b,#fbbf24)',
+      'linear-gradient(135deg,#ec4899,#f472b6)'
+    ];
+    var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return { ch: ch, bg: grads[h % grads.length] };
+  }
 
   function timeAgo(sec) {
     var d = Math.floor(Date.now() / 1000) - (sec || 0);
@@ -40,12 +56,19 @@
       if (!d.ok) { list.innerHTML = '<div class="wall-empty">留言墙暂不可用</div>'; return; }
       var items = d.items || [];
       if (!items.length) { list.innerHTML = '<div class="wall-empty">还没有留言，来抢沙发吧～</div>'; return; }
+      var sig = items.map(function (it) { return it.id; }).join('|');
+      if (sig === prevSig) return; // 列表无变化，跳过重绘（轮询去抖）
+      prevSig = sig;
       list.innerHTML = items.map(function (it) {
+        var av = avatarFor(it.name || '匿名搭子');
         return '<div class="wall-item" data-id="' + esc(it.id) + '">' +
-          '<div class="wi-head"><span class="wi-name">' + esc(it.name || '匿名搭子') + '</span>' +
-          '<span class="wi-time">' + timeAgo(it.createdAt) + '</span></div>' +
-          '<div class="wi-text">' + esc(it.text) + '</div>' +
-          '<span class="wall-del" data-id="' + esc(it.id) + '" hidden>✕</span>' +
+          '<div class="wi-avatar" style="background:' + av.bg + '">' + esc(av.ch) + '</div>' +
+          '<div class="wi-body">' +
+            '<div class="wi-top"><span class="wi-name">' + esc(it.name || '匿名搭子') + '</span>' +
+            '<span class="wi-time">' + timeAgo(it.createdAt) + '</span></div>' +
+            '<div class="wi-text">' + esc(it.text) + '</div>' +
+          '</div>' +
+          '<button class="wall-del" data-id="' + esc(it.id) + '" title="删除">✕</button>' +
           '</div>';
       }).join('');
     } catch (e) {
@@ -98,21 +121,24 @@
     if (post) post.addEventListener('click', postWall);
 
     var manage = $('#wallManage');
+    var wallEl = $('#wall');
     if (manage) manage.addEventListener('click', function () {
       var on = manage.classList.toggle('on');
-      document.querySelectorAll('.wall-del').forEach(function (el) { el.hidden = !on; });
+      if (wallEl) wallEl.classList.toggle('manager', on);
       if (on) {
-        var key = window.prompt('输入留言墙管理口令（WALL_ADMIN）以启用删除：');
-        if (!key) { manage.classList.remove('on'); document.querySelectorAll('.wall-del').forEach(function (el) { el.hidden = true; }); return; }
+        var key = window.prompt('输入留言墙管理口令（WALL_ADMIN）以开启删除：');
+        if (!key) { manage.classList.remove('on'); if (wallEl) wallEl.classList.remove('manager'); return; }
         window.__wallAdminKey = key;
+      } else {
+        window.__wallAdminKey = null;
       }
     });
 
     document.addEventListener('click', function (e) {
       var del = e.target.closest && e.target.closest('.wall-del');
-      if (del && !del.hidden) {
+      if (del && wallEl && wallEl.classList.contains('manager')) {
         var id = del.getAttribute('data-id');
-        if (!window.__wallAdminKey) { window.alert('请先点「🗑 管理留言」并输入口令'); return; }
+        if (!window.__wallAdminKey) { window.alert('请先点「🗑 管理」并输入口令'); return; }
         if (window.confirm('确定删除这条留言？')) {
           deleteWall(id, window.__wallAdminKey).then(function (ok) {
             if (ok) loadWall(); else window.alert('删除失败，口令可能不对');

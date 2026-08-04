@@ -161,17 +161,25 @@
       </div>
       <div id="admin-list" class="list"></div>
     </section>
-  <!-- 全站公开留言墙（2026-08-04 新增）：首页可见，7 天自动清理 -->
+  <!-- 全站公开留言墙（2026-08-04 升级 UI）：首页可见，7 天自动清理 -->
   <section class="wall" id="wall">
-    <h2>💬 搭子留言墙<span class="wall-badge">7 天自动清理</span></h2>
-    <p class="wall-sub">把你的备考心得、考场经验、组队需求留在这里，互相打气。文明留言，禁止广告与不良信息。</p>
-    <div class="wall-tools"><button class="wall-manage" id="wallManage">🗑 管理留言</button></div>
+    <header class="wall-head">
+      <div class="wall-ttl">
+        <span class="wall-emoji">💬</span>
+        <h2>搭子留言墙</h2>
+        <span class="wall-badge">7 天自动清理</span>
+      </div>
+      <button class="wall-manage" id="wallManage">🗑 管理</button>
+    </header>
+    <p class="wall-sub">把备考心得、考场经验、组队需求留在这里，互相打气 🤝 文明留言，禁止广告与不良信息。</p>
     <div class="wall-form">
-      <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名搭子」）" maxlength="20">
+      <div class="wall-form-row">
+        <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名搭子」）" maxlength="20">
+        <button class="wall-post" id="wallPost">✨ 发布留言</button>
+      </div>
       <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300"></textarea>
-      <button class="wall-post" id="wallPost">发布留言</button>
     </div>
-    <div class="wall-list" id="wallList"><div class="wall-empty">加载中…</div></div>
+    <div class="wall-list" id="wallList"><div class="wall-empty"><span class="we-emoji">📝</span>正在加载留言…</div></div>
   </section>
 
   </main>
