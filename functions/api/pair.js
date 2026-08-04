@@ -48,21 +48,56 @@ export async function onRequest(context) {
       if (intent.owner !== r.id) return err('not_owner', 403);
 
       if (body.decision === 'accept') {
-        const pairId = 'p_' + genId(12);
-        const now = nowSec();
-        const stmts = [
-          db.prepare(`INSERT INTO pairs (id, a, b, intent_id, mode, meet, status, ratings, created, expires)
-            VALUES (?, ?, ?, ?, ?, ?, 'matched', '{}', ?, ?)`)
-            .bind(pairId, intent.owner, app.applicant, app.intent_id, intent.mode, intent.meet || '', now, now + SESSION_TTL),
-          db.prepare("UPDATE applications SET status='accepted' WHERE id=?").bind(app.id),
-          db.prepare("UPDATE intents SET status='matched' WHERE id=?").bind(app.intent_id),
-        ];
-        await db.batch(stmts);
-        return json({ ok: true, pairId });
-      } else {
-        await db.prepare("UPDATE applications SET status='rejected' WHERE id=?").bind(app.id).run();
-        return json({ ok: true, status: 'rejected' });
+        // 双向互选第 1 步：A（意图方）点了「同意」。
+        // 此时不建 pair，只把这条申请置为 a_accepted，等 B 也点头。
+        // 同时把同意图下其它 pending/a_accepted 自动置 rejected，
+        // 这样 A 同一时刻只倾向一人，避免"暧昧多人"。
+        await db.batch([
+          db.prepare("UPDATE applications SET status='rejected' WHERE intent_id=? AND status IN ('pending','a_accepted') AND id<>?")
+            .bind(app.intent_id, app.id),
+          db.prepare("UPDATE applications SET status='a_accepted' WHERE id=?")
+            .bind(app.id),
+        ]);
+        return json({ ok: true, status: 'a_accepted' });
       }
+
+      if (body.decision === 'cancel-accept') {
+        // A 反悔撤回刚才的同意，回退到 pending，等他重新选别人
+        if (app.status !== 'a_accepted') return err('not_a_accepted', 409);
+        await db.prepare("UPDATE applications SET status='pending' WHERE id=?")
+          .bind(app.id).run();
+        return json({ ok: true, status: 'pending' });
+      }
+
+      // decision === 'reject'
+      await db.prepare("UPDATE applications SET status='rejected' WHERE id=?")
+        .bind(app.id).run();
+      return json({ ok: true, status: 'rejected' });
+    }
+
+    if (action === 'b-accept') {
+      // 双向互选第 2 步：B（申请方）看到 A 已点头，点了「我也同意」。
+      // 此时才正式创建 pair + intent.matched。
+      const app = await db.prepare('SELECT * FROM applications WHERE id=?').bind(body.appId).first();
+      if (!app) return err('app_gone', 404);
+      if (app.applicant !== r.id) return err('not_applicant', 403);
+      if (app.status !== 'a_accepted') return err('not_a_accepted', 409);
+      const intent = await db.prepare('SELECT * FROM intents WHERE id=?').bind(app.intent_id).first();
+      if (!intent) return err('intent_gone', 409);
+      if (intent.status !== 'open') return err('intent_closed', 409);
+
+      const pairId = 'p_' + genId(12);
+      const now = nowSec();
+      await db.batch([
+        db.prepare(`INSERT INTO pairs (id, a, b, intent_id, mode, meet, status, ratings, created, expires)
+          VALUES (?, ?, ?, ?, ?, ?, 'matched', '{}', ?, ?)`)
+          .bind(pairId, intent.owner, app.applicant, intent.id, intent.mode, intent.meet || '', now, now + SESSION_TTL),
+        db.prepare("UPDATE applications SET status='both_accepted' WHERE id=?")
+          .bind(app.id),
+        db.prepare("UPDATE intents SET status='matched' WHERE id=?")
+          .bind(intent.id),
+      ]);
+      return json({ ok: true, pairId });
     }
 
     if (action === 'rate') {

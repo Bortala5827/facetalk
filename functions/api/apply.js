@@ -34,6 +34,25 @@ export async function onRequest(context) {
     return json({ ok: true, appId, status: 'pending' });
   }
 
+  if (request.method === 'DELETE') {
+    // 申请方撤回自己的申请
+    const url = new URL(request.url);
+    const meTok = url.searchParams.get('me');
+    const appId = url.searchParams.get('appId');
+    const r = await requireToken(env, meTok);
+    if (r.error) return err(r.error, r.status);
+    if (!await rateLimit(db, 'rl:apply:' + ip, 40, 3600)) return err('rate_limited', 429);
+
+    const app = await db.prepare('SELECT * FROM applications WHERE id=?').bind(appId).first();
+    if (!app) return err('app_gone', 404);
+    if (app.applicant !== r.id) return err('not_applicant', 403);
+    if (app.status === 'both_accepted') return err('already_matched', 409);
+    // pending / a_accepted 都可以撤回；rejected / cancelled / expired 重复撤回幂等返 ok
+    await db.prepare("UPDATE applications SET status='cancelled' WHERE id=?")
+      .bind(app.id).run();
+    return json({ ok: true, status: 'cancelled' });
+  }
+
   if (request.method === 'GET') {
     const url = new URL(request.url);
     const me = url.searchParams.get('me');

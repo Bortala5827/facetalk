@@ -109,15 +109,26 @@
       $('inbox-empty').hidden = true;
       r.data.list.forEach(function (a) {
         var div = document.createElement('div'); div.className = 'li';
-        var decide = a.status === 'pending'
-          ? '<button class="btn-mini ok" data-acc="' + esc(a.appId) + '">同意</button>' +
-            '<button class="btn-mini no" data-rej="' + esc(a.appId) + '">拒绝</button>'
-          : '<span class="muted">' + (a.status === 'accepted' ? '已同意' : '已拒绝') + '</span>';
+        // 双向互选：每个状态对应不同的下一步
+        var decideHtml = '';
+        if (a.status === 'pending') {
+          decideHtml = '<button class="btn-mini ok" data-acc="' + esc(a.appId) + '">同意</button>' +
+                       '<button class="btn-mini no" data-rej="' + esc(a.appId) + '">拒绝</button>';
+        } else if (a.status === 'a_accepted') {
+          // A 已点头，等 B 也同意；A 可以撤回反悔
+          decideHtml = '<span class="muted">⏳ 等他也同意</span>' +
+                       '<button class="btn-mini grey" data-cancel-acc="' + esc(a.appId) + '">撤回</button>';
+        } else if (a.status === 'both_accepted') {
+          decideHtml = '<span class="ok-mark">🤝 已配对</span>' +
+                       '<a class="btn-mini" href="/pair.html?pair=' + esc(a.appId) + '">进入房间</a>';
+        } else {
+          decideHtml = '<span class="muted">' + (a.status === 'rejected' ? '已拒绝' : '已撤回') + '</span>';
+        }
         div.innerHTML = '<div class="li-main"><span class="tag">' + esc(a.role) + '</span>' +
           (a.city ? ' <span class="muted">' + esc(a.city) + '</span>' : '') +
           ' <span class="mode">' + modeLabel(a.mode) + '</span> <span class="rep">⭐' + (a.rep != null ? a.rep : '50') + '</span></div>' +
           (a.note ? '<p class="li-note">' + esc(a.note) + '</p>' : '') +
-          '<div class="li-foot">' + decide + '</div>';
+          '<div class="li-foot">' + decideHtml + '</div>';
         box.appendChild(div);
       });
       box.querySelectorAll('[data-acc]').forEach(function (b) {
@@ -126,14 +137,21 @@
       box.querySelectorAll('[data-rej]').forEach(function (b) {
         b.addEventListener('click', function () { decide(b.getAttribute('data-rej'), 'reject'); });
       });
+      box.querySelectorAll('[data-cancel-acc]').forEach(function (b) {
+        b.addEventListener('click', function () { decide(b.getAttribute('data-cancel-acc'), 'cancel-accept'); });
+      });
     } else { $('inbox-empty').hidden = false; }
   }
 
   async function decide(appId, decision) {
     var r = await api('POST', '/api/pair', { action: 'decide', appId: appId, decision: decision });
     if (r.status === 200 && r.data.ok) {
-      toast(decision === 'accept' ? '已同意，搭子匹配成功 🤝' : '已拒绝');
-      loadInbox(); checkPair();
+      var msg;
+      if (decision === 'accept') msg = '已同意，等对方也点头 ⏳';
+      else if (decision === 'cancel-accept') msg = '已撤回';
+      else msg = '已拒绝';
+      toast(msg);
+      loadInbox(); loadOut(); checkPair();
     } else toast('操作失败：' + (r.data.error || r.status), true);
   }
 
@@ -144,13 +162,55 @@
     if (r.status === 200 && r.data.list && r.data.list.length) {
       $('out-empty').hidden = true;
       r.data.list.forEach(function (o) {
-        var s = o.status === 'pending' ? '待对方同意' : (o.status === 'accepted' ? '已同意 ✓' : '已拒绝');
+        var s = '';
+        var actions = '';
+        if (o.status === 'pending') {
+          s = '⏳ 待对方同意';
+          actions = '<button class="btn-mini grey" data-cancel-app="' + esc(o.appId) + '">撤回</button>';
+        } else if (o.status === 'a_accepted') {
+          // B 看到 A 已点头的关键节点：B 现在点头 → 配对
+          s = '✅ 对方已同意你！';
+          actions = '<button class="btn-mini ok" data-bacc="' + esc(o.appId) + '">我也同意</button>' +
+                    '<button class="btn-mini grey" data-cancel-app="' + esc(o.appId) + '">撤回</button>';
+        } else if (o.status === 'both_accepted') {
+          s = '🤝 已互选成功';
+          actions = '<a class="btn-mini" href="/pair.html?pair=' + esc(o.appId) + '">进入房间</a>';
+        } else if (o.status === 'rejected') {
+          s = '已被拒绝';
+        } else if (o.status === 'cancelled') {
+          s = '已撤回';
+        } else {
+          s = o.status;
+        }
         var div = document.createElement('div'); div.className = 'li';
         div.innerHTML = '<div class="li-main"><span class="muted">申请 ' + esc(o.intentId) + '</span></div>' +
-          '<div class="li-foot"><span class="muted">' + s + '</span></div>';
+          '<div class="li-foot"><span class="' + (o.status === 'both_accepted' ? 'ok-mark' : 'muted') + '">' + s + '</span> ' + actions + '</div>';
         box.appendChild(div);
       });
+      box.querySelectorAll('[data-bacc]').forEach(function (b) {
+        b.addEventListener('click', function () { bAccept(b.getAttribute('data-bacc')); });
+      });
+      box.querySelectorAll('[data-cancel-app]').forEach(function (b) {
+        b.addEventListener('click', function () { cancelApply(b.getAttribute('data-cancel-app')); });
+      });
     } else { $('out-empty').hidden = false; }
+  }
+
+  async function bAccept(appId) {
+    var r = await api('POST', '/api/pair', { action: 'b-accept', appId: appId });
+    if (r.status === 200 && r.data.ok) {
+      toast('已互选，进入房间 🤝');
+      loadInbox(); loadOut(); checkPair();
+    } else toast('同意失败：' + (r.data.error || r.status), true);
+  }
+
+  async function cancelApply(appId) {
+    if (!confirm('撤回这条申请？撤回后对方将看不到你。')) return;
+    var r = await api('DELETE', '/api/apply?appId=' + encodeURIComponent(appId));
+    if (r.status === 200 && r.data.ok) {
+      toast('已撤回');
+      loadInbox(); loadOut();
+    } else toast('撤回失败：' + (r.data.error || r.status), true);
   }
 
   // 配对状态
