@@ -15,7 +15,7 @@ export async function onRequest(context) {
     if (r.error) return err(r.error, r.status);
     const now = nowSec();
     const p = await db.prepare('SELECT * FROM pairs WHERE (a=? OR b=?) AND expires > ? ORDER BY created DESC LIMIT 1')
-      .bind(r.id, now).first();
+      .bind(r.id, r.id, now).first();
     if (!p) return json({ ok: true, pair: null });
     const ratings = safeParse(p.ratings);
     const other = r.id === p.a ? p.b : p.a;
