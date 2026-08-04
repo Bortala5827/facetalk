@@ -147,6 +147,19 @@
     </section>
 
     <p class="foot-note">请注意隐私，勿留身份证、住址等敏感信息。本工具仅做匹配，实际连麦走腾讯会议。</p>
+
+    <!-- 管理员面板（隐藏） -->
+    <section class="card form-card" id="admin-panel" hidden>
+      <h2 class="sec-title">🔧 管理员面板</h2>
+      <label class="field">
+        <span class="field-label">管理员密钥</span>
+        <input id="admin-key" type="password" placeholder="输入 ADMIN_KEY" />
+      </label>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <button class="btn-mini" id="admin-load">加载所有意图</button>
+      </div>
+      <div id="admin-list" class="list"></div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -156,6 +169,8 @@
         <a href="https://exam.955827.xyz/" target="_blank" rel="noopener">真题库</a>
         <span class="sep">·</span>
         <a href="https://955827.xyz/" target="_blank" rel="noopener">RCJ 主页</a>
+        <span class="sep">·</span>
+        <a href="#" id="admin-toggle" style="color:var(--ink-3)">管理</a>
       </p>
       <p class="install-tip">📲 手机浏览器打开 → 点「⋯」→「添加到主屏幕」，即可变身 FaceTalk App。</p>
     </div>

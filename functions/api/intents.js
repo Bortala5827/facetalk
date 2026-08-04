@@ -43,14 +43,36 @@ export async function onRequest(context) {
 
     if (!await rateLimit(db, 'rl:list:' + ip, 120, 600)) return err('rate_limited', 429);
 
-    const { results } = await db.prepare(`SELECT i.id, i.role, i.city, i.mode, i.note, i.created, COALESCE(u.rep,50) AS rep
+    const { results } = await db.prepare(`SELECT i.id, i.role, i.city, i.mode, i.note, i.created, i.owner, COALESCE(u.rep,50) AS rep
       FROM intents i LEFT JOIN users u ON u.id = i.owner
-      WHERE i.status='open' AND i.owner<>? AND i.expires > ?
+      WHERE i.status='open' AND i.expires > ?
       ORDER BY RANDOM() LIMIT 40`)
-      .bind(r.id, nowSec()).all();
-    const own = await db.prepare("SELECT id FROM intents WHERE owner=? AND status='open' AND expires > ?")
-      .bind(r.id, nowSec()).first();
-    return json({ ok: true, list: results, hasOwn: !!own });
+      .bind(nowSec()).all();
+    // 标记哪些是自己的
+    const list = results.map(it => {
+      const isOwn = it.owner === r.id;
+      return { id: it.id, role: it.role, city: it.city, mode: it.mode, note: it.note, created: it.created, rep: it.rep, isOwn };
+    });
+    return json({ ok: true, list });
   }
+
+  // 删除自己的意图
+  if (request.method === 'DELETE') {
+    const url = new URL(request.url);
+    const me = url.searchParams.get('me');
+    const intentId = url.searchParams.get('id');
+    const r = await requireToken(env, me);
+    if (r.error) return err(r.error, r.status);
+    if (!intentId) return err('no_id');
+
+    const intent = await db.prepare('SELECT owner FROM intents WHERE id=?').bind(intentId).first();
+    if (!intent) return err('not_found', 404);
+    if (intent.owner !== r.id) return err('not_owner', 403);
+
+    await db.prepare("DELETE FROM applications WHERE intent_id=?").bind(intentId).run();
+    await db.prepare("DELETE FROM intents WHERE id=?").bind(intentId).run();
+    return json({ ok: true });
+  }
+
   return err('method', 405);
 }

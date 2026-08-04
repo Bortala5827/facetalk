@@ -83,12 +83,17 @@
       var ownHint = $('browse-empty-own'); if (ownHint) ownHint.hidden = true;
       r.data.list.forEach(function (it) {
         var div = document.createElement('div'); div.className = 'li';
+        var actionsHtml = it.isOwn
+          ? '<button class="btn-mini no" data-del-own="' + esc(it.id) + '">删除</button>'
+          : '<button class="btn-mini" data-apply="' + esc(it.id) + '">申请组队</button>';
         div.innerHTML = '<div class="li-main"><span class="tag tag-role">' + esc(it.role) + '</span>' +
           (it.city ? ' <span class="tag tag-city">' + esc(it.city) + '</span>' : '') +
-          ' <span class="mode">' + modeLabel(it.mode) + '</span></div>' +
+          ' <span class="mode">' + modeLabel(it.mode) + '</span>' +
+          (it.isOwn ? ' <span class="mode" style="background:#fff3cd;color:#856404">我的</span>' : '') +
+          '</div>' +
           (it.note ? '<p class="li-note">' + esc(it.note) + '</p>' : '') +
           '<div class="li-foot"><span class="rep">⭐ ' + (it.rep != null ? it.rep : '50') + '</span>' +
-          '<button class="btn-mini" data-apply="' + esc(it.id) + '">申请组队</button></div>';
+          actionsHtml + '</div>';
         box.appendChild(div);
       });
       box.querySelectorAll('[data-apply]').forEach(function (b) {
@@ -97,6 +102,15 @@
           if (rr.status === 200 && rr.data.ok) toast('已申请，等对方同意 ⏳');
           else toast('申请失败：' + (rr.data.error || rr.status), true);
           loadOut();
+        });
+      });
+      box.querySelectorAll('[data-del-own]').forEach(function (b) {
+        b.addEventListener('click', async function () {
+          if (!confirm('确定删除这条意图？')) return;
+          var id = b.getAttribute('data-del-own');
+          var rr = await api('DELETE', '/api/intents?id=' + encodeURIComponent(id));
+          if (rr.status === 200 && rr.data.ok) { toast('已删除'); loadBrowse(); }
+          else toast('删除失败：' + (rr.data.error || rr.status), true);
         });
       });
     } else if (r.status === 200) {
@@ -279,6 +293,70 @@
   });
 
   $('browse-refresh').addEventListener('click', loadBrowse);
+
+  // ============ 管理员面板 ============
+  var adminPanel = $('admin-panel');
+  var adminToggle = $('admin-toggle');
+  var adminKeyInput = $('admin-key');
+  var adminList = $('admin-list');
+
+  if (adminToggle) {
+    adminToggle.addEventListener('click', function (e) {
+      e.preventDefault();
+      adminPanel.hidden = !adminPanel.hidden;
+    });
+  }
+
+  async function adminAction(action, extra) {
+    var key = adminKeyInput.value.trim();
+    if (!key) { toast('请先输入管理员密钥', true); return; }
+    var body = Object.assign({ admin: key, action: action }, extra || {});
+    var res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    var d = {}; try { d = await res.json(); } catch (e) {}
+    if (res.status === 200 && d.ok) return d;
+    toast('管理操作失败：' + (d.error || res.status), true);
+    return null;
+  }
+
+  async function adminLoadIntents() {
+    var d = await adminAction('list_intents');
+    if (!d) return;
+    adminList.innerHTML = '';
+    if (!d.list || !d.list.length) {
+      adminList.innerHTML = '<p class="list-empty">暂无意图</p>';
+      return;
+    }
+    d.list.forEach(function (it) {
+      var div = document.createElement('div'); div.className = 'li';
+      var time = new Date(it.created * 1000).toLocaleString('zh-CN');
+      div.innerHTML = '<div class="li-main">' +
+        '<span class="tag tag-role">' + esc(it.role) + '</span>' +
+        (it.city ? ' <span class="tag tag-city">' + esc(it.city) + '</span>' : '') +
+        ' <span class="muted" style="font-size:12px">' + esc(it.id) + '</span>' +
+        '</div>' +
+        (it.note ? '<p class="li-note">' + esc(it.note) + '</p>' : '') +
+        '<div class="li-foot">' +
+        '<span class="muted" style="font-size:12px">' + esc(it.owner) + ' · ' + time + '</span>' +
+        '<span class="muted" style="font-size:12px">' + esc(it.status) + '</span>' +
+        '<button class="btn-mini no" data-admin-del="' + esc(it.id) + '">删除</button>' +
+        '</div>';
+      adminList.appendChild(div);
+    });
+    adminList.querySelectorAll('[data-admin-del]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        if (!confirm('确定删除意图 ' + b.getAttribute('data-admin-del') + '？')) return;
+        var r = await adminAction('delete_intent', { intentId: b.getAttribute('data-admin-del') });
+        if (r) { toast('已删除'); adminLoadIntents(); loadBrowse(); }
+      });
+    });
+  }
+
+  var adminLoadBtn = $('admin-load');
+  if (adminLoadBtn) adminLoadBtn.addEventListener('click', adminLoadIntents);
 
   async function boot() {
     try { await ensureToken(); } catch (e) { toast('无法获取身份，请稍后重试', true); }
