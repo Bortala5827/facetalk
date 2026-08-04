@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/assets/icon-192.png" />
   <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260805b" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260805c" />
 </head>
 <body>
   <header class="topbar">
@@ -199,12 +199,9 @@
 
   <footer class="site-footer">
     <div class="container">
-      <p class="muted">FaceTalk · RCJ9527 · 双向互选面试搭子</p>
       <p class="muted ver-plan-line"><span class="ver-plan">v2.0 试音互评（规划中）</span></p>
       <p class="foot-links">
-        <a href="https://exam.955827.xyz/" target="_blank" rel="noopener">真题库</a>
-        <span class="sep">·</span>
-        <a href="https://955827.xyz/" target="_blank" rel="noopener">RCJ 主页</a>
+        <a href="https://955827.xyz/" target="_blank" rel="noopener" class="vibe-capsule">Vibe Coding 胶囊</a>
         <span class="sep">·</span>
         <a href="#" id="admin-toggle" class="admin-link" onclick="var p=document.getElementById('admin-panel');if(p){p.hidden=!p.hidden;if(!p.hidden)p.scrollIntoView({behavior:'smooth',block:'start'});}return false;">🔧 管理（清空数据）</a>
       </p>
@@ -213,7 +210,7 @@
   </footer>
 
   <script src="/assets/wall.js"></script>
-  <script src="/assets/app.js?v=20260805b"></script>
+  <script src="/assets/app.js?v=20260805c"></script>
   <script>
     // 从 RCJ 任一站点（955827.xyz 任意子域）进来时，显示「← 返回」并跳回来源页，形成产品矩阵闭环
     (function () {
