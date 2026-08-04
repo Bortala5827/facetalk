@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   var me = null;
+  var dissolveTimer = null; // 首页：对方退出后房间倒计时自动关闭
 
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -83,7 +84,9 @@
     if (r.status === 200 && r.data.ok) {
       toast('意图已发布，等搭子来申请 🎉');
       $('i-city').value = ''; $('i-meet').value = ''; $('i-note').value = '';
-      loadBrowse(); loadInbox();
+      // 乐观插入「我发布的需求」，立即可见、避免重复提交（稍后 loadMine 用服务端数据校准）
+      renderMineOptimistic({ id: r.data.id, role: body.role, city: body.city, mode: body.mode, note: body.note });
+      loadBrowse(); loadInbox(); loadMine();
     } else {
       toast('发布失败：' + (r.data.error || r.status), true);
     }
@@ -92,6 +95,11 @@
   // 浏览
   async function loadBrowse() {
     var r = await api('GET', '/api/intents');
+    // 在线发需求人数（浅色 pill）
+    if (r.status === 200 && typeof r.data.online === 'number') {
+      var oc = $('online-count');
+      if (oc) { oc.hidden = false; oc.innerHTML = '🌐 当前在线发需求 <b>' + r.data.online + '</b> 人'; }
+    }
     var box = $('browse-list'); var empty = $('browse-empty'); box.innerHTML = '';
     if (r.status === 200 && r.data.list && r.data.list.length) {
       empty.hidden = true;
@@ -145,13 +153,20 @@
     var box = $('inbox-list'); var empty = $('inbox-empty'); box.innerHTML = '';
     if (r.status === 200 && r.data.list && r.data.list.length) {
       empty.hidden = true;
+      // 找出已被「选定为 a_accepted」的意图；其下其它 pending 申请灰化（避免重复确认撞车、误点拒绝）
+      var locked = {};
+      r.data.list.forEach(function (a) { if (a.status === 'a_accepted' && a.intentId) locked[a.intentId] = true; });
       r.data.list.forEach(function (a) {
         var div = document.createElement('div'); div.className = 'li';
         // 双向互选：每个状态对应不同的下一步
         var decideHtml = '';
         if (a.status === 'pending') {
-          decideHtml = '<button class="btn-mini ok" data-acc="' + esc(a.appId) + '">同意</button>' +
-                       '<button class="btn-mini no" data-rej="' + esc(a.appId) + '">拒绝</button>';
+          if (locked[a.intentId]) {
+            decideHtml = '<span class="muted">⏳ 你已选其他搭子，等待确认</span>';
+          } else {
+            decideHtml = '<button class="btn-mini ok" data-acc="' + esc(a.appId) + '">同意</button>' +
+                         '<button class="btn-mini no" data-rej="' + esc(a.appId) + '">拒绝</button>';
+          }
         } else if (a.status === 'a_accepted') {
           // A 已点头，等 B 也同意；A 可以撤回反悔
           decideHtml = '<span class="muted">⏳ 等他也同意</span>' +
@@ -256,6 +271,48 @@
     } else toast('同意失败：' + (r.data.error || r.status), true);
   }
 
+  // 我发布的需求：发布后立即可见，避免重复提交；含申请人数与「等待搭子申请」状态
+  async function loadMine() {
+    var r = await api('GET', '/api/intents?box=mine');
+    var box = $('mine-list'), empty = $('mine-empty');
+    if (r.status === 200 && r.data.list && r.data.list.length) {
+      empty.hidden = true; box.innerHTML = '';
+      r.data.list.forEach(function (it) {
+        var div = document.createElement('div'); div.className = 'li mine-intent';
+        var n = it.applicants || 0;
+        div.innerHTML = '<div class="li-main"><span class="tag tag-role">' + esc(it.role) + '</span>' +
+          (it.city ? ' <span class="tag tag-city">' + esc(it.city) + '</span>' : '') +
+          ' <span class="mode">' + modeLabel(it.mode) + '</span></div>' +
+          (it.note ? '<p class="li-note">' + esc(it.note) + '</p>' : '') +
+          '<div class="li-foot"><span class="muted">⏳ 等待搭子申请 · 已有 <b>' + n + '</b> 人申请</span>' +
+          '<button class="btn-mini grey" data-cancel-intent="' + esc(it.id) + '">撤回</button></div>';
+        box.appendChild(div);
+      });
+      box.querySelectorAll('[data-cancel-intent]').forEach(function (b) {
+        b.addEventListener('click', async function () {
+          if (!confirm('撤回这条意图？撤回后搭子将看不到你。')) return;
+          var rr = await api('DELETE', '/api/intents?id=' + encodeURIComponent(b.getAttribute('data-cancel-intent')));
+          if (rr.status === 200 && rr.data.ok) { toast('已撤回'); loadMine(); loadBrowse(); }
+          else toast('撤回失败：' + (rr.data.error || rr.status), true);
+        });
+      });
+    } else if (r.status === 200) {
+      empty.hidden = false; box.innerHTML = '';
+    }
+  }
+  function renderMineOptimistic(it) {
+    var box = $('mine-list'), empty = $('mine-empty');
+    if (empty) empty.hidden = true;
+    if (box.querySelector('[data-id="' + CSS.escape(it.id) + '"]')) return; // 避免重复
+    var div = document.createElement('div'); div.className = 'li mine-intent'; div.dataset.id = it.id;
+    div.innerHTML = '<div class="li-main"><span class="tag tag-role">' + esc(it.role) + '</span>' +
+      (it.city ? ' <span class="tag tag-city">' + esc(it.city) + '</span>' : '') +
+      ' <span class="mode">' + modeLabel(it.mode) + '</span></div>' +
+      (it.note ? '<p class="li-note">' + esc(it.note) + '</p>' : '') +
+      '<div class="li-foot"><span class="muted">⏳ 发布成功，等待搭子申请…</span></div>';
+    box.appendChild(div);
+  }
+
   // 用真实 pairId 跳转（不依赖 appId → pair 的映射）
   async function enterRoom() {
     var r = await api('GET', '/api/pair');
@@ -279,11 +336,40 @@
   async function checkPair() {
     var r = await api('GET', '/api/pair');
     var p = r.status === 200 ? r.data.pair : null;
+    if (dissolveTimer) { clearInterval(dissolveTimer); dissolveTimer = null; }
+    // 对方已退出 → 房间进入「自动关闭倒计时」，对方端 1 分钟后彻底销毁
+    if (p && p.dissolving) {
+      var card = $('room-card');
+      card.hidden = false;
+      var enter = $('room-enter'); if (enter) enter.style.display = 'none';
+      $('rate-card').hidden = true;
+      var tip = $('room-dissolve-tip');
+      if (!tip) { tip = document.createElement('p'); tip.id = 'room-dissolve-tip'; tip.className = 'dissolve-tip'; card.appendChild(tip); }
+      tip.hidden = false;
+      var secs = p.dissolveIn || 0;
+      function paint() { tip.textContent = '⚠️ 对方已退出组队，房间将在 ' + Math.max(0, secs) + 's 后自动关闭。'; }
+      paint();
+      if (secs <= 0) {
+        api('POST', '/api/pair', { action: 'close', pairId: p.pairId }).then(function () { toast('房间已关闭'); loadBrowse(); loadInbox(); loadOut(); loadMine(); checkPair(); });
+      } else {
+        dissolveTimer = setInterval(function () {
+          secs--;
+          paint();
+          if (secs <= 0) {
+            clearInterval(dissolveTimer); dissolveTimer = null;
+            api('POST', '/api/pair', { action: 'close', pairId: p.pairId }).then(function () { toast('房间已关闭'); loadBrowse(); loadInbox(); loadOut(); loadMine(); checkPair(); });
+          }
+        }, 1000);
+      }
+      return;
+    }
     var rated = p && p.rated;
     var left = p && p.left;
     if (p && !rated && !left) {
       $('room-card').hidden = false;
       $('room-enter').href = '/pair.html?pair=' + encodeURIComponent(p.pairId);
+      $('room-enter').style.display = '';
+      var oldTip = $('room-dissolve-tip'); if (oldTip) oldTip.hidden = true;
       if (p.status === 'done' && !rated) $('rate-card').hidden = false; else $('rate-card').hidden = true;
     } else {
       $('room-card').hidden = true; $('rate-card').hidden = true;
@@ -382,8 +468,8 @@
   async function boot() {
     try { await ensureToken(); } catch (e) { toast('无法获取身份，请稍后重试', true); }
     renderRep();
-    loadBrowse(); loadInbox(); loadOut(); checkPair();
-    setInterval(function () { loadBrowse(); loadInbox(); loadOut(); checkPair(); renderRep(); }, 15000);
+    loadBrowse(); loadInbox(); loadOut(); loadMine(); checkPair();
+    setInterval(function () { loadBrowse(); loadInbox(); loadOut(); loadMine(); checkPair(); renderRep(); }, 15000);
   }
   boot();
 })();

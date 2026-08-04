@@ -67,7 +67,7 @@ export async function onRequest(context) {
 
     if (box === 'in') {
       // 收件箱：过滤掉申请方被我屏蔽的人（LEFT JOIN blocks + WHERE NULL 经典套路）
-      const { results } = await db.prepare(`SELECT a.id AS appId, a.status, a.created, i.role, i.city, i.mode, i.note, COALESCE(u.rep,50) AS rep
+      const { results } = await db.prepare(`SELECT a.id AS appId, a.intent_id AS intentId, a.status, a.created, i.role, i.city, i.mode, i.note, COALESCE(u.rep,50) AS rep
         FROM applications a
         JOIN intents i ON i.id = a.intent_id
         LEFT JOIN users u ON u.id = a.applicant

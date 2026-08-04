@@ -38,7 +38,9 @@
     </section>
 
     <!-- 我的信誉 -->
-    <p class="me-bar">我的信誉 <span class="rep-star">⭐</span> <strong id="my-rep">…</strong> · 匿名身份，仅本地保存</p>
+    <p class="me-bar">我的信誉 <span class="rep-star">⭐</span> <strong id="my-rep">…</strong> · 匿名身份，仅本地保存
+      <span class="online-pill" id="online-count" hidden></span>
+    </p>
 
     <!-- 发布意图 -->
     <section class="card form-card">
@@ -81,6 +83,16 @@
         <button type="submit" class="btn-primary">发布意图 →</button>
         <p class="form-msg" id="i-msg" hidden></p>
       </form>
+    </section>
+
+    <!-- 我发布的需求 -->
+    <section class="board" id="mine-board">
+      <div class="board-head">
+        <h2 class="sec-title">📋 我发布的需求</h2>
+        <span class="muted" id="mine-hint"></span>
+      </div>
+      <div id="mine-list" class="list"></div>
+      <p class="list-empty" id="mine-empty" hidden>你还没发布意图。发布后会出现在这里，方便随时看搭子申请情况，避免重复发布。</p>
     </section>
 
     <!-- 浏览搭子 -->

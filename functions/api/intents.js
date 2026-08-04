@@ -24,22 +24,45 @@ export async function onRequest(context) {
     const note = String(body.note || '').slice(0, 140);
     const meet = String(body.meet || '').slice(0, 300);
 
-    // 每人只留一个开放意图：把旧的置为 closed
-    await db.prepare("UPDATE intents SET status='closed' WHERE owner=? AND status='open'").bind(r.id).run();
-
     const id = 'i_' + genId(12);
     const now = nowSec();
-    await db.prepare(`INSERT INTO intents (id, owner, role, city, mode, note, meet, status, created, expires)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`)
-      .bind(id, r.id, role, city, mode, note, meet, now, now + 86400).run();
+    // 每人只留一个开放意图：把旧的置为 closed（事务化，避免并发竞态）
+    // ip 列用于「在线发需求人数」统计；若尚未 ALTER 加入，回退不带 ip 的写法
+    try {
+      await db.batch([
+        db.prepare("UPDATE intents SET status='closed' WHERE owner=? AND status='open'").bind(r.id),
+        db.prepare(`INSERT INTO intents (id, owner, role, city, mode, note, meet, status, created, expires, ip)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)`)
+          .bind(id, r.id, role, city, mode, note, meet, now, now + 86400, ip),
+      ]);
+    } catch (e) {
+      await db.batch([
+        db.prepare("UPDATE intents SET status='closed' WHERE owner=? AND status='open'").bind(r.id),
+        db.prepare(`INSERT INTO intents (id, owner, role, city, mode, note, meet, status, created, expires)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`)
+          .bind(id, r.id, role, city, mode, note, meet, now, now + 86400),
+      ]);
+    }
     return json({ ok: true, id, mode });
   }
 
   if (request.method === 'GET') {
     const url = new URL(request.url);
     const me = url.searchParams.get('me');
+    const box = url.searchParams.get('box') || 'browse';
     const r = await requireToken(env, me);
     if (r.error) return err(r.error, r.status);
+
+    if (box === 'mine') {
+      // 「我发布的需求」：返回自己当前开放的意图 + 申请人数（供首页即时展示，避免重复提交）
+      const { results } = await db.prepare(`SELECT i.id, i.role, i.city, i.mode, i.note, i.meet, i.created,
+          (SELECT COUNT(*) FROM applications a WHERE a.intent_id=i.id AND a.expires > ? AND a.status IN ('pending','a_accepted')) AS applicants
+        FROM intents i
+        WHERE i.owner=? AND i.status='open' AND i.expires > ?
+        ORDER BY i.created DESC`)
+        .bind(nowSec(), r.id, nowSec()).all();
+      return json({ ok: true, list: results });
+    }
 
     if (!await rateLimit(db, 'rl:list:' + ip, 120, 600) && !adminBypass(env, request, null)) return err('rate_limited', 429);
 
@@ -51,12 +74,22 @@ export async function onRequest(context) {
       WHERE i.status='open' AND i.expires > ? AND i.owner != ? AND b.user_id IS NULL
       ORDER BY RANDOM() LIMIT 40`)
       .bind(r.id, nowSec(), r.id).all();
-    // 标记哪些是自己的（理论上 owner != r.id 已排除，这里再保险一次）
     const list = results.map(it => {
-      const isOwn = it.owner === r.id;
-      return { id: it.id, role: it.role, city: it.city, mode: it.mode, note: it.note, created: it.created, rep: it.rep, isOwn };
+      return { id: it.id, role: it.role, city: it.city, mode: it.mode, note: it.note, created: it.created, rep: it.rep, isOwn: false };
     });
-    return json({ ok: true, list });
+
+    // IP 在线提交需求人数：近 30 分钟内活跃开放意图的去重 IP 数（ip 列未 ALTER 时降级为去重 owner）
+    let online = 0;
+    try {
+      const oc = await db.prepare("SELECT COUNT(DISTINCT ip) AS c FROM intents WHERE status='open' AND expires > ? AND created > ?")
+        .bind(nowSec(), nowSec() - 1800).first();
+      online = oc ? oc.c : 0;
+    } catch (e) {
+      const oc = await db.prepare("SELECT COUNT(DISTINCT owner) AS c FROM intents WHERE status='open' AND expires > ?")
+        .bind(nowSec()).first();
+      online = oc ? oc.c : 0;
+    }
+    return json({ ok: true, list, online });
   }
 
   // 删除自己的意图

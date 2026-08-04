@@ -30,6 +30,8 @@
         <div><span class="muted">剩余时间</span> <strong id="timer" class="timer">--:--</strong></div>
       </div>
 
+      <p id="dissolve-tip" class="dissolve-tip" hidden></p>
+
       <div id="meet-box" class="meet-box"></div>
 
       <section class="card" id="info-card" style="margin-top:14px">
@@ -122,7 +124,7 @@
       return r;
     }
 
-    var remain = 0, timer = null, infoMineInit = false;
+    var remain = 0, timer = null, infoMineInit = false, dissolveTimer = null;
 
     function render(p){
       if(!p || p.pairId !== pairId){ document.getElementById('room').innerHTML='<p class="muted">无权限或房间已失效。</p>'; return; }
@@ -151,12 +153,47 @@
       if(!infoMineInit){ document.getElementById('info-mine').value = p.infoMine || ''; infoMineInit = true; }
       renderPeerInfo(p.infoPeer || '');
 
-      if (p.left) {
-        // 已退出本组队：隐藏评价卡与操作按钮，提示去首页找新搭子（退出后房间横幅也会消失）
+      // 房间自动解散 / 退出提示
+      if (dissolveTimer) { clearInterval(dissolveTimer); dissolveTimer = null; }
+      var dtip = document.getElementById('dissolve-tip');
+      var rb2 = document.getElementById('room-actions');
+
+      if (p.dissolving) {
+        // 对方已退出 → 本端 1 分钟倒计时自动关闭（close 清对话 + 房间）
         document.getElementById('rate-card').hidden = true;
-        var rb = document.getElementById('room-actions'); if (rb) rb.style.display = 'none';
-      } else if(p.status === 'done' && !p.rated){ document.getElementById('rate-card').hidden = false; }
-      else { document.getElementById('rate-card').hidden = true; }
+        if (rb2) rb2.style.display = 'none';
+        dtip.hidden = false;
+        var ds = p.dissolveIn || 0;
+        dtip.textContent = '⚠️ 对方已退出组队，房间将在 ' + Math.max(0, ds) + 's 后自动关闭，对话将清除。';
+        if (ds <= 0) closeRoom(p.pairId);
+        else dissolveTimer = setInterval(function () {
+          ds--; dtip.textContent = '⚠️ 对方已退出组队，房间将在 ' + Math.max(0, ds) + 's 后自动关闭，对话将清除。';
+          if (ds <= 0) { clearInterval(dissolveTimer); dissolveTimer = null; closeRoom(p.pairId); }
+        }, 1000);
+      } else if (p.left) {
+        // 我已退出（发起方通常已跳回首页，这里兜底）
+        document.getElementById('rate-card').hidden = true;
+        if (rb2) rb2.style.display = 'none';
+        dtip.hidden = true;
+      } else if (p.status === 'done' && p.autoCloseIn > 0) {
+        // 双方互评完成 → 5 分钟宽限后自动清空房间 + 对话
+        dtip.hidden = false;
+        var ac = p.autoCloseIn;
+        dtip.textContent = '✅ 互评完成，房间将在 ' + Math.max(0, ac) + 's 后自动解散并清除对话。';
+        if (ac <= 0) closeRoom(p.pairId);
+        else dissolveTimer = setInterval(function () {
+          ac--; dtip.textContent = '✅ 互评完成，房间将在 ' + Math.max(0, ac) + 's 后自动解散并清除对话。';
+          if (ac <= 0) { clearInterval(dissolveTimer); dissolveTimer = null; closeRoom(p.pairId); }
+        }, 1000);
+      } else if (p.status === 'done' && !p.rated) {
+        document.getElementById('rate-card').hidden = false;
+        if (rb2) rb2.style.display = '';
+        dtip.hidden = true;
+      } else {
+        document.getElementById('rate-card').hidden = true;
+        if (rb2) rb2.style.display = '';
+        dtip.hidden = true;
+      }
     }
 
     function renderPeerInfo(info){
@@ -325,6 +362,13 @@
       else if (r.data && r.data.error === 'not_active') toast('本组队已结束', true);
       else toast('退出失败：' + (r.data && r.data.error ? r.data.error : r.status), true);
     });
+
+    function closeRoom(pid) {
+      api('POST', { action: 'close', pairId: pid }).then(function (r) {
+        if (r.status === 200 && r.data && r.data.ok) toast('房间已关闭');
+        setTimeout(function () { location.href = '/'; }, 600);
+      });
+    }
 
     document.getElementById('rate-form').addEventListener('submit', async function(e){
       e.preventDefault();

@@ -27,12 +27,16 @@ export async function onRequest(context) {
     const isA = r.id === p.a;
     const infoMine = (isA ? p.info_a : p.info_b) || '';
     const infoPeer = (isA ? p.info_b : p.info_a) || '';
+    const dissolving = p.status === 'dissolving';
+    const dissolveIn = dissolving ? Math.max(0, (p.dissolve_at || 0) - now) : 0;
+    const autoCloseIn = (p.status === 'done') ? Math.max(0, (p.closed_at || 0) - now) : 0;
     return json({
       ok: true,
       pair: {
         pairId: p.id, otherRep, meet: p.meet, mode: p.mode, status: p.status,
         infoMine, infoPeer,
         ratingsCount: Object.keys(ratings || {}).length, remaining, rated, left,
+        dissolving, dissolveIn, autoCloseIn,
         nextAllowed: p.status === 'done' && bothNext(ratings) && bothPass(ratings),
       },
     });
@@ -51,6 +55,7 @@ export async function onRequest(context) {
       const intent = await db.prepare('SELECT * FROM intents WHERE id=?').bind(app.intent_id).first();
       if (!intent) return err('intent_gone', 409);
       if (intent.owner !== r.id) return err('not_owner', 403);
+      if (intent.status !== 'open') return err('intent_closed', 409);
 
       if (body.decision === 'accept') {
         // 双向互选第 1 步：A（意图方）点了「同意」。
@@ -92,6 +97,10 @@ export async function onRequest(context) {
       const intent = await db.prepare('SELECT * FROM intents WHERE id=?').bind(app.intent_id).first();
       if (!intent) return err('intent_gone', 409);
       if (intent.status !== 'open') return err('intent_closed', 409);
+
+      // 防 race：该意图已生成过 pair（并发双 b-accept）→ 拒绝重复建房间
+      const existing = await db.prepare("SELECT id FROM pairs WHERE intent_id=? AND status IN ('matched','dissolving') LIMIT 1").bind(intent.id).first();
+      if (existing) return err('already_paired', 409);
 
       const pairId = 'p_' + genId(12);
       const now = nowSec();
@@ -140,6 +149,10 @@ export async function onRequest(context) {
           .bind(r.id, other, nowSec()));
       }
       await db.batch(writes);
+      // 双方都评完 → 设 5 分钟后自动解散房间（清除对话）；closed_at 列未 ALTER 时静默跳过
+      if (done) {
+        try { await db.prepare("UPDATE pairs SET closed_at=? WHERE id=?").bind(nowSec() + 300, p.id).run(); } catch (e) {}
+      }
       return json({ ok: true, done, blocked: blockNext });
     }
 
@@ -192,17 +205,38 @@ export async function onRequest(context) {
     }
 
     if (action === 'leave') {
-      // 退出组队：把"我"标记为已退出（写进 ratings JSON 的 left:true，不新增表字段），
-      // 并置 status='done'。退出后首页房间横幅消失，可重新发布意图 / 申请新搭子。
+      // 退出组队：把"我"标记为已退出（写进 ratings JSON 的 left:true），并置 status='dissolving'。
+      // 设 dissolve_at = now+60，对方 GET /api/pair 会收到 dissolving + 倒计时，1 分钟后双方房间自动关闭。
       // 已评过分（ratings[r.id].score 存在）视为已结清，无需再退。
       const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
       if (!p) return err('pair_gone', 404);
       if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
-      if (p.status !== 'matched') return err('not_active', 409);
+      if (p.status !== 'matched' && p.status !== 'dissolving') return err('not_active', 409);
       const ratings = safeParse(p.ratings);
       if (ratings[r.id] && ratings[r.id].score) return err('already_rated', 409);
       ratings[r.id] = { left: true, at: nowSec() };
-      await db.prepare("UPDATE pairs SET ratings=?, status='done' WHERE id=?").bind(JSON.stringify(ratings), p.id).run();
+      const dissolveAt = nowSec() + 60;
+      // dissolve_at 列可能尚未 ALTER：try 新版，catch 回退（此时退出生效，但对方端不会倒计时，仅 15s 轮询消失）
+      try {
+        await db.prepare("UPDATE pairs SET ratings=?, status='dissolving', dissolve_at=? WHERE id=?")
+          .bind(JSON.stringify(ratings), dissolveAt, p.id).run();
+      } catch (e) {
+        await db.prepare("UPDATE pairs SET ratings=?, status='done' WHERE id=?")
+          .bind(JSON.stringify(ratings), p.id).run();
+      }
+      return json({ ok: true, dissolving: true, dissolveIn: 60 });
+    }
+
+    if (action === 'close') {
+      // 销毁房间：删除全部对话 + 清空互评 + 状态置 closed。由前端在「倒计时归零」后调用
+      // （一方退出 1 分钟 / 双方互评完 5 分钟两个时机），彻底清理，不留残留。
+      const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
+      if (!p) return err('pair_gone', 404);
+      if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
+      await db.batch([
+        db.prepare('DELETE FROM messages WHERE pair_id=?').bind(p.id),
+        db.prepare("UPDATE pairs SET status='closed', ratings='{}', info_a='', info_b='' WHERE id=?").bind(p.id),
+      ]);
       return json({ ok: true });
     }
 

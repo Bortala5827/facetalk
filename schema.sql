@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS intents (
   meet    TEXT NOT NULL DEFAULT '',
   status  TEXT NOT NULL DEFAULT 'open',   -- open | matched | closed
   created INTEGER NOT NULL,
-  expires INTEGER NOT NULL
+  expires INTEGER NOT NULL,
+  ip      TEXT DEFAULT ''                 -- 在线发需求人数统计（已存在库需 ALTER 加列）
 );
 CREATE INDEX IF NOT EXISTS idx_intents_status_created ON intents(status, created);
 CREATE INDEX IF NOT EXISTS idx_intents_owner ON intents(owner);
@@ -47,10 +48,12 @@ CREATE TABLE IF NOT EXISTS pairs (
   intent_id TEXT,
   mode     TEXT,
   meet     TEXT,
-  status   TEXT NOT NULL DEFAULT 'matched',   -- matched | done
-  ratings  TEXT NOT NULL DEFAULT '{}',        -- JSON: {"userId": {score,tags,next,at}}
+  status   TEXT NOT NULL DEFAULT 'matched',   -- matched | done | dissolving | closed
+  ratings  TEXT NOT NULL DEFAULT '{}',        -- JSON: {"userId": {score,tags,next,left,at}}
   created  INTEGER NOT NULL,
-  expires  INTEGER NOT NULL
+  expires  INTEGER NOT NULL,
+  dissolve_at INTEGER DEFAULT 0,              -- 一方退出后 60s 自动解散的时间点
+  closed_at   INTEGER DEFAULT 0               -- 双方互评完成后 5 分钟自动解散的时间点
 );
 CREATE INDEX IF NOT EXISTS idx_pairs_a ON pairs(a);
 CREATE INDEX IF NOT EXISTS idx_pairs_b ON pairs(b);
@@ -102,6 +105,14 @@ CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(pair_id);
 --   ALTER TABLE messages ADD COLUMN burn INTEGER DEFAULT 0;
 --   ALTER TABLE messages ADD COLUMN read INTEGER DEFAULT 0;
 -- 注：搭子「退出组队」不新增表字段，复用 pairs.ratings 的 JSON（标记 left:true），无需 ALTER。
+--
+-- 房间自动解散（2026-08-04 新增）：一方退出 → 1 分钟后双方房间关闭；双方互评完 → 5 分钟后自动清空。
+-- 依赖 pairs 表 dissolve_at / closed_at 两列。已存在库需在 D1 控制台执行 alter-room-dissolve.sql 一次性加列：
+--   ALTER TABLE pairs ADD COLUMN dissolve_at INTEGER DEFAULT 0;
+--   ALTER TABLE pairs ADD COLUMN closed_at INTEGER DEFAULT 0;
+-- 另需 intents.ip 列统计在线发需求人数：
+--   ALTER TABLE intents ADD COLUMN ip TEXT DEFAULT '';
+-- （SQLite 不支持 ADD COLUMN IF NOT EXISTS，重复执行会报「duplicate column」属正常，忽略即可。）
 
 -- 联机信息列（2026-08-04 新增）：pairs 表扩展 info_a / info_b，存双方各自填写的
 -- 腾讯会议 / 联系方式，置顶常驻、实时互看。因 pairs 表已存在，CREATE TABLE IF NOT EXISTS
