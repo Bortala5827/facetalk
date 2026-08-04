@@ -32,6 +32,17 @@
 
       <div id="meet-box" class="meet-box"></div>
 
+      <section class="card" id="info-card" style="margin-top:14px">
+        <h2 class="sec-title">🔗 联机信息</h2>
+        <p class="muted">交换腾讯会议 / 联系方式，置顶常驻，不被聊天刷走。双方都能看到对方填的。</p>
+        <label class="field">
+          <span class="field-label">我的联机信息（选填）</span>
+          <input id="info-mine" type="text" maxlength="500" placeholder="如：腾讯会议 123-456-789 / 微信号 xxx / 备注" autocomplete="off" />
+        </label>
+        <button class="btn-mini ok" id="info-save">保存我的信息</button>
+        <div id="info-peer-box" class="meet-box" style="margin-top:10px"></div>
+      </section>
+
       <p class="voice-tip">🎙 <strong>语音优先</strong>：先连麦互练结构、互相点评；熟了再开摄像头。点上方按钮即可在腾讯会议里通话。</p>
 
       <div class="room-actions">
@@ -93,7 +104,7 @@
       return fetch(url,opt).then(function(r){return r.json().catch(function(){return{};}).then(function(d){return{status:r.status,data:d};});});
     }
 
-    var remain = 0, timer = null;
+    var remain = 0, timer = null, infoMineInit = false;
 
     function render(p){
       if(!p || p.pairId !== pairId){ document.getElementById('room').innerHTML='<p class="muted">无权限或房间已失效。</p>'; return; }
@@ -119,8 +130,25 @@
         mb.innerHTML = '<p class="muted">对方未留会议链接，可在腾讯会议里互加后开房，再把链接粘贴给对方。</p>';
       }
 
+      if(!infoMineInit){ document.getElementById('info-mine').value = p.infoMine || ''; infoMineInit = true; }
+      renderPeerInfo(p.infoPeer || '');
+
       if(p.status === 'done' && !p.rated){ document.getElementById('rate-card').hidden = false; }
       else { document.getElementById('rate-card').hidden = true; }
+    }
+
+    function renderPeerInfo(info){
+      var pb = document.getElementById('info-peer-box');
+      if(!info){ pb.innerHTML = '<p class="muted">对方还没留联机信息。</p>'; return; }
+      var link = esc(info);
+      if(info.indexOf('meeting.tencent.com') >= 0){
+        pb.innerHTML = '<a class="btn-primary" href="'+link+'" target="_blank" rel="noopener">▶ 对方的腾讯会议（一键入会）</a>' +
+          '<button class="btn-mini" id="copy-peer">复制会议链接</button>';
+      } else {
+        pb.innerHTML = '<p class="li-note">对方：'+link+'</p><button class="btn-mini" id="copy-peer">复制</button>';
+      }
+      var cp = document.getElementById('copy-peer');
+      if(cp) cp.addEventListener('click', function(){ navigator.clipboard.writeText(info).then(function(){toast('已复制');}); });
     }
 
     function tick(){
@@ -214,6 +242,14 @@
     }
     document.getElementById('msg-send').addEventListener('click', sendMsg);
     document.getElementById('msg-text').addEventListener('keydown', function(e){ if(e.key === 'Enter') sendMsg(); });
+
+    document.getElementById('info-save').addEventListener('click', function(){
+      var v = document.getElementById('info-mine').value.replace(/\s+/g,' ').trim();
+      api('POST',{action:'set-info',pairId:pairId,info:v}).then(function(r){
+        if(r.status===200 && r.data.ok){ toast('已保存，对方即将看到'); }
+        else toast('保存失败：'+(r.data.error||r.status), true);
+      });
+    });
 
     document.getElementById('report-btn').addEventListener('click', async function(){
       if(!confirm('确认举报对方？多人举报将自动封禁。')) return;

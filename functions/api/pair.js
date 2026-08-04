@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, clampRep, getDB, nowSec } from '../_shared.js';
+import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp } from '../_shared.js';
 
 const SESSION_TTL = 1800; // 单次互练软上限 30 分钟（秒）
 
@@ -23,10 +23,14 @@ export async function onRequest(context) {
     const otherRep = o ? (o.rep | 0) : 50;
     const rated = !!ratings[r.id];
     const remaining = Math.max(0, p.expires - now);
+    const isA = r.id === p.a;
+    const infoMine = (isA ? p.info_a : p.info_b) || '';
+    const infoPeer = (isA ? p.info_b : p.info_a) || '';
     return json({
       ok: true,
       pair: {
         pairId: p.id, otherRep, meet: p.meet, mode: p.mode, status: p.status,
+        infoMine, infoPeer,
         ratingsCount: Object.keys(ratings || {}).length, remaining, rated,
         nextAllowed: p.status === 'done' && bothNext(ratings) && bothPass(ratings),
       },
@@ -124,6 +128,18 @@ export async function onRequest(context) {
           .bind('r_' + genId(12), p.id, r.id, other, score, JSON.stringify(tags), next ? 1 : 0, nowSec()),
       ]);
       return json({ ok: true, done });
+    }
+
+    if (action === 'set-info') {
+      // 更新我方填写的联机信息（腾讯会议 / 联系方式），置顶常驻，对方实时可见
+      const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
+      if (!p) return err('pair_gone', 404);
+      if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
+      if (!await rateLimit(db, 'rl:info:' + getIp(request), 10, 300)) return err('rate_limited', 429);
+      const info = String(body.info || '').replace(/\s+/g, ' ').trim().slice(0, 500);
+      const col = r.id === p.a ? 'info_a' : 'info_b';
+      await db.prepare('UPDATE pairs SET ' + col + '=? WHERE id=?').bind(info, p.id).run();
+      return json({ ok: true });
     }
 
     if (action === 'report') {

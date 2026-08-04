@@ -95,3 +95,10 @@ CREATE TABLE IF NOT EXISTS messages (
   created INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(pair_id);
+
+-- 联机信息列（2026-08-04 新增）：pairs 表扩展 info_a / info_b，存双方各自填写的
+-- 腾讯会议 / 联系方式，置顶常驻、实时互看。因 pairs 表已存在，CREATE TABLE IF NOT EXISTS
+-- 不会自动加列，需单独在 D1 控制台执行 alter-pairs-info.sql（见本目录）一次性加列：
+--   ALTER TABLE pairs ADD COLUMN info_a TEXT DEFAULT '';
+--   ALTER TABLE pairs ADD COLUMN info_b TEXT DEFAULT '';
+-- 注意：SQLite 不支持 ADD COLUMN IF NOT EXISTS，重复执行会报错，只需执行一次。
