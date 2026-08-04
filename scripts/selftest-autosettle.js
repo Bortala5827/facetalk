@@ -150,6 +150,18 @@ async function run() {
     check('对话清空', db._store.messages.length === 0);
   }
 
+  // 用例 G（用户实际场景）：列缺失时一方刚退出 → 对方轮询必须立刻拿到 dissolving:true 且 dissolveIn>0，
+  // 否则前端"对方已退出"提示不会显示（这就是"没反应"的根因回归点）。
+  console.log('\n[G] leave(列缺失) 立即轮询 → 期望：dissolving:true 且 dissolveIn>0（前端才弹提示）');
+  {
+    const db = makeDb({ id: 'pG', a: 'u1', b: 'u2', status: 'matched', ratings: '{}', expires: now + 999 }, [], true);
+    await leave(db, 'u1', 'pG');
+    const res = await poll(db, 'u2');
+    check('对方轮询到 dissolving:true', res.pair.status === 'dissolving');
+    check('dissolveIn>0（前端弹出"对方已退出"）', res.pair.dissolveIn > 0, 'dissolveIn=' + res.pair.dissolveIn);
+    check('倒计时在 55~60s 区间', res.pair.dissolveIn >= 55 && res.pair.dissolveIn <= 60, 'dissolveIn=' + res.pair.dissolveIn);
+  }
+
   console.log('\n=== 场景二：已跑 alter-room-dissolve.sql（列存在）===');
 
   // 用例 D：退出 dissolve_at 已过期 → 关闭

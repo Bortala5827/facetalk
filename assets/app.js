@@ -3,6 +3,7 @@
   'use strict';
   var me = null;
   var dissolveTimer = null; // 首页：对方退出后房间倒计时自动关闭
+  var roomDissolveToasted = false; // 首页：对方退出提示 toast 只弹一次
 
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -336,8 +337,8 @@
   async function checkPair() {
     var r = await api('GET', '/api/pair');
     var p = r.status === 200 ? r.data.pair : null;
-    // 房间已被服务端结算关闭 → 视为无活跃房间，隐藏卡片
-    if (p && p.status === 'closed') p = null;
+    // 房间已被服务端结算关闭 / 我已退出 → 视为无活跃房间，隐藏卡片（避免把"自己退出"显示成"对方退出"）
+    if (p && (p.status === 'closed' || p.left)) { roomDissolveToasted = false; p = null; }
     if (dissolveTimer) { clearInterval(dissolveTimer); dissolveTimer = null; }
     // 对方已退出 → 房间进入「自动关闭倒计时」，对方端 1 分钟后彻底销毁
     if (p && p.dissolving) {
@@ -351,6 +352,7 @@
       var secs = p.dissolveIn || 0;
       function paint() { tip.textContent = '⚠️ 对方已退出组队，房间将在 ' + Math.max(0, secs) + 's 后自动关闭。'; }
       paint();
+      if (!roomDissolveToasted) { roomDissolveToasted = true; toast('⚠️ 对方已退出组队，房间即将自动关闭'); }
       if (secs <= 0) {
         api('POST', '/api/pair', { action: 'close', pairId: p.pairId }).then(function () { toast('房间已关闭'); loadBrowse(); loadInbox(); loadOut(); loadMine(); checkPair(); });
       } else {
@@ -365,11 +367,12 @@
       }
       return;
     }
+    roomDissolveToasted = false;
     var rated = p && p.rated;
     var left = p && p.left;
     if (p && !rated && !left) {
       $('room-card').hidden = false;
-      $('room-enter').href = '/pair.html?pair=' + encodeURIComponent(p.pairId);
+      $('room-enter').href = '/pair.html?pair=' + encodeURIComponent(p.pairId) + '&v=20260804';
       $('room-enter').style.display = '';
       var oldTip = $('room-dissolve-tip'); if (oldTip) oldTip.hidden = true;
       if (p.status === 'done' && !rated) $('rate-card').hidden = false; else $('rate-card').hidden = true;
@@ -471,7 +474,9 @@
     try { await ensureToken(); } catch (e) { toast('无法获取身份，请稍后重试', true); }
     renderRep();
     loadBrowse(); loadInbox(); loadOut(); loadMine(); checkPair();
-    setInterval(function () { loadBrowse(); loadInbox(); loadOut(); loadMine(); checkPair(); renderRep(); }, 15000);
+    // 重负载（看板/收件箱）仍 15s 刷新，避免滚动跳动；配对状态单独 5s 快轮询，对方退出即时响应
+    setInterval(function () { loadBrowse(); loadInbox(); loadOut(); loadMine(); renderRep(); }, 15000);
+    setInterval(checkPair, 5000);
   }
   boot();
 })();

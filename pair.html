@@ -124,7 +124,7 @@
       return r;
     }
 
-    var remain = 0, timer = null, infoMineInit = false, dissolveTimer = null;
+    var remain = 0, timer = null, infoMineInit = false, dissolveTimer = null, dissolveToasted = false;
 
     function render(p){
       if(!p || p.pairId !== pairId){ document.getElementById('room').innerHTML='<p class="muted">无权限或房间已失效。</p>'; return; }
@@ -160,23 +160,24 @@
       var dtip = document.getElementById('dissolve-tip');
       var rb2 = document.getElementById('room-actions');
 
-      if (p.dissolving) {
+      if (p.left) {
+        // 我已退出（发起方通常已跳回首页，这里兜底；优先于 dissolving 判断，避免把自己走的当成对方走）
+        document.getElementById('rate-card').hidden = true;
+        if (rb2) rb2.style.display = 'none';
+        dtip.hidden = true;
+      } else if (p.dissolving) {
         // 对方已退出 → 本端 1 分钟倒计时自动关闭（close 清对话 + 房间）
         document.getElementById('rate-card').hidden = true;
         if (rb2) rb2.style.display = 'none';
         dtip.hidden = false;
         var ds = p.dissolveIn || 0;
         dtip.textContent = '⚠️ 对方已退出组队，房间将在 ' + Math.max(0, ds) + 's 后自动关闭，对话将清除。';
+        if (!dissolveToasted) { dissolveToasted = true; toast('⚠️ 对方已退出组队，房间即将自动关闭'); }
         if (ds <= 0) closeRoom(p.pairId);
         else dissolveTimer = setInterval(function () {
           ds--; dtip.textContent = '⚠️ 对方已退出组队，房间将在 ' + Math.max(0, ds) + 's 后自动关闭，对话将清除。';
           if (ds <= 0) { clearInterval(dissolveTimer); dissolveTimer = null; closeRoom(p.pairId); }
         }, 1000);
-      } else if (p.left) {
-        // 我已退出（发起方通常已跳回首页，这里兜底）
-        document.getElementById('rate-card').hidden = true;
-        if (rb2) rb2.style.display = 'none';
-        dtip.hidden = true;
       } else if (p.status === 'done' && p.autoCloseIn > 0) {
         // 双方互评完成 → 5 分钟宽限后自动清空房间 + 对话
         dtip.hidden = false;
@@ -195,6 +196,7 @@
         document.getElementById('rate-card').hidden = true;
         if (rb2) rb2.style.display = '';
         dtip.hidden = true;
+        dissolveToasted = false; // 房间恢复正常，下次再进入 dissolving 可重新弹 toast
       }
     }
 
@@ -304,6 +306,8 @@
         if (stream) { try { stream.close(); } catch(_){} }
         stream = new EventSource('/api/messages?me=' + encodeURIComponent(me) + '&pair=' + encodeURIComponent(pairId) + '&stream=1');
         stream.addEventListener('init', function(ev){ try { var d = JSON.parse(ev.data); renderAll(d.list || []); } catch(_){} });
+        // 实时接收到房间状态变化（对方退出 / 互评完 / 已关闭）→ 立即重渲染，后台标签也能即时提示
+        stream.addEventListener('pair', function(ev){ try { var d = JSON.parse(ev.data); if (d && d.pairId === pairId) render(d); } catch(_){} });
         stream.addEventListener('messages', function(ev){ try { var d = JSON.parse(ev.data); appendNew(d.list || []); } catch(_){} });
         stream.addEventListener('bye', function(){ try { stream.close(); } catch(_){} setTimeout(connectStream, 500); });
         stream.addEventListener('error', function(){ /* EventSource 自动重连 */ });
@@ -389,7 +393,8 @@
 
     api('GET').then(function(r){ render(r.data.pair); });
     connectStream(); // SSE 推送接管留言板；首屏 init 事件会渲染历史
-    setInterval(function(){ api('GET').then(function(r){ if(r.data.pair) render(r.data.pair); }); }, 15000);
+    // 轮询兜底（SSE 不可用时）：5s 一次，保证对方退出时及时刷新（配合 SSE 实时推近乎即时）
+    setInterval(function(){ api('GET').then(function(r){ if(r.data.pair) render(r.data.pair); }); }, 5000);
   })();
   </script>
 </body>

@@ -87,12 +87,16 @@ export async function onRequest(context) {
   return err('method', 405);
 }
 
+// 与 pair.js 保持一致的兜底计时解析（避免重复 import）
+function safeParse(s) { try { return JSON.parse(s || '{}') || {}; } catch (e) { return {}; } }
+
 // SSE 推送：维持连接 ~25s，期间每 2s 查一次 D1，把新留言推到客户端。
 // 用 ReadableStream + encoder 在 Workers 里很轻量，到点主动关流让前端 EventSource 自动重连。
 function streamMessages(env, db, member, pairId) {
   const me = member.r.id;
   const encoder = new TextEncoder();
   let lastSeen = nowSec(); // 上次推送后的最大 created；首屏先发历史
+  let lastPairStatus = ''; // 上次推送的房间状态，仅变化时推 pair 事件，避免刷屏
   let alive = true;
   let timer = null;
 
@@ -150,8 +154,32 @@ function streamMessages(env, db, member, pairId) {
             lastSeen = list[list.length - 1].created;
             send('messages', { list });
           }
-          // 同时检测留言删除（拿最近 1 分钟的 id 集合，前端自己 diff）
-          // 简化处理：删除走单独 SSE 事件，前端主动 DELETE 后也广播一次空推送
+          // 顺带检测房间状态变化（对方退出 / 互评完 / 已关闭）→ 实时推 pair 事件给双方，
+          // 弥补「15s 轮询 + 后台标签被节流」导致对方退出时看不到提示。
+          // 仅状态跃迁时推一次（25s 重连后会重新同步），避免刷屏。
+          try {
+            const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(pairId).first();
+            if (p) {
+              const st = p.status;
+              if ((st === 'dissolving' || st === 'done' || st === 'closed') && st !== lastPairStatus) {
+                lastPairStatus = st;
+                const ratings = safeParse(p.ratings);
+                const now = nowSec();
+                const leftAt = (ratings[p.a] && ratings[p.a].left ? (ratings[p.a].at || 0) : 0) || (ratings[p.b] && ratings[p.b].left ? (ratings[p.b].at || 0) : 0);
+                const ratedAt = (ratings[p.a] && ratings[p.a].at && ratings[p.b] && ratings[p.b].at) ? Math.max(ratings[p.a].at, ratings[p.b].at) : 0;
+                let dissolveIn = st === 'dissolving' ? Math.max(0, (p.dissolve_at || 0) - now) : 0;
+                if (st === 'dissolving' && dissolveIn === 0 && leftAt > 0) dissolveIn = Math.max(0, leftAt + 60 - now);
+                let autoCloseIn = st === 'done' ? Math.max(0, (p.closed_at || 0) - now) : 0;
+                if (st === 'done' && autoCloseIn === 0 && ratedAt > 0) autoCloseIn = Math.max(0, ratedAt + 300 - now);
+                send('pair', {
+                  pairId, status: st, dissolving: st === 'dissolving', dissolveIn, autoCloseIn,
+                  left: !!(ratings[me] && ratings[me].left), rated: !!ratings[me],
+                });
+              } else if (st !== lastPairStatus) {
+                lastPairStatus = st;
+              }
+            }
+          } catch (_) { /* pair 表异常不影响留言流 */ }
         } catch (e) {
           // 表未建等异常：不掐流，让前端继续重连
         }
