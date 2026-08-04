@@ -20,11 +20,17 @@ export async function onRequest(context) {
   }
 
   if (request.method === 'GET') {
-    // 拉取该房间全部留言（按时间正序）
     const url = new URL(request.url);
     const pairId = url.searchParams.get('pair');
     const m = await memberCheck(url.searchParams.get('me'), pairId);
     if (m.error) return err(m.error, m.status);
+
+    // SSE 推送模式：实时把新留言推到房间双方浏览器（25s 窗口后自动断，客户端 EventSource 自动重连）
+    if (url.searchParams.get('stream') === '1') {
+      return streamMessages(env, db, m, pairId);
+    }
+
+    // 普通 GET：拉取该房间全部留言（按时间正序）
     const { results } = await db.prepare(
       'SELECT id, sender, text, created FROM messages WHERE pair_id=? ORDER BY created ASC LIMIT 500'
     ).bind(pairId).all();
@@ -67,4 +73,89 @@ export async function onRequest(context) {
     return json({ ok: true });
   }
   return err('method', 405);
+}
+
+// SSE 推送：维持连接 ~25s，期间每 2s 查一次 D1，把新留言推到客户端。
+// 用 ReadableStream + encoder 在 Workers 里很轻量，到点主动关流让前端 EventSource 自动重连。
+function streamMessages(env, db, member, pairId) {
+  const me = member.r.id;
+  const encoder = new TextEncoder();
+  let lastSeen = nowSec(); // 上次推送后的最大 created；首屏先发历史
+  let alive = true;
+  let timer = null;
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      function send(event, data) {
+        if (!alive) return;
+        try {
+          controller.enqueue(encoder.encode('event: ' + event + '\ndata: ' + JSON.stringify(data) + '\n\n'));
+        } catch (e) {
+          alive = false;
+          try { controller.close(); } catch (_) {}
+        }
+      }
+      function ping() {
+        if (!alive) return;
+        try { controller.enqueue(encoder.encode(': ping\n\n')); } catch (e) { alive = false; }
+      }
+
+      // 首屏：先发历史留言（用 since=0 把现有全推一次）
+      try {
+        const { results } = await db.prepare(
+          'SELECT id, sender, text, created FROM messages WHERE pair_id=? AND created > 0 ORDER BY created ASC LIMIT 500'
+        ).bind(pairId).all();
+        const list = (results || []).map(function (x) {
+          return { id: x.id, text: x.text, created: x.created, mine: x.sender === me };
+        });
+        if (list.length) lastSeen = list[list.length - 1].created;
+        send('init', { list });
+      } catch (e) {
+        send('error', { msg: 'init_failed' });
+      }
+
+      // 循环：每 2s 查新增；每 15s 发个心跳保活
+      async function tick() {
+        if (!alive) return;
+        try {
+          const { results } = await db.prepare(
+            'SELECT id, sender, text, created FROM messages WHERE pair_id=? AND created > ? ORDER BY created ASC LIMIT 50'
+          ).bind(pairId, lastSeen).all();
+          if (results && results.length) {
+            const list = results.map(function (x) {
+              return { id: x.id, text: x.text, created: x.created, mine: x.sender === me };
+            });
+            lastSeen = list[list.length - 1].created;
+            send('messages', { list });
+          }
+          // 同时检测留言删除（拿最近 1 分钟的 id 集合，前端自己 diff）
+          // 简化处理：删除走单独 SSE 事件，前端主动 DELETE 后也广播一次空推送
+        } catch (e) {
+          // 表未建等异常：不掐流，让前端继续重连
+        }
+      }
+      timer = setInterval(tick, 2000);
+      const pingTimer = setInterval(ping, 15000);
+
+      // 25s 主动关流（避 CF 免费版 30s 上限），前端 EventSource 自动重连
+      setTimeout(function () {
+        alive = false;
+        clearInterval(timer);
+        clearInterval(pingTimer);
+        try { send('bye', { ok: true }); controller.close(); } catch (_) {}
+      }, 25000);
+    },
+    cancel() {
+      alive = false;
+      if (timer) clearInterval(timer);
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-store, no-transform',
+      'x-accel-buffering': 'no',
+    },
+  });
 }

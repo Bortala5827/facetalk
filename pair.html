@@ -134,38 +134,81 @@
     function msgApi(path, opt){
       return fetch('/api/messages' + path, opt).then(function(r){ return r.json().catch(function(){ return {}; }); });
     }
-    function loadMsgs(){
-      return msgApi('?me=' + encodeURIComponent(me) + '&pair=' + encodeURIComponent(pairId)).then(function(d){
-        var box = document.getElementById('msg-list');
-        if (!d.ok || !d.list || !d.list.length){ box.innerHTML = '<p class="muted">还没有留言，写一句开场白吧。</p>'; return; }
-        box.innerHTML = '';
-        d.list.forEach(function(m){
-          var div = document.createElement('div');
-          div.className = 'msg-item' + (m.mine ? ' mine' : '');
-          var t = new Date(m.created * 1000);
-          var hh = ('0'+t.getHours()).slice(-2) + ':' + ('0'+t.getMinutes()).slice(-2);
-          var del = m.mine ? '<button class="msg-del" data-id="'+esc(m.id)+'">删除</button>' : '';
-          div.innerHTML = '<div class="msg-body"><span class="msg-text">' + esc(m.text) + '</span>' + del + '</div>' +
-            '<div class="msg-meta">' + (m.mine ? '我' : '搭子') + ' · ' + hh + '</div>';
-          box.appendChild(div);
-        });
-        box.scrollTop = box.scrollHeight;
-        box.querySelectorAll('.msg-del').forEach(function(b){
-          b.addEventListener('click', function(){
-            if(!confirm('删除这条留言？')) return;
-            msgApi('?me=' + encodeURIComponent(me) + '&id=' + encodeURIComponent(b.getAttribute('data-id')), { method: 'DELETE' }).then(function(d){
-              if (d.ok){ toast('已删除'); loadMsgs(); } else { toast('删除失败', true); }
-            });
+    function renderMsgItem(m, prepend){
+      var div = document.createElement('div');
+      div.className = 'msg-item' + (m.mine ? ' mine' : '');
+      div.dataset.id = m.id;
+      var t = new Date(m.created * 1000);
+      var hh = ('0'+t.getHours()).slice(-2) + ':' + ('0'+t.getMinutes()).slice(-2);
+      var del = m.mine ? '<button class="msg-del" data-id="'+esc(m.id)+'">删除</button>' : '';
+      div.innerHTML = '<div class="msg-body"><span class="msg-text">' + esc(m.text) + '</span>' + del + '</div>' +
+        '<div class="msg-meta">' + (m.mine ? '我' : '搭子') + ' · ' + hh + '</div>';
+      if (prepend) return div; // 返回供调用方决定插哪里
+      var box = document.getElementById('msg-list');
+      // 已存在则跳过（避免重复）
+      if (box.querySelector('[data-id="'+CSS.escape(m.id)+'"]')) return;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+      bindMsgDel(div);
+    }
+    function bindMsgDel(scope){
+      scope.querySelectorAll('.msg-del').forEach(function(b){
+        b.addEventListener('click', function(){
+          if(!confirm('删除这条留言？')) return;
+          var msgId = b.getAttribute('data-id');
+          msgApi('?me=' + encodeURIComponent(me) + '&id=' + encodeURIComponent(msgId), { method: 'DELETE' }).then(function(d){
+            if (d.ok){
+              var el = b.closest('.msg-item'); if (el) el.remove();
+              delete knownIds[msgId];
+              toast('已删除');
+            } else { toast('删除失败', true); }
           });
         });
       });
+    }
+    var knownIds = {}; // 已渲染的留言 id，避免重复
+    function renderAll(list){
+      var box = document.getElementById('msg-list');
+      box.innerHTML = '';
+      knownIds = {};
+      if (!list || !list.length){ box.innerHTML = '<p class="muted">还没有留言，写一句开场白吧。</p>'; return; }
+      list.forEach(function(m){ knownIds[m.id]=1; renderMsgItem(m); });
+      box.scrollTop = box.scrollHeight;
+    }
+    function appendNew(list){
+      if (!list || !list.length) return;
+      var box = document.getElementById('msg-list');
+      var empty = box.querySelector('p.muted'); if (empty) empty.remove();
+      list.forEach(function(m){
+        if (knownIds[m.id]) return;
+        knownIds[m.id] = 1;
+        renderMsgItem(m);
+      });
+      box.scrollTop = box.scrollHeight;
+    }
+    function loadMsgs(){
+      return msgApi('?me=' + encodeURIComponent(me) + '&pair=' + encodeURIComponent(pairId)).then(function(d){
+        if (d.ok) renderAll(d.list || []);
+      });
+    }
+    // ===== SSE 实时推送 =====
+    var stream = null;
+    function connectStream(){
+      try {
+        if (stream) { try { stream.close(); } catch(_){} }
+        stream = new EventSource('/api/messages?me=' + encodeURIComponent(me) + '&pair=' + encodeURIComponent(pairId) + '&stream=1');
+        stream.addEventListener('init', function(ev){ try { var d = JSON.parse(ev.data); renderAll(d.list || []); } catch(_){} });
+        stream.addEventListener('messages', function(ev){ try { var d = JSON.parse(ev.data); appendNew(d.list || []); } catch(_){} });
+        stream.addEventListener('bye', function(){ try { stream.close(); } catch(_){} setTimeout(connectStream, 500); });
+        stream.addEventListener('error', function(){ /* EventSource 自动重连 */ });
+      } catch(e) { /* SSE 不可用时回落到轮询 */ setInterval(loadMsgs, 10000); }
     }
     function sendMsg(){
       var inp = document.getElementById('msg-text');
       var text = inp.value.replace(/\s+/g,' ').trim();
       if(!text){ return; }
       msgApi('', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ me: me, pair: pairId, text: text }) }).then(function(d){
-        if (d.ok){ inp.value = ''; loadMsgs(); }
+        if (d.ok){ inp.value = ''; /* 不主动 loadMsgs，等 SSE 推回来（自己发的也会被服务端命中）*/ }
         else toast('发送失败：' + (d.error || d.status), true);
       });
     }
@@ -189,9 +232,8 @@
     });
 
     api('GET').then(function(r){ render(r.data.pair); });
-    loadMsgs();
+    connectStream(); // SSE 推送接管留言板；首屏 init 事件会渲染历史
     setInterval(function(){ api('GET').then(function(r){ if(r.data.pair) render(r.data.pair); }); }, 15000);
-    setInterval(loadMsgs, 10000);
   })();
   </script>
 </body>
