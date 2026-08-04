@@ -295,17 +295,10 @@
   $('browse-refresh').addEventListener('click', loadBrowse);
 
   // ============ 管理员面板 ============
+  // 注：开关逻辑已移到 index.html 内联 onclick（不依赖本脚本，避免 JS 报错时无法展开）
   var adminPanel = $('admin-panel');
-  var adminToggle = $('admin-toggle');
   var adminKeyInput = $('admin-key');
   var adminList = $('admin-list');
-
-  if (adminToggle) {
-    adminToggle.addEventListener('click', function (e) {
-      e.preventDefault();
-      adminPanel.hidden = !adminPanel.hidden;
-    });
-  }
 
   async function adminAction(action, extra) {
     var key = adminKeyInput.value.trim();
