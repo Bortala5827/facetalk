@@ -32,7 +32,7 @@
     if (body) { opt.headers['content-type'] = 'application/json'; opt.body = JSON.stringify(Object.assign({ me: me }, body)); }
     var res = await fetch(url, opt);
     var d = {}; try { d = await res.json(); } catch (e) {}
-    if (res.status === 503 && d.error === 'KV_NOT_BOUND') toast('后端存储正在初始化：请在 Cloudflare 绑定 KV（变量名 DAZI_KV）', true);
+    if (res.status === 503 && d.error === 'DB_NOT_BOUND') toast('后端存储正在初始化：请在 Cloudflare 绑定 D1 数据库（变量名 DB）', true);
     else if (res.status === 403 && d.error === 'BANNED') toast('该身份已被封禁', true);
     else if (res.status === 401 && d.error === 'BAD_TOKEN') { localStorage.removeItem('ft_me'); location.reload(); }
     return { status: res.status, data: d };
