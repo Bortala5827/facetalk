@@ -1,7 +1,15 @@
 // FaceTalk 全站公开留言墙 API（Cloudflare Pages Functions + D1）
 // GET    /api/wall                 -> 留言列表（最新在前）
 // POST   /api/wall                 -> 发帖（body: {name, text}），60s + 每日 20 条限流，敏感词过滤，5min 去重
-// DELETE /api/wall?id=xxx&admin=口令 -> 管理员删除（口令取 env.WALL_ADMIN，缺省 rcj9527）
+// DELETE /api/wall?id=xxx&admin=口令 -> 管理员删除（口令优先取 env.MS_ADMIN_KEY 即全站限流解锁密码，
+// 再回退 env.WALL_ADMIN 旧名，最后默认 rcj9527；任一匹配即通过，避免两套密码割裂）
+const adminPassOk = function(env, admin) {
+  const a = String(admin || '').trim();
+  if (!a) return false;
+  const list = [env && env.MS_ADMIN_KEY, env && env.WALL_ADMIN, 'rcj9527']
+    .map(s => s && String(s)).filter(Boolean);
+  return list.includes(a);
+};
 // 存储：D1 表 wall（绑定名 DB）。created_at 用「秒」时间戳（与全站一致），7 天自动清理（见 _cleanup.js）。
 const MAX_ITEMS = 200;
 const RATE_LIMIT_SEC = 60;
@@ -139,8 +147,7 @@ export async function onRequestDelete(context) {
   const url = new URL(context.request.url);
   const id = sanitize(url.searchParams.get("id"), 40);
   const admin = url.searchParams.get("admin") || "";
-  const secret = (context.env && context.env.WALL_ADMIN) || "rcj9527";
-  if (admin !== secret) return json({ ok: false, error: "BAD_ADMIN" }, 403);
+  if (!adminPassOk(context.env, admin)) return json({ ok: false, error: "BAD_ADMIN" }, 403);
   const db = getDB(context.env);
   if (!db) return json({ ok: false, error: "DB_NOT_BOUND" }, 503);
   try {

@@ -110,7 +110,8 @@
 
   async function deleteWall(id, key) {
     try {
-      var r = await fetch(BASE + '/api/wall?id=' + encodeURIComponent(id) + '&admin=' + encodeURIComponent(key), { method: 'DELETE' });
+      var k = String(key || '').trim();
+      var r = await fetch(BASE + '/api/wall?id=' + encodeURIComponent(id) + '&admin=' + encodeURIComponent(k), { method: 'DELETE' });
       var d = await r.json();
       return !!(d && d.ok);
     } catch (e) { return false; }
@@ -126,7 +127,7 @@
       var on = manage.classList.toggle('on');
       if (wallEl) wallEl.classList.toggle('manager', on);
       if (on) {
-        var key = window.prompt('输入留言墙管理口令（WALL_ADMIN）以开启删除：');
+        var key = String(window.prompt('输入管理员密码（与限流解锁密码一致，即 MS_ADMIN_KEY；未设置时默认 rcj9527）：') || '').trim();
         if (!key) { manage.classList.remove('on'); if (wallEl) wallEl.classList.remove('manager'); return; }
         window.__wallAdminKey = key;
       } else {
