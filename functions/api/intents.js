@@ -45,18 +45,25 @@ export async function onRequest(context) {
 
     const out = [];
     try {
-      const iter = kv.list({ prefix: 'intent:' });
-      for await (const { name } of iter) {
-        const raw = await kv.get(name);
-        if (!raw) continue;
-        const it = JSON.parse(raw);
-        // 已关闭/已匹配的意图提前清掉（不占 24h，也不污染列表）
-        if (it.status !== 'open') { await kv.delete(name).catch(() => {}); continue; }
-        if (it.owner === r.id) continue;
-        const owner = await kv.get('u:' + it.owner);
-        const rep = owner ? JSON.parse(owner).rep : 50;
-        out.push({ id: it.id, role: it.role, city: it.city, mode: it.mode, note: it.note, rep, created: it.created });
-      }
+      let cursor;
+      do {
+        const opts = { prefix: 'intent:' };
+        if (cursor) opts.cursor = cursor;
+        const page = await kv.list(opts);
+        for (const k of page.keys) {
+          const raw = await kv.get(k.name);
+          if (!raw) continue;
+          let it;
+          try { it = JSON.parse(raw); } catch (e) { continue; }
+          // 已关闭/已匹配的意图提前清掉（不占 24h，也不污染列表）
+          if (it.status !== 'open') { await kv.delete(k.name).catch(() => {}); continue; }
+          if (it.owner === r.id) continue;
+          const owner = await kv.get('u:' + it.owner);
+          const rep = owner ? JSON.parse(owner).rep : 50;
+          out.push({ id: it.id, role: it.role, city: it.city, mode: it.mode, note: it.note, rep, created: it.created });
+        }
+        cursor = page.list_complete ? undefined : page.cursor;
+      } while (cursor);
     } catch (e) { /* 列表异常返回空 */ }
     // 随机打散，防爬抓顺序
     for (let i = out.length - 1; i > 0; i--) {
