@@ -345,6 +345,9 @@ a { color: inherit; text-decoration: none; }
 .ok-mark { color: #16a34a; font-weight: 600; }
 .field.check { display: flex; align-items: center; gap: 8px; }
 .field.check input { width: auto; }
+.field-hint { font-size: 12px; color: var(--ink-3); margin: -2px 0 8px 26px; }
+.field.check.block-next { color: #dc2626; }
+.field.check.block-next span { color: #dc2626; font-weight: 600; }
 
 /* 房间页 */
 .room-meta { display: flex; gap: 18px; flex-wrap: wrap; margin: 14px 0; padding: 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
@@ -357,13 +360,15 @@ a { color: inherit; text-decoration: none; }
 
 /* 留言板 */
 .msg-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; margin: 12px 0; padding: 2px; }
-.msg-item { align-self: flex-start; max-width: 85%; background: #f1f5f9; border-radius: 14px 14px 14px 4px; padding: 8px 12px 6px; }
+/* 关键：fit-content 让气泡只占内容宽，否则块级 div 撑满父容器、align-self 失效（全堆在一列） */
+.msg-item { align-self: flex-start; width: fit-content; max-width: 85%; background: #f1f5f9; border-radius: 14px 14px 14px 4px; padding: 8px 12px 6px; }
 .msg-item.mine { align-self: flex-end; background: var(--accent-soft); border-radius: 14px 14px 4px 14px; }
-.msg-body { display: flex; align-items: flex-start; gap: 8px; }
-.msg-text { font-size: 14px; line-height: 1.55; word-break: break-all; flex: 1; }
+.msg-body { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.msg-text { font-size: 14px; line-height: 1.55; word-break: break-word; flex: 1; min-width: 0; }
 .msg-del { border: none; background: transparent; color: var(--ink-3); font-size: 12px; cursor: pointer; flex-shrink: 0; padding: 2px 4px; border-radius: 6px; }
 .msg-del:hover { color: #dc2626; background: #fee2e2; }
-.msg-meta { font-size: 11px; color: var(--ink-3); margin-top: 3px; }
+.msg-meta { font-size: 11px; color: var(--ink-3); margin-top: 3px; width: fit-content; }
+.msg-item.mine .msg-meta { align-self: flex-end; }
 .msg-input { display: flex; gap: 8px; }
 .msg-input input { flex: 1; }
 

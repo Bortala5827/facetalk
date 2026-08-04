@@ -43,12 +43,15 @@ export async function onRequest(context) {
 
     if (!await rateLimit(db, 'rl:list:' + ip, 120, 600)) return err('rate_limited', 429);
 
+    // browse 列表：过滤掉「我屏蔽的人」发布的意图（LEFT JOIN blocks + WHERE NULL）
     const { results } = await db.prepare(`SELECT i.id, i.role, i.city, i.mode, i.note, i.created, i.owner, COALESCE(u.rep,50) AS rep
-      FROM intents i LEFT JOIN users u ON u.id = i.owner
-      WHERE i.status='open' AND i.expires > ?
+      FROM intents i
+      LEFT JOIN users u ON u.id = i.owner
+      LEFT JOIN blocks b ON b.user_id = ? AND b.blocked_id = i.owner
+      WHERE i.status='open' AND i.expires > ? AND i.owner != ? AND b.user_id IS NULL
       ORDER BY RANDOM() LIMIT 40`)
-      .bind(nowSec()).all();
-    // 标记哪些是自己的
+      .bind(r.id, nowSec(), r.id).all();
+    // 标记哪些是自己的（理论上 owner != r.id 已排除，这里再保险一次）
     const list = results.map(it => {
       const isOwn = it.owner === r.id;
       return { id: it.id, role: it.role, city: it.city, mode: it.mode, note: it.note, created: it.created, rep: it.rep, isOwn };

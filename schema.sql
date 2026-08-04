@@ -126,3 +126,14 @@ CREATE TABLE IF NOT EXISTS wall_day (
   n   INTEGER DEFAULT 0,
   PRIMARY KEY (ip, day)
 );
+
+-- 用户主动屏蔽搭子（2026-08-04 新增）：评价时勾「不再匹配此搭子」即写入本表。
+-- 后续 browse 列表 / 收件箱会过滤掉被自己屏蔽的人，避免再被同一人骚扰。
+-- （不按 IP 屏蔽：IP 会变；user_id 是稳定的匿名身份，更可靠。）
+CREATE TABLE IF NOT EXISTS blocks (
+  user_id     TEXT NOT NULL,
+  blocked_id  TEXT NOT NULL,
+  created     INTEGER NOT NULL,
+  PRIMARY KEY (user_id, blocked_id)
+);
+CREATE INDEX IF NOT EXISTS idx_blocks_user ON blocks(user_id);

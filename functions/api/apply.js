@@ -21,6 +21,11 @@ export async function onRequest(context) {
     if (intent.status !== 'open') return err('intent_closed', 409);
     if (intent.owner === r.id) return err('self_apply', 400);
 
+    // 屏蔽检查：对方的 user_id 在我的 block 列表 → 拒绝申请
+    const blocked = await db.prepare('SELECT 1 FROM blocks WHERE user_id=? AND blocked_id=? LIMIT 1')
+      .bind(r.id, intent.owner).first();
+    if (blocked) return err('blocked', 403);
+
     // 同一意图重复申请去重
     const dup = await db.prepare('SELECT id FROM applications WHERE intent_id=? AND applicant=? AND status=?')
       .bind(intentId, r.id, 'pending').first();
@@ -61,15 +66,18 @@ export async function onRequest(context) {
     if (r.error) return err(r.error, r.status);
 
     if (box === 'in') {
+      // 收件箱：过滤掉申请方被我屏蔽的人（LEFT JOIN blocks + WHERE NULL 经典套路）
       const { results } = await db.prepare(`SELECT a.id AS appId, a.status, a.created, i.role, i.city, i.mode, i.note, COALESCE(u.rep,50) AS rep
         FROM applications a
         JOIN intents i ON i.id = a.intent_id
         LEFT JOIN users u ON u.id = a.applicant
-        WHERE i.owner = ? AND a.expires > ?
+        LEFT JOIN blocks b ON b.user_id = ? AND b.blocked_id = a.applicant
+        WHERE i.owner = ? AND a.expires > ? AND b.user_id IS NULL
         ORDER BY a.created DESC`)
-        .bind(r.id, nowSec()).all();
+        .bind(r.id, r.id, nowSec()).all();
       return json({ ok: true, list: results });
     } else {
+      // 发件箱：保留全部（自己能看到自己申请过谁）；UI 侧显示对方状态
       const { results } = await db.prepare(`SELECT a.id AS appId, a.intent_id AS intentId, a.status, a.created
         FROM applications a
         WHERE a.applicant = ? AND a.expires > ?

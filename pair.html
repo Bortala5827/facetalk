@@ -79,6 +79,8 @@
           <input id="r-tags" type="text" placeholder="如：守时,点评到位,声音清晰" />
         </label>
         <label class="field check"><input id="r-next" type="checkbox" /> <span>愿意再约一次</span></label>
+        <label class="field check block-next"><input id="r-block" type="checkbox" /> <span>🚫 不再匹配此搭子</span></label>
+        <p class="field-hint">勾选后，对方不会再出现在你的看板和收件箱。</p>
         <button type="submit" class="btn-primary">提交评价 →</button>
         <p class="form-msg" id="r-msg" hidden></p>
       </form>
@@ -152,7 +154,19 @@
     }
 
     function tick(){
-      if(remain <= 0){ document.getElementById('timer').textContent='00:00'; document.getElementById('expired').hidden=false; if(timer)clearInterval(timer); return; }
+      if(remain <= 0){
+        document.getElementById('timer').textContent='00:00';
+        document.getElementById('expired').hidden=false;
+        if(timer){ clearInterval(timer); timer=null; }
+        // 时间到 → 自动弹出评价卡（如果还没评过）
+        var rc = document.getElementById('rate-card');
+        if (rc.hidden){
+          rc.hidden = false;
+          rc.scrollIntoView({behavior:'smooth', block:'center'});
+          toast('⏰ 时间到，请给搭子打个分吧');
+        }
+        return;
+      }
       var m = Math.floor(remain/60), s = remain%60;
       document.getElementById('timer').textContent = (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
       remain--;
@@ -271,8 +285,14 @@
       e.preventDefault();
       var r = await api('POST',{action:'rate',pairId:pairId,score:parseInt(document.getElementById('r-score').value,10),
         tags:document.getElementById('r-tags').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean).slice(0,5),
-        next:document.getElementById('r-next').checked});
-      if(r.status===200&&r.data.ok){ toast('评价已提交 ⭐'); document.getElementById('rate-card').hidden=true; }
+        next:document.getElementById('r-next').checked,
+        blockNext:document.getElementById('r-block').checked});
+      if(r.status===200&&r.data.ok){
+        var msg = '评价已提交 ⭐';
+        if (r.data.blocked) msg += '（已屏蔽此搭子）';
+        toast(msg);
+        document.getElementById('rate-card').hidden=true;
+      }
       else toast('评价失败：'+(r.data.error||r.status), true);
     });
 

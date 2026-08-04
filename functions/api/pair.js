@@ -118,21 +118,28 @@ export async function onRequest(context) {
       const score = Math.max(1, Math.min(5, parseInt(body.score, 10) || 3));
       const tags = Array.isArray(body.tags) ? body.tags.slice(0, 5).map(String) : [];
       const next = !!body.next;
+      const blockNext = !!body.blockNext;
       const other = r.id === p.a ? p.b : p.a;
-      ratings[r.id] = { score, tags, next, at: nowSec() };
+      ratings[r.id] = { score, tags, next, blockNext, at: nowSec() };
 
       const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
       const newRep = clampRep((o ? (o.rep | 0) : 50) + (score - 3));
 
       const done = Object.keys(ratings).length >= 2;
-      await db.batch([
+      // 「不想再匹配此搭子」勾选 → 写 blocks 表（幂等 INSERT OR IGNORE），后续 browse/inbox 自动过滤
+      const writes = [
         db.prepare('UPDATE users SET rep=? WHERE id=?').bind(newRep, other),
         db.prepare("UPDATE pairs SET ratings=?, status=? WHERE id=?").bind(JSON.stringify(ratings), done ? 'done' : 'matched', p.id),
         db.prepare(`INSERT INTO ratings (id, pair_id, from_user, to_user, score, tags, next, created)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
           .bind('r_' + genId(12), p.id, r.id, other, score, JSON.stringify(tags), next ? 1 : 0, nowSec()),
-      ]);
-      return json({ ok: true, done });
+      ];
+      if (blockNext) {
+        writes.push(db.prepare(`INSERT OR IGNORE INTO blocks (user_id, blocked_id, created) VALUES (?, ?, ?)`)
+          .bind(r.id, other, nowSec()));
+      }
+      await db.batch(writes);
+      return json({ ok: true, done, blocked: blockNext });
     }
 
     if (action === 'set-info') {
