@@ -48,7 +48,9 @@ export async function onRequest(context) {
       WHERE i.status='open' AND i.owner<>? AND i.expires > ?
       ORDER BY RANDOM() LIMIT 40`)
       .bind(r.id, nowSec()).all();
-    return json({ ok: true, list: results });
+    const own = await db.prepare("SELECT id FROM intents WHERE owner=? AND status='open' AND expires > ?")
+      .bind(r.id, nowSec()).first();
+    return json({ ok: true, list: results, hasOwn: !!own });
   }
   return err('method', 405);
 }

@@ -77,13 +77,14 @@
   // 浏览
   async function loadBrowse() {
     var r = await api('GET', '/api/intents');
-    var box = $('browse-list'); box.innerHTML = '';
+    var box = $('browse-list'); var empty = $('browse-empty'); box.innerHTML = '';
     if (r.status === 200 && r.data.list && r.data.list.length) {
-      $('browse-empty').hidden = true;
+      empty.hidden = true;
+      var ownHint = $('browse-empty-own'); if (ownHint) ownHint.hidden = true;
       r.data.list.forEach(function (it) {
         var div = document.createElement('div'); div.className = 'li';
-        div.innerHTML = '<div class="li-main"><span class="tag">' + esc(it.role) + '</span>' +
-          (it.city ? ' <span class="muted">' + esc(it.city) + '</span>' : '') +
+        div.innerHTML = '<div class="li-main"><span class="tag tag-role">' + esc(it.role) + '</span>' +
+          (it.city ? ' <span class="tag tag-city">' + esc(it.city) + '</span>' : '') +
           ' <span class="mode">' + modeLabel(it.mode) + '</span></div>' +
           (it.note ? '<p class="li-note">' + esc(it.note) + '</p>' : '') +
           '<div class="li-foot"><span class="rep">⭐ ' + (it.rep != null ? it.rep : '50') + '</span>' +
@@ -98,15 +99,23 @@
           loadOut();
         });
       });
-    } else { $('browse-empty').hidden = false; }
+    } else if (r.status === 200) {
+      empty.hidden = false; empty.textContent = '还没有人发布意图，去发一个？';
+      if (r.data.hasOwn) {
+        var ownHint = $('browse-empty-own');
+        if (ownHint) ownHint.hidden = false;
+      }
+    } else {
+      empty.hidden = false; empty.textContent = '加载失败，点刷新重试';
+    }
   }
 
   // 收到申请
   async function loadInbox() {
     var r = await api('GET', '/api/apply?box=in');
-    var box = $('inbox-list'); box.innerHTML = '';
+    var box = $('inbox-list'); var empty = $('inbox-empty'); box.innerHTML = '';
     if (r.status === 200 && r.data.list && r.data.list.length) {
-      $('inbox-empty').hidden = true;
+      empty.hidden = true;
       r.data.list.forEach(function (a) {
         var div = document.createElement('div'); div.className = 'li';
         // 双向互选：每个状态对应不同的下一步
@@ -143,7 +152,11 @@
       box.querySelectorAll('[data-enter-room]').forEach(function (b) {
         b.addEventListener('click', enterRoom);
       });
-    } else { $('inbox-empty').hidden = false; }
+    } else if (r.status === 200) {
+      empty.hidden = false; empty.textContent = '暂无人申请你，发布意图后等搭子来。';
+    } else {
+      empty.hidden = false; empty.textContent = '加载失败，点刷新重试';
+    }
   }
 
   async function decide(appId, decision) {
@@ -161,9 +174,9 @@
   // 发出申请
   async function loadOut() {
     var r = await api('GET', '/api/apply?box=out');
-    var box = $('out-list'); box.innerHTML = '';
+    var box = $('out-list'); var empty = $('out-empty'); box.innerHTML = '';
     if (r.status === 200 && r.data.list && r.data.list.length) {
-      $('out-empty').hidden = true;
+      empty.hidden = true;
       r.data.list.forEach(function (o) {
         var s = '';
         var actions = '';
@@ -199,7 +212,11 @@
       box.querySelectorAll('[data-enter-room]').forEach(function (b) {
         b.addEventListener('click', enterRoom);
       });
-    } else { $('out-empty').hidden = false; }
+    } else if (r.status === 200) {
+      empty.hidden = false; empty.textContent = '还没申请过别人。';
+    } else {
+      empty.hidden = false; empty.textContent = '加载失败，点刷新重试';
+    }
   }
 
   async function bAccept(appId) {

@@ -38,7 +38,7 @@
     </section>
 
     <!-- 我的信誉 -->
-    <p class="me-bar">我的信誉 <span class="rep-star">⭐</span> <strong id="my-rep">--</strong> · 匿名身份，仅本地保存</p>
+    <p class="me-bar">我的信誉 <span class="rep-star">⭐</span> <strong id="my-rep">…</strong> · 匿名身份，仅本地保存</p>
 
     <!-- 发布意图 -->
     <section class="card form-card">
@@ -90,7 +90,8 @@
         <button class="btn-mini" id="browse-refresh">刷新</button>
       </div>
       <div id="browse-list" class="list"></div>
-      <p class="list-empty" id="browse-empty">还没有人发布意图，去发一个？</p>
+      <p class="list-empty" id="browse-empty">加载中…</p>
+      <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px">你已发布意图，这里展示的是别人的意图。等搭子来申请，或等别人发布后刷新。</p>
     </section>
 
     <!-- 我的邀约：收到 -->
@@ -99,7 +100,7 @@
         <h2 class="sec-title">📨 收到的申请</h2>
       </div>
       <div id="inbox-list" class="list"></div>
-      <p class="list-empty" id="inbox-empty">暂无人申请你，发布意图后等搭子来。</p>
+      <p class="list-empty" id="inbox-empty">加载中…</p>
     </section>
 
     <!-- 我的邀约：发出 -->
@@ -108,7 +109,7 @@
         <h2 class="sec-title">📤 我发出的申请</h2>
       </div>
       <div id="out-list" class="list"></div>
-      <p class="list-empty" id="out-empty">还没申请过别人。</p>
+      <p class="list-empty" id="out-empty">加载中…</p>
     </section>
 
     <!-- 搭子房间 -->
