@@ -318,7 +318,7 @@
   async function enterRoom() {
     var r = await api('GET', '/api/pair');
     if (r.status === 200 && r.data.pair && r.data.pair.pairId) {
-      location.href = '/pair.html?pair=' + encodeURIComponent(r.data.pair.pairId);
+      location.href = '/pair.html?pair=' + encodeURIComponent(r.data.pair.pairId) + '&v=20260804b';
     } else {
       toast('当前房间不可用，请到主页底部查看', true);
     }
@@ -372,7 +372,7 @@
     var left = p && p.left;
     if (p && !rated && !left) {
       $('room-card').hidden = false;
-      $('room-enter').href = '/pair.html?pair=' + encodeURIComponent(p.pairId) + '&v=20260804';
+      $('room-enter').href = '/pair.html?pair=' + encodeURIComponent(p.pairId) + '&v=20260804b';
       $('room-enter').style.display = '';
       var oldTip = $('room-dissolve-tip'); if (oldTip) oldTip.hidden = true;
       if (p.status === 'done' && !rated) $('rate-card').hidden = false; else $('rate-card').hidden = true;
