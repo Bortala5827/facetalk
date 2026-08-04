@@ -19,7 +19,8 @@ export async function runCleanup(env) {
 
   const ops = [
     db.prepare("DELETE FROM intents WHERE status<>'open' OR expires < ?").bind(now),
-    db.prepare("DELETE FROM applications WHERE status<>'pending' OR expires < ?").bind(now),
+    // applications：只清过期或非 pending 老于 7 天的；a_accepted/both_accepted 是「正在进行的双向匹配」，绝不能清
+    db.prepare("DELETE FROM applications WHERE (status='pending' AND expires < ?) OR (status<>'pending' AND created < ?)").bind(now, weekAgo),
     db.prepare("DELETE FROM pairs WHERE expires < ?").bind(now),
     db.prepare("DELETE FROM reports WHERE created < ?").bind(weekAgo),
     db.prepare("DELETE FROM rate_limits WHERE reset_at < ?").bind(now),
