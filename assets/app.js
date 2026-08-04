@@ -118,9 +118,9 @@
           // A 已点头，等 B 也同意；A 可以撤回反悔
           decideHtml = '<span class="muted">⏳ 等他也同意</span>' +
                        '<button class="btn-mini grey" data-cancel-acc="' + esc(a.appId) + '">撤回</button>';
-        } else if (a.status === 'both_accepted') {
-          decideHtml = '<span class="ok-mark">🤝 已配对</span>' +
-                       '<a class="btn-mini" href="/pair.html?pair=' + esc(a.appId) + '">进入房间</a>';
+        } else if (a.status === 'both_accepted' || a.status === 'accepted') {
+          // 'accepted' 为旧版状态（老代码「单方匹配」遗留），当作已配对展示
+          decideHtml = '<span class="ok-mark">🤝 已配对</span> <button class="btn-mini" data-enter-room>进入房间</button>';
         } else {
           decideHtml = '<span class="muted">' + (a.status === 'rejected' ? '已拒绝' : '已撤回') + '</span>';
         }
@@ -139,6 +139,9 @@
       });
       box.querySelectorAll('[data-cancel-acc]').forEach(function (b) {
         b.addEventListener('click', function () { decide(b.getAttribute('data-cancel-acc'), 'cancel-accept'); });
+      });
+      box.querySelectorAll('[data-enter-room]').forEach(function (b) {
+        b.addEventListener('click', enterRoom);
       });
     } else { $('inbox-empty').hidden = false; }
   }
@@ -172,9 +175,9 @@
           s = '✅ 对方已同意你！';
           actions = '<button class="btn-mini ok" data-bacc="' + esc(o.appId) + '">我也同意</button>' +
                     '<button class="btn-mini grey" data-cancel-app="' + esc(o.appId) + '">撤回</button>';
-        } else if (o.status === 'both_accepted') {
+        } else if (o.status === 'both_accepted' || o.status === 'accepted') {
           s = '🤝 已互选成功';
-          actions = '<a class="btn-mini" href="/pair.html?pair=' + esc(o.appId) + '">进入房间</a>';
+          actions = '<button class="btn-mini" data-enter-room>进入房间</button>';
         } else if (o.status === 'rejected') {
           s = '已被拒绝';
         } else if (o.status === 'cancelled') {
@@ -193,6 +196,9 @@
       box.querySelectorAll('[data-cancel-app]').forEach(function (b) {
         b.addEventListener('click', function () { cancelApply(b.getAttribute('data-cancel-app')); });
       });
+      box.querySelectorAll('[data-enter-room]').forEach(function (b) {
+        b.addEventListener('click', enterRoom);
+      });
     } else { $('out-empty').hidden = false; }
   }
 
@@ -202,6 +208,16 @@
       toast('已互选，进入房间 🤝');
       loadInbox(); loadOut(); checkPair();
     } else toast('同意失败：' + (r.data.error || r.status), true);
+  }
+
+  // 用真实 pairId 跳转（不依赖 appId → pair 的映射）
+  async function enterRoom() {
+    var r = await api('GET', '/api/pair');
+    if (r.status === 200 && r.data.pair && r.data.pair.pairId) {
+      location.href = '/pair.html?pair=' + encodeURIComponent(r.data.pair.pairId);
+    } else {
+      toast('当前房间不可用，请到主页底部查看', true);
+    }
   }
 
   async function cancelApply(appId) {
