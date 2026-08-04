@@ -1,7 +1,7 @@
 import { json, err, getDB } from '../_shared.js';
 
 // 管理员接口：POST {admin, action, target, intentId}
-// action: ban | unban | delete_intent | list_intents | delete_user
+// action: ban | unban | delete_intent | list_intents | delete_user | clear_all
 // admin 为 CF 环境变量 ADMIN_KEY（用户在控制台设置）
 export async function onRequest(context) {
   const { request, env } = context;
@@ -62,6 +62,22 @@ export async function onRequest(context) {
     await db.prepare("DELETE FROM applications WHERE applicant=?").bind(target).run();
     await db.prepare("DELETE FROM users WHERE id=?").bind(target).run();
     return json({ ok: true, deleted: target, intentsDeleted: intents.length });
+  }
+
+  // 一键清空全部数据（测试/重置用；不可逆）
+  if (action === 'clear_all') {
+    const ops = [
+      db.prepare('DELETE FROM messages'),
+      db.prepare('DELETE FROM ratings'),
+      db.prepare('DELETE FROM reports'),
+      db.prepare('DELETE FROM pairs'),
+      db.prepare('DELETE FROM applications'),
+      db.prepare('DELETE FROM intents'),
+      db.prepare('DELETE FROM rate_limits'),
+      db.prepare('DELETE FROM users'),
+    ];
+    await db.batch(ops);
+    return json({ ok: true, cleared: ops.length });
   }
 
   return err('unknown_action', 400);

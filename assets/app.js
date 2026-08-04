@@ -358,6 +358,18 @@
   var adminLoadBtn = $('admin-load');
   if (adminLoadBtn) adminLoadBtn.addEventListener('click', adminLoadIntents);
 
+  var adminClearBtn = $('admin-clear');
+  if (adminClearBtn) adminClearBtn.addEventListener('click', async function () {
+    if (!confirm('⚠️ 将清空全部数据（意图 / 申请 / 搭子房 / 留言 / 举报 / 用户等），且不可恢复！\n确定继续？')) return;
+    if (!confirm('再次确认：真的要一键清空全部数据吗？')) return;
+    var r = await adminAction('clear_all');
+    if (r) {
+      toast('已清空全部数据');
+      adminList.innerHTML = '<p class="list-empty">已清空</p>';
+      loadBrowse(); loadInbox(); loadOut(); checkPair();
+    }
+  });
+
   async function boot() {
     try { await ensureToken(); } catch (e) { toast('无法获取身份，请稍后重试', true); }
     renderRep();
