@@ -9,6 +9,7 @@ import { getDB, nowSec } from './_shared.js';
 //   3) pairs:   已过期（>30min）
 //   4) reports: 超过 7 天（封禁状态已持久化到 users.banned，report 行可清）
 //   5) rate_limits: 窗口已过的计数
+//   6) wall:   公开留言墙，超过 7 天自动清理
 
 export async function runCleanup(env) {
   const db = getDB(env);
@@ -24,6 +25,8 @@ export async function runCleanup(env) {
     db.prepare("DELETE FROM pairs WHERE expires < ?").bind(now),
     db.prepare("DELETE FROM reports WHERE created < ?").bind(weekAgo),
     db.prepare("DELETE FROM rate_limits WHERE reset_at < ?").bind(now),
+    // wall：公开留言墙，7 天前的老旧留言清理掉
+    db.prepare("DELETE FROM wall WHERE created_at < ?").bind(weekAgo),
   ];
   const res = await db.batch(ops);
   const deleted = res.reduce((s, r) => s + ((r && r.meta && r.meta.changes) || 0), 0);

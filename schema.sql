@@ -102,3 +102,25 @@ CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(pair_id);
 --   ALTER TABLE pairs ADD COLUMN info_a TEXT DEFAULT '';
 --   ALTER TABLE pairs ADD COLUMN info_b TEXT DEFAULT '';
 -- 注意：SQLite 不支持 ADD COLUMN IF NOT EXISTS，重复执行会报错，只需执行一次。
+
+-- 全站公开留言墙（2026-08-04 新增）：首页可见，任何人可留，7 天自动清理（见 _cleanup.js）。
+-- created_at 用「秒」时间戳，与全站一致。
+CREATE TABLE IF NOT EXISTS wall (
+  id          TEXT PRIMARY KEY,
+  name        TEXT,
+  text        TEXT,
+  created_at  INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_wall_created ON wall(created_at DESC);
+
+-- 发帖频率限制（按 IP，秒级）：wall_rl = 60s 内不可重复发；wall_day = 单 IP 单日上限
+CREATE TABLE IF NOT EXISTS wall_rl (
+  ip      TEXT PRIMARY KEY,
+  last_ts INTEGER
+);
+CREATE TABLE IF NOT EXISTS wall_day (
+  ip  TEXT NOT NULL,
+  day TEXT NOT NULL,
+  n   INTEGER DEFAULT 0,
+  PRIMARY KEY (ip, day)
+);

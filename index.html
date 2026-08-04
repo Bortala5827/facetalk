@@ -161,6 +161,19 @@
       </div>
       <div id="admin-list" class="list"></div>
     </section>
+  <!-- 全站公开留言墙（2026-08-04 新增）：首页可见，7 天自动清理 -->
+  <section class="wall" id="wall">
+    <h2>💬 搭子留言墙<span class="wall-badge">7 天自动清理</span></h2>
+    <p class="wall-sub">把你的备考心得、考场经验、组队需求留在这里，互相打气。文明留言，禁止广告与不良信息。</p>
+    <div class="wall-tools"><button class="wall-manage" id="wallManage">🗑 管理留言</button></div>
+    <div class="wall-form">
+      <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名搭子」）" maxlength="20">
+      <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300"></textarea>
+      <button class="wall-post" id="wallPost">发布留言</button>
+    </div>
+    <div class="wall-list" id="wallList"><div class="wall-empty">加载中…</div></div>
+  </section>
+
   </main>
 
   <footer class="site-footer">
@@ -177,6 +190,7 @@
     </div>
   </footer>
 
+  <script src="/assets/wall.js"></script>
   <script src="/assets/app.js"></script>
   <script>
     // 从 RCJ 任一站点（955827.xyz 任意子域）进来时，显示「← 返回」并跳回来源页，形成产品矩阵闭环
