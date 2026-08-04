@@ -85,3 +85,13 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   count    INTEGER NOT NULL DEFAULT 0,
   reset_at INTEGER NOT NULL
 );
+
+-- 搭子房间留言板（自删除：仅发送者可删）
+CREATE TABLE IF NOT EXISTS messages (
+  id      TEXT PRIMARY KEY,
+  pair_id TEXT NOT NULL,
+  sender  TEXT NOT NULL,
+  text    TEXT NOT NULL,
+  created INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(pair_id);

@@ -309,6 +309,18 @@ a { color: inherit; text-decoration: none; }
 .voice-tip { font-size: 13.5px; color: var(--ink-2); background: var(--accent-soft); border-radius: var(--radius); padding: 12px 14px; margin: 12px 0; line-height: 1.6; }
 .room-actions { margin-top: 8px; }
 
+/* 留言板 */
+.msg-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; margin: 12px 0; padding: 2px; }
+.msg-item { align-self: flex-start; max-width: 85%; background: #f1f5f9; border-radius: 14px 14px 14px 4px; padding: 8px 12px 6px; }
+.msg-item.mine { align-self: flex-end; background: var(--accent-soft); border-radius: 14px 14px 4px 14px; }
+.msg-body { display: flex; align-items: flex-start; gap: 8px; }
+.msg-text { font-size: 14px; line-height: 1.55; word-break: break-all; flex: 1; }
+.msg-del { border: none; background: transparent; color: var(--ink-3); font-size: 12px; cursor: pointer; flex-shrink: 0; padding: 2px 4px; border-radius: 6px; }
+.msg-del:hover { color: #dc2626; background: #fee2e2; }
+.msg-meta { font-size: 11px; color: var(--ink-3); margin-top: 3px; }
+.msg-input { display: flex; gap: 8px; }
+.msg-input input { flex: 1; }
+
 /* Toast */
 .toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 16px); background: #0f172a; color: #fff; font-size: 13.5px; padding: 11px 18px; border-radius: 12px; opacity: 0; transition: all .28s ease; z-index: 999; max-width: 86vw; text-align: center; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }

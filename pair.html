@@ -39,6 +39,16 @@
       </div>
     </section>
 
+    <section class="card" id="msg-card">
+      <h2 class="sec-title">💬 留言板</h2>
+      <p class="muted">互留文字：约时间、留备用联系方式。每人只能删自己发的留言。</p>
+      <div id="msg-list" class="msg-list"><p class="muted">加载中…</p></div>
+      <div class="msg-input">
+        <input id="msg-text" type="text" maxlength="300" placeholder="写点什么…" autocomplete="off" />
+        <button class="btn-mini ok" id="msg-send">发送</button>
+      </div>
+    </section>
+
     <section class="card form-card" id="rate-card" hidden>
       <h2 class="sec-title">⭐ 本次互练评价</h2>
       <p class="muted">互评完成、且双方都愿意，才能解锁「再约一次」。</p>
@@ -120,6 +130,48 @@
       remain--;
     }
 
+    // ===== 留言板 =====
+    function msgApi(path, opt){
+      return fetch('/api/messages' + path, opt).then(function(r){ return r.json().catch(function(){ return {}; }); });
+    }
+    function loadMsgs(){
+      return msgApi('?me=' + encodeURIComponent(me) + '&pair=' + encodeURIComponent(pairId)).then(function(d){
+        var box = document.getElementById('msg-list');
+        if (!d.ok || !d.list || !d.list.length){ box.innerHTML = '<p class="muted">还没有留言，写一句开场白吧。</p>'; return; }
+        box.innerHTML = '';
+        d.list.forEach(function(m){
+          var div = document.createElement('div');
+          div.className = 'msg-item' + (m.mine ? ' mine' : '');
+          var t = new Date(m.created * 1000);
+          var hh = ('0'+t.getHours()).slice(-2) + ':' + ('0'+t.getMinutes()).slice(-2);
+          var del = m.mine ? '<button class="msg-del" data-id="'+esc(m.id)+'">删除</button>' : '';
+          div.innerHTML = '<div class="msg-body"><span class="msg-text">' + esc(m.text) + '</span>' + del + '</div>' +
+            '<div class="msg-meta">' + (m.mine ? '我' : '搭子') + ' · ' + hh + '</div>';
+          box.appendChild(div);
+        });
+        box.scrollTop = box.scrollHeight;
+        box.querySelectorAll('.msg-del').forEach(function(b){
+          b.addEventListener('click', function(){
+            if(!confirm('删除这条留言？')) return;
+            msgApi('?me=' + encodeURIComponent(me) + '&id=' + encodeURIComponent(b.getAttribute('data-id')), { method: 'DELETE' }).then(function(d){
+              if (d.ok){ toast('已删除'); loadMsgs(); } else { toast('删除失败', true); }
+            });
+          });
+        });
+      });
+    }
+    function sendMsg(){
+      var inp = document.getElementById('msg-text');
+      var text = inp.value.replace(/\s+/g,' ').trim();
+      if(!text){ return; }
+      msgApi('', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ me: me, pair: pairId, text: text }) }).then(function(d){
+        if (d.ok){ inp.value = ''; loadMsgs(); }
+        else toast('发送失败：' + (d.error || d.status), true);
+      });
+    }
+    document.getElementById('msg-send').addEventListener('click', sendMsg);
+    document.getElementById('msg-text').addEventListener('keydown', function(e){ if(e.key === 'Enter') sendMsg(); });
+
     document.getElementById('report-btn').addEventListener('click', async function(){
       if(!confirm('确认举报对方？多人举报将自动封禁。')) return;
       var r = await api('POST',{action:'report',pairId:pairId});
@@ -137,7 +189,9 @@
     });
 
     api('GET').then(function(r){ render(r.data.pair); });
+    loadMsgs();
     setInterval(function(){ api('GET').then(function(r){ if(r.data.pair) render(r.data.pair); }); }, 15000);
+    setInterval(loadMsgs, 10000);
   })();
   </script>
 </body>
