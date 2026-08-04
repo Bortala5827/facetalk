@@ -371,6 +371,10 @@ a { color: inherit; text-decoration: none; }
 .msg-item.mine .msg-meta { align-self: flex-end; }
 .msg-input { display: flex; gap: 8px; }
 .msg-input input { flex: 1; }
+.msg-burn { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-3); margin: 6px 2px 0; user-select: none; }
+.msg-burn input { width: auto; }
+.msg-burn-tag { font-size: 11px; color: #e0531f; margin-left: 4px; }
+.msg-item.burned { opacity: 0; transform: translateY(-6px); transition: .4s ease; }
 
 /* Toast */
 .toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 16px); background: #0f172a; color: #fff; font-size: 13.5px; padding: 11px 18px; border-radius: 12px; opacity: 0; transition: all .28s ease; z-index: 999; max-width: 86vw; text-align: center; }

@@ -44,6 +44,17 @@ export async function rateLimit(db, key, max, windowSec) {
     return true; // 限流器异常不阻断主流程
   }
 }
+// 站点管理员密码解锁限流：设置环境变量 MS_ADMIN_KEY 后，超限请求带 admin key 可绕过限流（便于作者自测）。
+// POST 走 body.adminKey；GET 走 ?admin=。未设置 MS_ADMIN_KEY 时恒返回 false（限流照常生效）。
+export function adminBypass(env, request, body) {
+  if (!env || !env.MS_ADMIN_KEY) return false;
+  let key = null;
+  if (body && body.adminKey != null) key = String(body.adminKey);
+  else {
+    try { const u = new URL(request.url); key = u.searchParams.get('admin'); } catch (e) {}
+  }
+  return !!key && key === String(env.MS_ADMIN_KEY);
+}
 // 校验 token：返回 {user, id} 或 {error, status}
 export async function requireToken(env, me) {
   if (!me) return { error: 'NO_TOKEN', status: 401 };

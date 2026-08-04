@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp } from '../_shared.js';
+import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass } from '../_shared.js';
 
 const SESSION_TTL = 1800; // 单次互练软上限 30 分钟（秒）
 
@@ -22,6 +22,7 @@ export async function onRequest(context) {
     const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
     const otherRep = o ? (o.rep | 0) : 50;
     const rated = !!ratings[r.id];
+    const left = !!(ratings[r.id] && ratings[r.id].left);
     const remaining = Math.max(0, p.expires - now);
     const isA = r.id === p.a;
     const infoMine = (isA ? p.info_a : p.info_b) || '';
@@ -31,7 +32,7 @@ export async function onRequest(context) {
       pair: {
         pairId: p.id, otherRep, meet: p.meet, mode: p.mode, status: p.status,
         infoMine, infoPeer,
-        ratingsCount: Object.keys(ratings || {}).length, remaining, rated,
+        ratingsCount: Object.keys(ratings || {}).length, remaining, rated, left,
         nextAllowed: p.status === 'done' && bothNext(ratings) && bothPass(ratings),
       },
     });
@@ -147,7 +148,7 @@ export async function onRequest(context) {
       const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
       if (!p) return err('pair_gone', 404);
       if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
-      if (!await rateLimit(db, 'rl:info:' + getIp(request), 10, 300)) return err('rate_limited', 429);
+      if (!await rateLimit(db, 'rl:info:' + getIp(request), 10, 300) && !adminBypass(env, request, body)) return err('rate_limited', 429);
       const info = String(body.info || '').replace(/\s+/g, ' ').trim().slice(0, 500);
       const col = r.id === p.a ? 'info_a' : 'info_b';
       await db.prepare('UPDATE pairs SET ' + col + '=? WHERE id=?').bind(info, p.id).run();
@@ -170,7 +171,7 @@ export async function onRequest(context) {
       const reason = String(body.reason || '').trim();
       if (reason.length < 5) return err('reason_too_short', 400);
       // 4) 同 IP 60s 限流 1 次（防脚本刷）
-      if (!await rateLimit(db, 'rl:report:' + getIp(request), 1, 60)) return err('rate_limited', 429);
+      if (!await rateLimit(db, 'rl:report:' + getIp(request), 1, 60) && !adminBypass(env, request, body)) return err('rate_limited', 429);
       // 5) (by, target) 去重：UNIQUE 索引 + INSERT OR IGNORE 双重兜底
       try { await db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_reports_by_target ON reports(by, target)`); } catch (e) { /* 历史数据偶发重复，忽略 */ }
 
@@ -188,6 +189,21 @@ export async function onRequest(context) {
         banned = true;
       }
       return json({ ok: true, banned, reports: cnt, dup: !inserted });
+    }
+
+    if (action === 'leave') {
+      // 退出组队：把"我"标记为已退出（写进 ratings JSON 的 left:true，不新增表字段），
+      // 并置 status='done'。退出后首页房间横幅消失，可重新发布意图 / 申请新搭子。
+      // 已评过分（ratings[r.id].score 存在）视为已结清，无需再退。
+      const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
+      if (!p) return err('pair_gone', 404);
+      if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
+      if (p.status !== 'matched') return err('not_active', 409);
+      const ratings = safeParse(p.ratings);
+      if (ratings[r.id] && ratings[r.id].score) return err('already_rated', 409);
+      ratings[r.id] = { left: true, at: nowSec() };
+      await db.prepare("UPDATE pairs SET ratings=?, status='done' WHERE id=?").bind(JSON.stringify(ratings), p.id).run();
+      return json({ ok: true });
     }
 
     return err('unknown_action', 400);

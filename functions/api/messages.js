@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec } from '../_shared.js';
+import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass } from '../_shared.js';
 
 // 搭子房间留言板：配对双方互留文字（约时间 / 留备用联系方式）。
 // 安全规则：仅 pair 双方可读写；每人只能删自己发的留言（自删除）。
@@ -30,14 +30,11 @@ export async function onRequest(context) {
       return streamMessages(env, db, m, pairId);
     }
 
-    // 普通 GET：拉取该房间全部留言（按时间正序）
+    // 普通 GET：拉取该房间全部留言（按时间正序）；阅后即焚消息在接收方读取后自动销毁
     const { results } = await db.prepare(
-      'SELECT id, sender, text, created FROM messages WHERE pair_id=? ORDER BY created ASC LIMIT 500'
+      'SELECT id, sender, text, created, burn, read FROM messages WHERE pair_id=? ORDER BY created ASC LIMIT 500'
     ).bind(pairId).all();
-    const me = m.r.id;
-    const list = (results || []).map(function (x) {
-      return { id: x.id, text: x.text, created: x.created, mine: x.sender === me };
-    });
+    const list = await mapAndBurn(db, m.r.id, results);
     return json({ ok: true, list });
   }
 
@@ -47,14 +44,15 @@ export async function onRequest(context) {
     try { body = await request.json(); } catch (e) { return err('bad_json'); }
     const m = await memberCheck(body.me, String(body.pair || ''));
     if (m.error) return err(m.error, m.status);
-    if (!await rateLimit(db, 'rl:msg:' + ip, 30, 300)) return err('rate_limited', 429);
-    if (!await rateLimit(db, 'rl:msg:u:' + m.r.id, 60, 3600)) return err('too_many_msgs', 429);
+    if (!await rateLimit(db, 'rl:msg:' + ip, 30, 300) && !adminBypass(env, request, body)) return err('rate_limited', 429);
+    if (!await rateLimit(db, 'rl:msg:u:' + m.r.id, 60, 3600) && !adminBypass(env, request, body)) return err('too_many_msgs', 429);
     const text = String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 300);
     if (!text) return err('empty_text', 400);
+    const burn = body.burn ? 1 : 0;
     const id = 'm_' + genId(12);
     const now = nowSec();
-    await db.prepare('INSERT INTO messages (id, pair_id, sender, text, created) VALUES (?, ?, ?, ?, ?)')
-      .bind(id, m.p.id, m.r.id, text, now).run();
+    await db.prepare('INSERT INTO messages (id, pair_id, sender, text, created, burn, read) VALUES (?, ?, ?, ?, ?, ?, 0)')
+      .bind(id, m.p.id, m.r.id, text, now, burn).run();
     return json({ ok: true, id, created: now, mine: true });
   }
 
@@ -100,14 +98,12 @@ function streamMessages(env, db, member, pairId) {
         try { controller.enqueue(encoder.encode(': ping\n\n')); } catch (e) { alive = false; }
       }
 
-      // 首屏：先发历史留言（用 since=0 把现有全推一次）
+      // 首屏：先发历史留言（用 since=0 把现有全推一次）；阅后即焚在接收方读取即焚
       try {
         const { results } = await db.prepare(
-          'SELECT id, sender, text, created FROM messages WHERE pair_id=? AND created > 0 ORDER BY created ASC LIMIT 500'
+          'SELECT id, sender, text, created, burn, read FROM messages WHERE pair_id=? AND created > 0 ORDER BY created ASC LIMIT 500'
         ).bind(pairId).all();
-        const list = (results || []).map(function (x) {
-          return { id: x.id, text: x.text, created: x.created, mine: x.sender === me };
-        });
+        const list = await mapAndBurn(db, me, results);
         if (list.length) lastSeen = list[list.length - 1].created;
         send('init', { list });
       } catch (e) {
@@ -119,12 +115,10 @@ function streamMessages(env, db, member, pairId) {
         if (!alive) return;
         try {
           const { results } = await db.prepare(
-            'SELECT id, sender, text, created FROM messages WHERE pair_id=? AND created > ? ORDER BY created ASC LIMIT 50'
+            'SELECT id, sender, text, created, burn, read FROM messages WHERE pair_id=? AND created > ? ORDER BY created ASC LIMIT 50'
           ).bind(pairId, lastSeen).all();
           if (results && results.length) {
-            const list = results.map(function (x) {
-              return { id: x.id, text: x.text, created: x.created, mine: x.sender === me };
-            });
+            const list = await mapAndBurn(db, me, results);
             lastSeen = list[list.length - 1].created;
             send('messages', { list });
           }
@@ -158,4 +152,20 @@ function streamMessages(env, db, member, pairId) {
       'x-accel-buffering': 'no',
     },
   });
+}
+
+// 阅后即焚：把查询结果映射为前端结构；若某条是「接收方（非发送者）」的焚消息且尚未读，
+// 标记 read=1 并删除——接收方本次已拿到内容，下次拉取即消失（双方都只看一次）。
+async function mapAndBurn(db, me, rows) {
+  const toBurn = [];
+  const list = (rows || []).map(function (x) {
+    const mine = x.sender === me;
+    if (!mine && x.burn && !x.read) toBurn.push(x.id);
+    return { id: x.id, text: x.text, created: x.created, mine: mine, burn: !!x.burn };
+  });
+  if (toBurn.length) {
+    await db.batch(toBurn.map(function (id) { return db.prepare('UPDATE messages SET read=1 WHERE id=?').bind(id); }));
+    await db.batch(toBurn.map(function (id) { return db.prepare('DELETE FROM messages WHERE id=?').bind(id); }));
+  }
+  return list;
 }

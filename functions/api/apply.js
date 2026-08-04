@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec } from '../_shared.js';
+import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass } from '../_shared.js';
 
 // 申请组队 + 收件箱 / 发件箱
 export async function onRequest(context) {
@@ -12,8 +12,8 @@ export async function onRequest(context) {
     try { body = await request.json(); } catch (e) { return err('bad_json'); }
     const r = await requireToken(env, body.me);
     if (r.error) return err(r.error, r.status);
-    if (!await rateLimit(db, 'rl:apply:' + ip, 40, 3600)) return err('rate_limited', 429);
-    if (!await rateLimit(db, 'rl:apply:u:' + r.id, 20, 3600)) return err('too_many_applies', 429);
+    if (!await rateLimit(db, 'rl:apply:' + ip, 40, 3600) && !adminBypass(env, request, body)) return err('rate_limited', 429);
+    if (!await rateLimit(db, 'rl:apply:u:' + r.id, 20, 3600) && !adminBypass(env, request, body)) return err('too_many_applies', 429);
 
     const intentId = String(body.intentId || '');
     const intent = await db.prepare('SELECT * FROM intents WHERE id=?').bind(intentId).first();
@@ -46,7 +46,7 @@ export async function onRequest(context) {
     const appId = url.searchParams.get('appId');
     const r = await requireToken(env, meTok);
     if (r.error) return err(r.error, r.status);
-    if (!await rateLimit(db, 'rl:apply:' + ip, 40, 3600)) return err('rate_limited', 429);
+    if (!await rateLimit(db, 'rl:apply:' + ip, 40, 3600) && !adminBypass(env, request, null)) return err('rate_limited', 429);
 
     const app = await db.prepare('SELECT * FROM applications WHERE id=?').bind(appId).first();
     if (!app) return err('app_gone', 404);

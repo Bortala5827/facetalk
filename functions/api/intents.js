@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec } from '../_shared.js';
+import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass } from '../_shared.js';
 
 const MODES = ['voice', 'video'];
 
@@ -15,8 +15,8 @@ export async function onRequest(context) {
     const r = await requireToken(env, body.me);
     if (r.error) return err(r.error, r.status);
 
-    if (!await rateLimit(db, 'rl:intent:' + ip, 30, 3600)) return err('rate_limited', 429);
-    if (!await rateLimit(db, 'rl:intent:u:' + r.id, 10, 3600)) return err('too_many_intents', 429);
+    if (!await rateLimit(db, 'rl:intent:' + ip, 30, 3600) && !adminBypass(env, request, body)) return err('rate_limited', 429);
+    if (!await rateLimit(db, 'rl:intent:u:' + r.id, 10, 3600) && !adminBypass(env, request, body)) return err('too_many_intents', 429);
 
     const role = String(body.role || '').slice(0, 20) || '其他';
     const city = String(body.city || '').slice(0, 20);
@@ -41,7 +41,7 @@ export async function onRequest(context) {
     const r = await requireToken(env, me);
     if (r.error) return err(r.error, r.status);
 
-    if (!await rateLimit(db, 'rl:list:' + ip, 120, 600)) return err('rate_limited', 429);
+    if (!await rateLimit(db, 'rl:list:' + ip, 120, 600) && !adminBypass(env, request, null)) return err('rate_limited', 429);
 
     // browse 列表：过滤掉「我屏蔽的人」发布的意图（LEFT JOIN blocks + WHERE NULL）
     const { results } = await db.prepare(`SELECT i.id, i.role, i.city, i.mode, i.note, i.created, i.owner, COALESCE(u.rep,50) AS rep

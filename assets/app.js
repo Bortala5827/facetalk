@@ -26,12 +26,27 @@
 
   // 带 token 的 API；GET 走 query，POST 走 body
   async function api(method, path, body) {
+    var admin = sessionStorage.getItem('ft_admin') || '';
     var url = new URL(path, location.origin);
-    if (method === 'GET') url.searchParams.set('me', me);
+    if (method === 'GET') { url.searchParams.set('me', me); if (admin) url.searchParams.set('admin', admin); }
     var opt = { method: method, headers: {} };
-    if (body) { opt.headers['content-type'] = 'application/json'; opt.body = JSON.stringify(Object.assign({ me: me }, body)); }
+    if (body) {
+      var b = Object.assign({ me: me }, body);
+      if (admin) b.adminKey = admin;
+      opt.headers['content-type'] = 'application/json'; opt.body = JSON.stringify(b);
+    }
     var res = await fetch(url, opt);
     var d = {}; try { d = await res.json(); } catch (e) {}
+    // 频率上限：若未输入过管理员密码，弹框输入后重试（便于作者自测）
+    var rateErr = res.status === 429 && (d.error === 'rate_limited' || d.error === 'too_many_applies' || d.error === 'too_many_intents' || d.error === 'too_many_msgs');
+    if (rateErr) {
+      if (!admin) {
+        var k = prompt('已达频率上限（防刷保护）。如要继续测试，请输入管理员密码：');
+        if (k) { sessionStorage.setItem('ft_admin', k.trim()); return api(method, path, body); }
+      } else {
+        sessionStorage.removeItem('ft_admin'); // 密码错误，清除以便下次重新输入
+      }
+    }
     if (res.status === 503 && d.error === 'DB_NOT_BOUND') toast('后端存储正在初始化：请在 Cloudflare 绑定 D1 数据库（变量名 DB）', true);
     else if (res.status === 403 && d.error === 'BANNED') toast('该身份已被封禁', true);
     else if (res.status === 401 && d.error === 'BAD_TOKEN') { localStorage.removeItem('ft_me'); location.reload(); }
@@ -265,7 +280,8 @@
     var r = await api('GET', '/api/pair');
     var p = r.status === 200 ? r.data.pair : null;
     var rated = p && p.rated;
-    if (p && !rated) {
+    var left = p && p.left;
+    if (p && !rated && !left) {
       $('room-card').hidden = false;
       $('room-enter').href = '/pair.html?pair=' + encodeURIComponent(p.pairId);
       if (p.status === 'done' && !rated) $('rate-card').hidden = false; else $('rate-card').hidden = true;

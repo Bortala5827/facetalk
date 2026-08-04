@@ -97,6 +97,11 @@ CREATE TABLE IF NOT EXISTS messages (
   created INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(pair_id);
+-- 阅后即焚（2026-08-04 新增）：burn=是否焚消息、read=接收方是否已读（读后即删）。
+-- messages 表已存在时 CREATE TABLE IF NOT EXISTS 不会加列，需在 D1 控制台执行 alter-messages-burn.sql 一次性加列：
+--   ALTER TABLE messages ADD COLUMN burn INTEGER DEFAULT 0;
+--   ALTER TABLE messages ADD COLUMN read INTEGER DEFAULT 0;
+-- 注：搭子「退出组队」不新增表字段，复用 pairs.ratings 的 JSON（标记 left:true），无需 ALTER。
 
 -- 联机信息列（2026-08-04 新增）：pairs 表扩展 info_a / info_b，存双方各自填写的
 -- 腾讯会议 / 联系方式，置顶常驻、实时互看。因 pairs 表已存在，CREATE TABLE IF NOT EXISTS

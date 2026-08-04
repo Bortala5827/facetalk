@@ -47,6 +47,7 @@
 
       <div class="room-actions">
         <button class="btn-mini no" id="report-btn">⚠ 举报对方</button>
+        <button class="btn-mini grey" id="leave-btn">🚪 退出组队</button>
       </div>
     </section>
 
@@ -54,6 +55,7 @@
       <h2 class="sec-title">💬 留言板</h2>
       <p class="muted">互留文字：约时间、留备用联系方式。每人只能删自己发的留言。</p>
       <div id="msg-list" class="msg-list"><p class="muted">加载中…</p></div>
+      <label class="msg-burn"><input id="msg-burn" type="checkbox" /> 🔥 阅后即焚</label>
       <div class="msg-input">
         <input id="msg-text" type="text" maxlength="300" placeholder="写点什么…" autocomplete="off" />
         <button class="btn-mini ok" id="msg-send">发送</button>
@@ -100,10 +102,24 @@
     function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
     function toast(m, e){var d=document.createElement('div');d.className='toast'+(e?' toast-err':'');d.textContent=m;document.body.appendChild(d);setTimeout(function(){d.classList.add('show');},10);setTimeout(function(){d.classList.remove('show');setTimeout(function(){d.remove();},300);},2600);}
     function api(method, body){
-      var url=new URL('/api/pair',location.origin); if(method==='GET')url.searchParams.set('me',me);
+      var url=new URL('/api/pair',location.origin);
+      var admin = sessionStorage.getItem('ft_admin') || '';
+      if(method==='GET'){ url.searchParams.set('me',me); if(admin) url.searchParams.set('admin', admin); }
       var opt={method:method,headers:{}};
-      if(body){opt.headers['content-type']='application/json';opt.body=JSON.stringify(Object.assign({me:me},body));}
+      if(body){ var b=Object.assign({me:me},body); if(admin) b.adminKey=admin; opt.headers['content-type']='application/json'; opt.body=JSON.stringify(b); }
       return fetch(url,opt).then(function(r){return r.json().catch(function(){return{};}).then(function(d){return{status:r.status,data:d};});});
+    }
+    // 带管理员解锁的版本：频率超限且未输过密码时，弹框输入并存 sessionStorage 后重试
+    async function apiA(method, body){
+      var r = await api(method, body);
+      var rateErr = r.status===429 && r.data && r.data.error==='rate_limited';
+      if (rateErr) {
+        if (!sessionStorage.getItem('ft_admin')) {
+          var k = prompt('已达频率上限（防刷保护）。请输入管理员密码继续测试：');
+          if (k){ sessionStorage.setItem('ft_admin', k.trim()); return apiA(method, body); }
+        } else { sessionStorage.removeItem('ft_admin'); }
+      }
+      return r;
     }
 
     var remain = 0, timer = null, infoMineInit = false;
@@ -135,7 +151,11 @@
       if(!infoMineInit){ document.getElementById('info-mine').value = p.infoMine || ''; infoMineInit = true; }
       renderPeerInfo(p.infoPeer || '');
 
-      if(p.status === 'done' && !p.rated){ document.getElementById('rate-card').hidden = false; }
+      if (p.left) {
+        // 已退出本组队：隐藏评价卡与操作按钮，提示去首页找新搭子（退出后房间横幅也会消失）
+        document.getElementById('rate-card').hidden = true;
+        var rb = document.getElementById('room-actions'); if (rb) rb.style.display = 'none';
+      } else if(p.status === 'done' && !p.rated){ document.getElementById('rate-card').hidden = false; }
       else { document.getElementById('rate-card').hidden = true; }
     }
 
@@ -183,8 +203,9 @@
       var t = new Date(m.created * 1000);
       var hh = ('0'+t.getHours()).slice(-2) + ':' + ('0'+t.getMinutes()).slice(-2);
       var del = m.mine ? '<button class="msg-del" data-id="'+esc(m.id)+'">删除</button>' : '';
+      var burnTag = m.burn ? (m.mine ? ' <span class="msg-burn-tag">🔥阅后即焚</span>' : ' <span class="msg-burn-tag">🔥</span>') : '';
       div.innerHTML = '<div class="msg-body"><span class="msg-text">' + esc(m.text) + '</span>' + del + '</div>' +
-        '<div class="msg-meta">' + (m.mine ? '我' : '搭子') + ' · ' + hh + '</div>';
+        '<div class="msg-meta">' + (m.mine ? '我' : '搭子') + ' · ' + hh + burnTag + '</div>';
       if (prepend) return div; // 返回供调用方决定插哪里
       var box = document.getElementById('msg-list');
       // 已存在则跳过（避免重复）
@@ -192,6 +213,10 @@
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
       bindMsgDel(div);
+      // 阅后即焚：收到的焚消息，5 秒后自动销毁（对方读后即焚）
+      if (m.burn && !m.mine) {
+        setTimeout(function(){ div.classList.add('burned'); setTimeout(function(){ div.remove(); }, 400); }, 5000);
+      }
     }
     function bindMsgDel(scope){
       scope.querySelectorAll('.msg-del').forEach(function(b){
@@ -249,8 +274,15 @@
       var inp = document.getElementById('msg-text');
       var text = inp.value.replace(/\s+/g,' ').trim();
       if(!text){ return; }
-      msgApi('', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ me: me, pair: pairId, text: text }) }).then(function(d){
-        if (d.ok){ inp.value = ''; /* 不主动 loadMsgs，等 SSE 推回来（自己发的也会被服务端命中）*/ }
+      var admin = sessionStorage.getItem('ft_admin') || '';
+      var body = { me: me, pair: pairId, text: text, burn: document.getElementById('msg-burn').checked };
+      if (admin) body.adminKey = admin;
+      msgApi('', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(function(d){
+        if (d.ok){ inp.value = ''; document.getElementById('msg-burn').checked = false; /* 不主动 loadMsgs，等 SSE 推回来 */ }
+        else if (d.error === 'rate_limited' || d.error === 'too_many_msgs'){
+          if (!admin){ var k = prompt('发送太频繁，达到频率上限。请输入管理员密码继续测试：'); if (k){ sessionStorage.setItem('ft_admin', k.trim()); sendMsg(); } }
+          else toast('发送太频繁，稍后再试', true);
+        }
         else toast('发送失败：' + (d.error || d.status), true);
       });
     }
@@ -259,7 +291,7 @@
 
     document.getElementById('info-save').addEventListener('click', function(){
       var v = document.getElementById('info-mine').value.replace(/\s+/g,' ').trim();
-      api('POST',{action:'set-info',pairId:pairId,info:v}).then(function(r){
+      apiA('POST',{action:'set-info',pairId:pairId,info:v}).then(function(r){
         if(r.status===200 && r.data.ok){ toast('已保存，对方即将看到'); }
         else toast('保存失败：'+(r.data.error||r.status), true);
       });
@@ -269,7 +301,7 @@
       if(!confirm('举报需说明原因（≥5 字），且你必须真的和对方搭过、留过联机信息。确认继续？')) return;
       var reason = (prompt('请说明举报原因（至少 5 个字）') || '').trim();
       if (reason.length < 5) { toast('请填写至少 5 个字的原因', true); return; }
-      var r = await api('POST',{action:'report', pairId:pairId, reason:reason});
+      var r = await apiA('POST',{action:'report', pairId:pairId, reason:reason});
       if(r.status===200){
         if (r.data.dup) toast('你已经举报过对方，本次不重复计数');
         else toast(r.data.banned ? ('已举报，累计 '+r.data.reports+'/3 个不同举报人，已封禁') : ('已举报（累计 '+r.data.reports+'/3 个不同举报人）'));
@@ -279,6 +311,19 @@
       else if (r.data && r.data.error === 'reason_too_short') toast('请填写至少 5 个字的原因', true);
       else if (r.data && r.data.error === 'rate_limited') toast('操作太频繁，1 分钟后再试', true);
       else toast('举报失败：' + (r.data && r.data.error ? r.data.error : r.status), true);
+    });
+
+    document.getElementById('leave-btn').addEventListener('click', async function(){
+      if(!confirm('退出后本组队结束，可去首页找新搭子。确定退出？')) return;
+      var r = await apiA('POST',{action:'leave',pairId:pairId});
+      if(r.status===200 && r.data.ok){
+        toast('已退出组队，去首页找新搭子 👋');
+        setTimeout(function(){ location.href = '/'; }, 800);
+      }
+      else if (r.data && r.data.error === 'rate_limited') toast('操作太频繁，稍后再试', true);
+      else if (r.data && r.data.error === 'already_rated') toast('你已评过分，无需退出', true);
+      else if (r.data && r.data.error === 'not_active') toast('本组队已结束', true);
+      else toast('退出失败：' + (r.data && r.data.error ? r.data.error : r.status), true);
     });
 
     document.getElementById('rate-form').addEventListener('submit', async function(e){
