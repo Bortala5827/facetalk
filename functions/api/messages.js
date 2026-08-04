@@ -31,10 +31,18 @@ export async function onRequest(context) {
     }
 
     // 普通 GET：拉取该房间全部留言（按时间正序）；阅后即焚消息在接收方读取后自动销毁
-    const { results } = await db.prepare(
-      'SELECT id, sender, text, created, burn, read FROM messages WHERE pair_id=? ORDER BY created ASC LIMIT 500'
-    ).bind(pairId).all();
-    const list = await mapAndBurn(db, m.r.id, results);
+    // 兼容：burn/read 列可能尚未 ALTER 加入，失败时退回不带该列的查询（焚功能暂不可用）
+    let rows;
+    try {
+      ({ results: rows } = await db.prepare(
+        'SELECT id, sender, text, created, burn, read FROM messages WHERE pair_id=? ORDER BY created ASC LIMIT 500'
+      ).bind(pairId).all());
+    } catch (e) {
+      ({ results: rows } = await db.prepare(
+        'SELECT id, sender, text, created FROM messages WHERE pair_id=? ORDER BY created ASC LIMIT 500'
+      ).bind(pairId).all());
+    }
+    const list = await mapAndBurn(db, m.r.id, rows || []);
     return json({ ok: true, list });
   }
 
@@ -51,8 +59,14 @@ export async function onRequest(context) {
     const burn = body.burn ? 1 : 0;
     const id = 'm_' + genId(12);
     const now = nowSec();
-    await db.prepare('INSERT INTO messages (id, pair_id, sender, text, created, burn, read) VALUES (?, ?, ?, ?, ?, ?, 0)')
-      .bind(id, m.p.id, m.r.id, text, now, burn).run();
+    // 兼容：burn/read 列可能尚未 ALTER 加入；若失败则退回不带该列的写入（焚功能暂不可用）
+    try {
+      await db.prepare('INSERT INTO messages (id, pair_id, sender, text, created, burn, read) VALUES (?, ?, ?, ?, ?, ?, 0)')
+        .bind(id, m.p.id, m.r.id, text, now, burn).run();
+    } catch (e) {
+      await db.prepare('INSERT INTO messages (id, pair_id, sender, text, created) VALUES (?, ?, ?, ?, ?)')
+        .bind(id, m.p.id, m.r.id, text, now).run();
+    }
     return json({ ok: true, id, created: now, mine: true });
   }
 
@@ -100,10 +114,17 @@ function streamMessages(env, db, member, pairId) {
 
       // 首屏：先发历史留言（用 since=0 把现有全推一次）；阅后即焚在接收方读取即焚
       try {
-        const { results } = await db.prepare(
-          'SELECT id, sender, text, created, burn, read FROM messages WHERE pair_id=? AND created > 0 ORDER BY created ASC LIMIT 500'
-        ).bind(pairId).all();
-        const list = await mapAndBurn(db, me, results);
+        let rows;
+        try {
+          ({ results: rows } = await db.prepare(
+            'SELECT id, sender, text, created, burn, read FROM messages WHERE pair_id=? AND created > 0 ORDER BY created ASC LIMIT 500'
+          ).bind(pairId).all());
+        } catch (e) {
+          ({ results: rows } = await db.prepare(
+            'SELECT id, sender, text, created FROM messages WHERE pair_id=? AND created > 0 ORDER BY created ASC LIMIT 500'
+          ).bind(pairId).all());
+        }
+        const list = await mapAndBurn(db, me, rows || []);
         if (list.length) lastSeen = list[list.length - 1].created;
         send('init', { list });
       } catch (e) {
@@ -114,11 +135,18 @@ function streamMessages(env, db, member, pairId) {
       async function tick() {
         if (!alive) return;
         try {
-          const { results } = await db.prepare(
-            'SELECT id, sender, text, created, burn, read FROM messages WHERE pair_id=? AND created > ? ORDER BY created ASC LIMIT 50'
-          ).bind(pairId, lastSeen).all();
-          if (results && results.length) {
-            const list = await mapAndBurn(db, me, results);
+          let rows;
+          try {
+            ({ results: rows } = await db.prepare(
+              'SELECT id, sender, text, created, burn, read FROM messages WHERE pair_id=? AND created > ? ORDER BY created ASC LIMIT 50'
+            ).bind(pairId, lastSeen).all());
+          } catch (e) {
+            ({ results: rows } = await db.prepare(
+              'SELECT id, sender, text, created FROM messages WHERE pair_id=? AND created > ? ORDER BY created ASC LIMIT 50'
+            ).bind(pairId, lastSeen).all());
+          }
+          if (rows && rows.length) {
+            const list = await mapAndBurn(db, me, rows);
             lastSeen = list[list.length - 1].created;
             send('messages', { list });
           }
