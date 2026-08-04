@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#1e88e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260804d" />
 </head>
 <body>
   <header class="topbar">
@@ -50,6 +50,73 @@
       <div class="room-actions">
         <button class="btn-mini no" id="report-btn">⚠ 举报对方</button>
         <button class="btn-mini grey" id="leave-btn">🚪 退出组队</button>
+      </div>
+    </section>
+
+    <!-- ===== 2.0 试音互评：匹配后先各录 30–60 秒，互听互评，双方点头才解锁下面的功能 ===== -->
+    <section class="card" id="voice-card" hidden>
+      <h2 class="sec-title">🎙 30 秒试音互评 <span class="v-badge">2.0</span></h2>
+      <p class="muted">双方各录一段答同一道题，互听互评。<strong>都点「愿意组队」才解锁留言板和联机信息</strong>——不合适就早点各找各的，别互相耽误时间。</p>
+      <div class="v-topic"><span class="v-topic-tag">本场题目</span><p id="v-topic">加载中…</p></div>
+
+      <!-- 步骤 1：录制 -->
+      <div class="v-step" id="v-record" hidden>
+        <div class="v-rec-row">
+          <button class="btn-primary" id="v-start">● 开始录音</button>
+          <button class="btn-mini no" id="v-stop" hidden>■ 停止并提交</button>
+          <span class="v-time" id="v-time">00:00</span>
+        </div>
+        <div class="v-bar"><i id="v-fill"></i></div>
+        <p class="field-hint" id="v-hint">⏱ 最短 30 秒、满 60 秒自动停止。录音只在互评期间临时存在，<strong>对方一提交评价就立刻销毁</strong>，手机和电脑本地都不保存。</p>
+      </div>
+
+      <!-- 步骤 2：等对方录 -->
+      <div class="v-step" id="v-wait" hidden>
+        <p class="v-state">✅ 你的试音已提交（<span id="v-mine-dur">--</span> 秒），正在等对方录制…</p>
+        <button class="btn-mini grey" id="v-retake">🔁 重录一遍</button>
+      </div>
+
+      <!-- 步骤 3：听 + 评 -->
+      <div class="v-step" id="v-review" hidden>
+        <div class="v-play-row">
+          <button class="btn-primary" id="v-play">▶ 播放对方的试音</button>
+          <span class="muted" id="v-plays">最多可听 2 次</span>
+        </div>
+        <audio id="v-audio" controlsList="nodownload noplaybackrate" hidden></audio>
+        <form id="v-form" autocomplete="off">
+          <div class="v-grid">
+            <label class="field"><span class="field-label">表达清晰</span>
+              <select id="v-clarity"><option value="5">5 · 很清楚</option><option value="4">4 · 较清楚</option><option value="3" selected>3 · 一般</option><option value="2">2 · 有点含糊</option><option value="1">1 · 听不太清</option></select>
+            </label>
+            <label class="field"><span class="field-label">逻辑结构</span>
+              <select id="v-logic"><option value="5">5 · 层次分明</option><option value="4">4 · 较有条理</option><option value="3" selected>3 · 一般</option><option value="2">2 · 有点乱</option><option value="1">1 · 没有结构</option></select>
+            </label>
+            <label class="field"><span class="field-label">语速节奏</span>
+              <select id="v-pace"><option value="5">5 · 很稳</option><option value="4">4 · 较稳</option><option value="3" selected>3 · 一般</option><option value="2">2 · 偏快/偏慢</option><option value="1">1 · 卡顿明显</option></select>
+            </label>
+          </div>
+          <label class="field"><span class="field-label">一句话点评（选填，≤100 字）</span>
+            <input id="v-comment" type="text" maxlength="100" placeholder="如：开头点题很稳，中间可以再举个例子" />
+          </label>
+          <div class="v-willing">
+            <label class="v-w-opt"><input type="radio" name="v-willing" value="1" checked /> <span>👍 愿意组队，继续深聊</span></label>
+            <label class="v-w-opt"><input type="radio" name="v-willing" value="0" /> <span>🙅 这次不太合适，婉拒</span></label>
+          </div>
+          <p class="field-hint">提交后对方的录音会<strong>立即从服务器删除</strong>。双方都提交才会互相揭晓评价，避免看着对方的分打分。</p>
+          <button type="submit" class="btn-primary" id="v-submit">提交评价 →</button>
+        </form>
+      </div>
+
+      <!-- 步骤 4：等对方评 -->
+      <div class="v-step" id="v-waitrev" hidden>
+        <p class="v-state">📨 你的评价已提交，对方的录音已销毁。正在等对方评价…</p>
+        <p class="field-hint">双方都提交后立刻揭晓结果。若两边都点了「愿意组队」，房间功能会自动解锁。</p>
+      </div>
+
+      <!-- 步骤 5：结果 -->
+      <div class="v-step" id="v-result" hidden>
+        <p class="v-state" id="v-verdict"></p>
+        <div class="v-cards" id="v-review-cards"></div>
       </div>
     </section>
 
@@ -171,11 +238,17 @@
         if (rb2) rb2.style.display = 'none';
         dtip.hidden = false;
         var ds = p.dissolveIn || 0;
-        dtip.textContent = '⚠️ 对方已退出组队，房间将在 ' + Math.max(0, ds) + 's 后自动关闭，对话将清除。';
-        if (!dissolveToasted) { dissolveToasted = true; toast('⚠️ 对方已退出组队，房间即将自动关闭'); }
+        // 区分两种解散原因：试音互评被婉拒 vs 对方主动退出，文案不一样，避免用户误会
+        var dsWord = function (n) {
+          return (vGate === 'rejected')
+            ? '🙅 试音互评结束，有一方选择不组队，房间将在 ' + Math.max(0, n) + 's 后自动关闭。'
+            : '⚠️ 对方已退出组队，房间将在 ' + Math.max(0, n) + 's 后自动关闭，对话将清除。';
+        };
+        dtip.textContent = dsWord(ds);
+        if (!dissolveToasted) { dissolveToasted = true; toast(vGate === 'rejected' ? '🙅 试音后有一方婉拒，房间即将关闭' : '⚠️ 对方已退出组队，房间即将自动关闭'); }
         if (ds <= 0) closeRoom(p.pairId);
         else dissolveTimer = setInterval(function () {
-          ds--; dtip.textContent = '⚠️ 对方已退出组队，房间将在 ' + Math.max(0, ds) + 's 后自动关闭，对话将清除。';
+          ds--; dtip.textContent = dsWord(ds);
           if (ds <= 0) { clearInterval(dissolveTimer); dissolveTimer = null; closeRoom(p.pairId); }
         }, 1000);
       } else if (p.status === 'done' && p.autoCloseIn > 0) {
@@ -370,11 +443,221 @@
     });
 
     function closeRoom(pid) {
+      vKillAudio();
       api('POST', { action: 'close', pairId: pid }).then(function (r) {
         if (r.status === 200 && r.data && r.data.ok) toast('房间已关闭');
         setTimeout(function () { location.href = '/'; }, 600);
       });
     }
+
+    // ===================== 2.0 试音互评 =====================
+    // 录音全程只在内存里流转：录 → base64 分片上传 → 对方听完评完，服务端立刻物理删除。
+    // 本地不写 localStorage/IndexedDB，播放用 Blob URL，用完即 revoke。
+    var MIN_SEC = 30, MAX_SEC = 60;
+    var vMeta = null, vGate = 'skip', vRec = null, vStream = null, vParts = [], vT0 = 0, vTimer = null, vBlobUrl = null, vBusy = false;
+
+    function vGet(extra) {
+      var u = new URL('/api/voice', location.origin);
+      u.searchParams.set('me', me); u.searchParams.set('pair', pairId);
+      var admin = sessionStorage.getItem('ft_admin') || ''; if (admin) u.searchParams.set('admin', admin);
+      if (extra) Object.keys(extra).forEach(function (k) { u.searchParams.set(k, extra[k]); });
+      return fetch(u).then(function (r) { return r.json().catch(function () { return {}; }); });
+    }
+    function vPost(body) {
+      var admin = sessionStorage.getItem('ft_admin') || '';
+      var b = Object.assign({ me: me, pair: pairId }, body); if (admin) b.adminKey = admin;
+      return fetch('/api/voice', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) })
+        .then(function (r) { return r.json().catch(function () { return {}; }); });
+    }
+    function vShow(id) {
+      ['v-record', 'v-wait', 'v-review', 'v-waitrev', 'v-result'].forEach(function (x) {
+        var el = document.getElementById(x); if (el) el.hidden = (x !== id);
+      });
+    }
+    function loadVoice() {
+      return vGet().then(function (d) {
+        if (!d) return;
+        vMeta = d; vGate = d.gate || 'skip';
+        applyVoiceGate();
+      }).catch(function () { /* 网络抖动：保持当前界面 */ });
+    }
+    // 强制前置：试音没通过之前，留言板 / 联机信息一律不开放
+    function applyVoiceGate() {
+      var card = document.getElementById('voice-card');
+      var unlocked = (vGate === 'skip' || vGate === 'passed');
+      document.getElementById('msg-card').hidden = !unlocked;
+      document.getElementById('info-card').hidden = !unlocked;
+      if (vGate === 'skip') { card.hidden = true; return; }   // voice 表未建 → 整个环节跳过，不影响老功能
+      card.hidden = false;
+      document.getElementById('v-topic').textContent = vMeta.topic || '';
+      if (vGate === 'record') {
+        vShow('v-record');
+      } else if (vGate === 'wait_peer') {
+        vShow('v-wait');
+        document.getElementById('v-mine-dur').textContent = (vMeta.mine && vMeta.mine.dur) || '--';
+        document.getElementById('v-retake').hidden = !(vMeta.mine && vMeta.mine.canRetake);
+      } else if (vGate === 'review') {
+        vShow('v-review');
+        var pl = (vMeta.peer && vMeta.peer.playsLeft) || 0;
+        document.getElementById('v-plays').textContent = pl > 0 ? ('最多可听 ' + pl + ' 次') : '回听次数已用完，请凭印象评价';
+      } else if (vGate === 'wait_review') {
+        vShow('v-waitrev');
+      } else {
+        vShow('v-result'); renderVerdict();
+      }
+    }
+    function renderVerdict() {
+      var v = document.getElementById('v-verdict');
+      if (vGate === 'passed') { v.className = 'v-state ok'; v.textContent = '🎉 双方都愿意组队！留言板和联机信息已解锁，去约时间吧。'; }
+      else { v.className = 'v-state bad'; v.textContent = '🙅 有一方觉得这次不太合适，房间即将自动关闭，回首页再约下一位就好。'; }
+      var html = '';
+      if (vMeta.peerReview) html += revCard('对方给你的评价', vMeta.peerReview);
+      if (vMeta.myReview) html += revCard('你给对方的评价', vMeta.myReview);
+      document.getElementById('v-review-cards').innerHTML = html;
+    }
+    function revCard(title, r) {
+      return '<div class="v-card"><h4>' + esc(title) + '</h4>' +
+        '<p class="v-scores">表达清晰 ' + r.clarity + '/5 · 逻辑结构 ' + r.logic + '/5 · 语速节奏 ' + r.pace + '/5</p>' +
+        (r.comment ? '<p class="v-comment">「' + esc(r.comment) + '」</p>' : '') +
+        '<p class="v-will">' + (r.willing ? '👍 愿意组队' : '🙅 婉拒') + '</p></div>';
+    }
+    // ── 录音 ──
+    function vMimeType() {
+      var c = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+      for (var i = 0; i < c.length; i++) { try { if (window.MediaRecorder && MediaRecorder.isTypeSupported(c[i])) return c[i]; } catch (e) {} }
+      return '';
+    }
+    async function vStart() {
+      if (vBusy || vRec) return;
+      if (!navigator.mediaDevices || !window.MediaRecorder) { toast('当前浏览器不支持录音，请换 Chrome / Safari 最新版', true); return; }
+      try {
+        vStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+      } catch (e) { toast('没拿到麦克风权限，请在浏览器里允许后重试', true); return; }
+      var mt = vMimeType();
+      try { vRec = new MediaRecorder(vStream, mt ? { mimeType: mt, audioBitsPerSecond: 24000 } : { audioBitsPerSecond: 24000 }); }
+      catch (e) { try { vRec = new MediaRecorder(vStream); } catch (e2) { toast('录音初始化失败', true); return; } }
+      vParts = []; vT0 = Date.now();
+      vRec.ondataavailable = function (e) { if (e.data && e.data.size) vParts.push(e.data); };
+      vRec.onstop = vFinish;
+      vRec.start();
+      document.getElementById('v-start').hidden = true;
+      var stop = document.getElementById('v-stop');
+      stop.hidden = false; stop.disabled = true;
+      vTimer = setInterval(vTick, 200);
+    }
+    function vTick() {
+      var s = (Date.now() - vT0) / 1000;
+      var mm = Math.floor(s / 60), ss = Math.floor(s % 60);
+      document.getElementById('v-time').textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+      document.getElementById('v-fill').style.width = Math.min(100, s / MAX_SEC * 100) + '%';
+      var stop = document.getElementById('v-stop');
+      if (s >= MIN_SEC) { stop.disabled = false; stop.textContent = '■ 停止并提交'; }
+      else stop.textContent = '■ 还差 ' + Math.ceil(MIN_SEC - s) + 's';
+      if (s >= MAX_SEC) vStopRec();
+    }
+    function vStopRec() {
+      if (vTimer) { clearInterval(vTimer); vTimer = null; }
+      try { if (vRec && vRec.state !== 'inactive') vRec.stop(); } catch (e) {}
+    }
+    async function vFinish() {
+      if (vStream) { vStream.getTracks().forEach(function (t) { t.stop(); }); vStream = null; }
+      var dur = Math.round((Date.now() - vT0) / 1000);
+      var type = (vRec && vRec.mimeType) || 'audio/webm';
+      var blob = new Blob(vParts, { type: type });
+      vParts = []; vRec = null;
+      document.getElementById('v-start').hidden = false;
+      document.getElementById('v-stop').hidden = true;
+      document.getElementById('v-time').textContent = '00:00';
+      document.getElementById('v-fill').style.width = '0%';
+      if (dur < MIN_SEC) { toast('至少要录 ' + MIN_SEC + ' 秒，再来一次', true); return; }
+      await vUpload(blob, Math.min(dur, MAX_SEC));
+    }
+    function blobToB64(blob) {
+      return blob.arrayBuffer().then(function (buf) {
+        var b = new Uint8Array(buf), s = '', CH = 0x8000;
+        for (var i = 0; i < b.length; i += CH) s += String.fromCharCode.apply(null, b.subarray(i, i + CH));
+        return btoa(s);
+      });
+    }
+    async function vUpload(blob, dur) {
+      vBusy = true;
+      var hint = document.getElementById('v-hint'), old = hint.innerHTML;
+      hint.textContent = '上传中… 0%';
+      try {
+        var b64 = await blobToB64(blob);
+        if (b64.length > 1500000) { toast('录音体积偏大，请缩短到 45 秒内重录', true); return; }
+        var init = await vPost({ action: 'init', mime: blob.type || 'audio/webm' });
+        if (!init.ok) { toast('上传失败：' + (init.error || ''), true); return; }
+        var SZ = 48 * 1024, total = Math.ceil(b64.length / SZ);
+        for (var i = 0, seq = 0; i < b64.length; i += SZ, seq++) {
+          var r = await vPost({ action: 'chunk', clipId: init.clipId, seq: seq, data: b64.substr(i, SZ) });
+          if (!r.ok) { toast('上传中断：' + (r.error || ''), true); return; }
+          hint.textContent = '上传中… ' + Math.round((seq + 1) / total * 100) + '%';
+        }
+        var d = await vPost({ action: 'done', clipId: init.clipId, dur: dur });
+        if (!d.ok) { toast(d.error === 'too_short' ? '不足 30 秒，请重录' : ('提交失败：' + (d.error || '')), true); return; }
+        toast('试音已提交 ✅');
+        await loadVoice();
+      } finally { vBusy = false; hint.innerHTML = old; }
+    }
+    // ── 播放对方录音（内存播放，不落盘）──
+    async function vPlay() {
+      var btn = document.getElementById('v-play');
+      btn.disabled = true; btn.textContent = '加载中…';
+      var d = await vGet({ action: 'fetch', clip: (vMeta && vMeta.peer && vMeta.peer.clipId) || '' });
+      btn.disabled = false; btn.textContent = '▶ 再听一次';
+      if (!d.ok) {
+        if (d.error === 'no_plays_left') toast('回听次数已用完，请凭印象评价', true);
+        else if (d.error === 'clip_gone') { toast('录音已销毁', true); loadVoice(); }
+        else toast('播放失败：' + (d.error || ''), true);
+        return;
+      }
+      var bin = atob(d.b64), arr = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      if (vBlobUrl) { URL.revokeObjectURL(vBlobUrl); vBlobUrl = null; }
+      vBlobUrl = URL.createObjectURL(new Blob([arr], { type: d.mime || 'audio/webm' }));
+      var au = document.getElementById('v-audio');
+      au.src = vBlobUrl; au.hidden = false; au.controls = true;
+      au.play().catch(function () { toast('点一下播放器的 ▶ 即可播放'); });
+      document.getElementById('v-plays').textContent = d.playsLeft > 0 ? ('还可重听 ' + d.playsLeft + ' 次') : '这是最后一次回听';
+    }
+    function vKillAudio() {
+      var au = document.getElementById('v-audio');
+      if (au) { try { au.pause(); au.removeAttribute('src'); au.load(); } catch (e) {} au.hidden = true; }
+      if (vBlobUrl) { URL.revokeObjectURL(vBlobUrl); vBlobUrl = null; }
+    }
+    window.addEventListener('beforeunload', vKillAudio);
+    window.addEventListener('pagehide', vKillAudio);
+
+    document.getElementById('v-start').addEventListener('click', vStart);
+    document.getElementById('v-stop').addEventListener('click', vStopRec);
+    document.getElementById('v-play').addEventListener('click', vPlay);
+    document.getElementById('v-retake').addEventListener('click', async function () {
+      if (!confirm('重录会删掉刚才那段试音，确定？')) return;
+      var d = await vPost({ action: 'retake' });
+      if (d.ok) { toast('已删除，重新录一段吧'); loadVoice(); }
+      else toast(d.error === 'peer_already_reviewed' ? '对方已经评过了，不能再重录' : '操作失败', true);
+    });
+    document.getElementById('v-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var w = document.querySelector('input[name="v-willing"]:checked');
+      var willing = !!(w && w.value === '1');
+      if (!willing && !confirm('婉拒后房间会自动关闭，双方各自去找新搭子。确定吗？')) return;
+      var btn = document.getElementById('v-submit'); btn.disabled = true;
+      var d = await vPost({
+        action: 'review',
+        clarity: parseInt(document.getElementById('v-clarity').value, 10),
+        logic: parseInt(document.getElementById('v-logic').value, 10),
+        pace: parseInt(document.getElementById('v-pace').value, 10),
+        comment: document.getElementById('v-comment').value,
+        willing: willing,
+      });
+      btn.disabled = false;
+      if (!d.ok) { toast('提交失败：' + (d.error || ''), true); return; }
+      vKillAudio();
+      toast('评价已提交，对方录音已销毁 🔥');
+      await loadVoice();
+    });
 
     document.getElementById('rate-form').addEventListener('submit', async function(e){
       e.preventDefault();
@@ -392,9 +675,14 @@
     });
 
     api('GET').then(function(r){ render(r.data.pair); });
+    loadVoice();     // 2.0：先拉试音进度，决定是否放行留言板 / 联机信息
     connectStream(); // SSE 推送接管留言板；首屏 init 事件会渲染历史
     // 轮询兜底（SSE 不可用时）：5s 一次，保证对方退出时及时刷新（配合 SSE 实时推近乎即时）
-    setInterval(function(){ api('GET').then(function(r){ if(r.data.pair) render(r.data.pair); }); }, 5000);
+    // 录音 / 上传过程中跳过试音状态刷新，避免把用户正在操作的界面切走
+    setInterval(function(){
+      api('GET').then(function(r){ if(r.data.pair) render(r.data.pair); });
+      if (!vBusy && !vRec) loadVoice();
+    }, 5000);
   })();
   </script>
 </body>

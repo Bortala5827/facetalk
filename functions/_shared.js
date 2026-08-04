@@ -66,3 +66,15 @@ export async function requireToken(env, me) {
   return { user: { rep: (u.rep == null ? 50 : u.rep) | 0 }, id: me };
 }
 export function clampRep(v) { return Math.max(0, Math.min(100, v | 0)); }
+
+// 清空一个房间里的全部试音录音（分片 + 主行）。
+// 结算 / 关房 / 每日清理都会调用，保证"云端不留存"。
+// voice_* 表未建时静默跳过，不影响 1.0 的既有功能。
+export async function dropPairClips(db, pairId) {
+  try {
+    await db.batch([
+      db.prepare('DELETE FROM voice_chunks WHERE clip_id IN (SELECT id FROM voice_clips WHERE pair_id=?)').bind(pairId),
+      db.prepare('DELETE FROM voice_clips WHERE pair_id=?').bind(pairId),
+    ]);
+  } catch (e) { /* 表未建：无录音可清 */ }
+}

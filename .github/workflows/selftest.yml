@@ -31,3 +31,6 @@ jobs:
 
       - name: 房间解散后申请卡变灰+3天自动删+解锁重选 自测
         run: node scripts/selftest-dissolved.js
+
+      - name: 2.0 试音互评逻辑自测（阅后即焚/婉拒解散/降级）
+        run: node scripts/selftest-voice.js

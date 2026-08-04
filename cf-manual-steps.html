@@ -109,6 +109,50 @@ CREATE TABLE IF NOT EXISTS wall_day (
 );</code><button class="copy" onclick="copy(this)">复制</button></div>
   </div>
 
+  <div class="group">v2.0 试音互评（建表，启用 30 秒试音互评必需）</div>
+
+  <div class="card">
+    <h3>⑦ 试音互评三张表（voice_clips / voice_chunks / voice_reviews）</h3>
+    <p>30 秒试音互评（录音分片 + 阅后即焚 + 互评）依赖这三张新表。对应 <code>voice-tables.sql</code>，全部 <code>CREATE TABLE IF NOT EXISTS</code>，不改动任何老表，可安全重复跑。</p>
+    <div class="codebox"><code>CREATE TABLE IF NOT EXISTS voice_clips (
+  id       TEXT PRIMARY KEY,
+  pair_id  TEXT NOT NULL,
+  owner    TEXT NOT NULL,
+  mime     TEXT NOT NULL DEFAULT 'audio/webm',
+  dur      INTEGER NOT NULL DEFAULT 0,
+  bytes    INTEGER NOT NULL DEFAULT 0,
+  chunks   INTEGER NOT NULL DEFAULT 0,
+  plays    INTEGER NOT NULL DEFAULT 0,
+  ready    INTEGER NOT NULL DEFAULT 0,
+  created  INTEGER NOT NULL,
+  expires  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_vclips_pair ON voice_clips(pair_id);
+CREATE INDEX IF NOT EXISTS idx_vclips_expires ON voice_clips(expires);
+
+CREATE TABLE IF NOT EXISTS voice_chunks (
+  clip_id TEXT NOT NULL,
+  seq     INTEGER NOT NULL,
+  data    TEXT NOT NULL,
+  PRIMARY KEY (clip_id, seq)
+);
+
+CREATE TABLE IF NOT EXISTS voice_reviews (
+  pair_id  TEXT NOT NULL,
+  reviewer TEXT NOT NULL,
+  target   TEXT NOT NULL,
+  clarity  INTEGER NOT NULL DEFAULT 3,
+  logic    INTEGER NOT NULL DEFAULT 3,
+  pace     INTEGER NOT NULL DEFAULT 3,
+  comment  TEXT DEFAULT '',
+  willing  INTEGER NOT NULL DEFAULT 0,
+  created  INTEGER NOT NULL,
+  PRIMARY KEY (pair_id, reviewer)
+);
+CREATE INDEX IF NOT EXISTS idx_vreviews_pair ON voice_reviews(pair_id);</code><button class="copy" onclick="copy(this)">复制</button></div>
+    <p class="note">未建这三张表时，<code>/api/voice</code> 返回 <code>ready:false</code>，前端自动跳过试音环节，v1.0 的匹配/留言/互评照常可用，不会报错。建好后无需改代码，试音互评即上线。</p>
+  </div>
+
   <p class="foot">执行完任意 ALTER 后，_functions 代码已 try/catch 兼容，无需重新部署即可生效；若仍报错，去 Deployments 点 Retry 一次。</p>
 </div>
 

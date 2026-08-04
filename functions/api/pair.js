@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass } from '../_shared.js';
+import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips } from '../_shared.js';
 
 const SESSION_TTL = 1800; // 单次互练软上限 30 分钟（秒）
 
@@ -271,9 +271,20 @@ async function closeRoomDB(db, id) {
   const rt = safeParse(p && p.ratings);
   rt._closedAt = nowSec();
   const intentId = (p && p.intent_id) || '';
-  await db.batch([
+  const base = [
     db.prepare('DELETE FROM messages WHERE pair_id=?').bind(id),
-    db.prepare("UPDATE pairs SET status='closed', ratings=?, info_a='', info_b='' WHERE id=?").bind(JSON.stringify(rt), id),
     db.prepare("UPDATE applications SET status='pending' WHERE intent_id=? AND status='rejected'").bind(intentId),
-  ]);
+  ];
+  try {
+    await db.batch(base.concat([
+      db.prepare("UPDATE pairs SET status='closed', ratings=?, info_a='', info_b='' WHERE id=?").bind(JSON.stringify(rt), id),
+    ]));
+  } catch (e) {
+    // info_a/info_b 列未 ALTER 的库：退化为不清联机信息，至少保证房间能正常关闭
+    await db.batch(base.concat([
+      db.prepare("UPDATE pairs SET status='closed', ratings=? WHERE id=?").bind(JSON.stringify(rt), id),
+    ]));
+  }
+  // 2.0：房间关闭 → 连带焚毁双方试音录音，云端不留存
+  await dropPairClips(db, id);
 }
