@@ -16,20 +16,33 @@ export async function onRequest(context) {
     const now = nowSec();
     const p = await db.prepare('SELECT * FROM pairs WHERE (a=? OR b=?) AND expires > ? ORDER BY created DESC LIMIT 1')
       .bind(r.id, r.id, now).first();
-    if (!p) return json({ ok: true, pair: null });
-    const ratings = safeParse(p.ratings);
-    const other = r.id === p.a ? p.b : p.a;
-    const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
-    const otherRep = o ? (o.rep | 0) : 50;
-    const rated = !!ratings[r.id];
-    const left = !!(ratings[r.id] && ratings[r.id].left);
-    const remaining = Math.max(0, p.expires - now);
-    const isA = r.id === p.a;
-    const infoMine = (isA ? p.info_a : p.info_b) || '';
-    const infoPeer = (isA ? p.info_b : p.info_a) || '';
-    const dissolving = p.status === 'dissolving';
-    const dissolveIn = dissolving ? Math.max(0, (p.dissolve_at || 0) - now) : 0;
-    const autoCloseIn = (p.status === 'done') ? Math.max(0, (p.closed_at || 0) - now) : 0;
+      if (!p) return json({ ok: true, pair: null });
+      const ratings = safeParse(p.ratings);
+      // 从 ratings JSON 的 at 时间推算兜底计时：即使 dissolve_at/closed_at 列未 ALTER 也能自动结算
+      const leftAt = (ratings.a && ratings.a.left ? (ratings.a.at || 0) : 0) || (ratings.b && ratings.b.left ? (ratings.b.at || 0) : 0);
+      const ratedAt = (ratings.a && ratings.a.at && ratings.b && ratings.b.at) ? Math.max(ratings.a.at, ratings.b.at) : 0;
+      // 服务端兜底：任意一次轮询命中过期时间即直接关房，不依赖某一方还开着页面
+      // 退出 60s / 双方互评完 5 分钟两个时机；列存在优先用列，列缺失回退用 ratings.at
+      const exitDue = p.status === 'dissolving' && ((p.dissolve_at || 0) > 0 ? now >= p.dissolve_at : leftAt > 0 && now >= leftAt + 60);
+      const settleDue = p.status === 'done' && ((p.closed_at || 0) > 0 ? now >= p.closed_at : ratedAt > 0 && now >= ratedAt + 300);
+      if (exitDue || settleDue) {
+        await closeRoomDB(db, p.id);
+        p.status = 'closed';
+      }
+      const other = r.id === p.a ? p.b : p.a;
+      const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
+      const otherRep = o ? (o.rep | 0) : 50;
+      const rated = !!ratings[r.id];
+      const left = !!(ratings[r.id] && ratings[r.id].left);
+      const remaining = Math.max(0, p.expires - now);
+      const isA = r.id === p.a;
+      const infoMine = (isA ? p.info_a : p.info_b) || '';
+      const infoPeer = (isA ? p.info_b : p.info_a) || '';
+      const dissolving = p.status === 'dissolving';
+      let dissolveIn = dissolving ? Math.max(0, (p.dissolve_at || 0) - now) : 0;
+      if (dissolving && dissolveIn === 0 && leftAt > 0) dissolveIn = Math.max(0, leftAt + 60 - now);
+      let autoCloseIn = (p.status === 'done') ? Math.max(0, (p.closed_at || 0) - now) : 0;
+      if (p.status === 'done' && autoCloseIn === 0 && ratedAt > 0) autoCloseIn = Math.max(0, ratedAt + 300 - now);
     return json({
       ok: true,
       pair: {
@@ -216,15 +229,17 @@ export async function onRequest(context) {
       if (ratings[r.id] && ratings[r.id].score) return err('already_rated', 409);
       ratings[r.id] = { left: true, at: nowSec() };
       const dissolveAt = nowSec() + 60;
-      // dissolve_at 列可能尚未 ALTER：try 新版，catch 回退（此时退出生效，但对方端不会倒计时，仅 15s 轮询消失）
+      // 始终置 dissolving（status 枚举值，无需新列）；dissolve_at 列可能未 ALTER：try 写列，catch 忽略，
+      // 计时改由 ratings JSON 的 left.at 兜底，保证不跑 SQL 也能 60s 自动解散
+      let dissolving = true;
       try {
         await db.prepare("UPDATE pairs SET ratings=?, status='dissolving', dissolve_at=? WHERE id=?")
           .bind(JSON.stringify(ratings), dissolveAt, p.id).run();
       } catch (e) {
-        await db.prepare("UPDATE pairs SET ratings=?, status='done' WHERE id=?")
+        await db.prepare("UPDATE pairs SET ratings=?, status='dissolving' WHERE id=?")
           .bind(JSON.stringify(ratings), p.id).run();
       }
-      return json({ ok: true, dissolving: true, dissolveIn: 60 });
+      return json({ ok: true, dissolving, dissolveIn: 60 });
     }
 
     if (action === 'close') {
@@ -233,10 +248,7 @@ export async function onRequest(context) {
       const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
       if (!p) return err('pair_gone', 404);
       if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
-      await db.batch([
-        db.prepare('DELETE FROM messages WHERE pair_id=?').bind(p.id),
-        db.prepare("UPDATE pairs SET status='closed', ratings='{}', info_a='', info_b='' WHERE id=?").bind(p.id),
-      ]);
+      await closeRoomDB(db, p.id);
       return json({ ok: true });
     }
 
@@ -250,3 +262,11 @@ function safeParse(s) {
 }
 function bothNext(ratings) { return ratings && ratings.a && ratings.b && ratings.a.next && ratings.b.next; }
 function bothPass(ratings) { return ratings && ratings.a && ratings.b && ratings.a.score >= 3 && ratings.b.score >= 3; }
+
+// 销毁房间：清对话 + 置 closed。GET 服务端兜底与前端 close 动作共用。
+async function closeRoomDB(db, id) {
+  await db.batch([
+    db.prepare('DELETE FROM messages WHERE pair_id=?').bind(id),
+    db.prepare("UPDATE pairs SET status='closed', ratings='{}', info_a='', info_b='' WHERE id=?").bind(id),
+  ]);
+}

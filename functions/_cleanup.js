@@ -30,5 +30,14 @@ export async function runCleanup(env) {
   ];
   const res = await db.batch(ops);
   const deleted = res.reduce((s, r) => s + ((r && r.meta && r.meta.changes) || 0), 0);
+  // 主动结算：到期仍未关的房间（退出 60s / 双方互评完 5 分钟）直接关房并清对话。
+  // 兜底用——即便没人开着页面轮询，每日定时清理也会把过期房间结清，不留残留对话。
+  // dissolve_at/closed_at 列可能未 ALTER：单独跑、catch 忽略，绝不影响上面的基础清理。
+  try {
+    await db.batch([
+      db.prepare("UPDATE pairs SET status='closed', ratings='{}', info_a='', info_b='' WHERE (status='dissolving' AND dissolve_at>0 AND dissolve_at<=?) OR (status='done' AND closed_at>0 AND closed_at<=?)").bind(now, now),
+      db.prepare("DELETE FROM messages WHERE pair_id IN (SELECT id FROM pairs WHERE status='closed')"),
+    ]);
+  } catch (e) { /* 列未 ALTER 时忽略：运行时已由 ratings.at 兜底自动结算 */ }
   return { ok: true, deleted, at: Date.now() };
 }

@@ -336,6 +336,8 @@
   async function checkPair() {
     var r = await api('GET', '/api/pair');
     var p = r.status === 200 ? r.data.pair : null;
+    // 房间已被服务端结算关闭 → 视为无活跃房间，隐藏卡片
+    if (p && p.status === 'closed') p = null;
     if (dissolveTimer) { clearInterval(dissolveTimer); dissolveTimer = null; }
     // 对方已退出 → 房间进入「自动关闭倒计时」，对方端 1 分钟后彻底销毁
     if (p && p.dissolving) {
