@@ -1,34 +1,34 @@
-import { json, err, genId, requireToken, refreshUser, clampRep, getKV } from '../_shared.js';
+import { json, err, genId, requireToken, clampRep, getDB, nowSec } from '../_shared.js';
 
-const SESSION_TTL = 1800; // 单次互练软上限 30 分钟
+const SESSION_TTL = 1800; // 单次互练软上限 30 分钟（秒）
 
 // 配对：决定(同意/拒绝) / 状态 / 互评 / 举报
 export async function onRequest(context) {
   const { request, env } = context;
-  const kv = getKV(env);
-  if (!kv) return err('KV_NOT_BOUND', 503);
+  const db = getDB(env);
+  if (!db) return err('DB_NOT_BOUND', 503);
 
   if (request.method === 'GET') {
     const url = new URL(request.url);
     const me = url.searchParams.get('me');
     const r = await requireToken(env, me);
     if (r.error) return err(r.error, r.status);
-    const pid = await kv.get('mypair:' + r.id);
-    if (!pid) return json({ ok: true, pair: null });
-    const raw = await kv.get('pair:' + pid);
-    if (!raw) { await kv.delete('mypair:' + r.id).catch(() => {}); return json({ ok: true, pair: null }); }
-    const p = JSON.parse(raw);
+    const now = nowSec();
+    const p = await db.prepare('SELECT * FROM pairs WHERE (a=? OR b=?) AND expires > ? ORDER BY created DESC LIMIT 1')
+      .bind(r.id, now).first();
+    if (!p) return json({ ok: true, pair: null });
+    const ratings = safeParse(p.ratings);
     const other = r.id === p.a ? p.b : p.a;
-    const oRaw = await kv.get('u:' + other);
-    const otherRep = oRaw ? JSON.parse(oRaw).rep : 50;
-    const rated = !!p.ratings[r.id];
-    const remaining = Math.max(0, Math.floor(SESSION_TTL - (Date.now() - p.created) / 1000));
+    const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
+    const otherRep = o ? (o.rep | 0) : 50;
+    const rated = !!ratings[r.id];
+    const remaining = Math.max(0, p.expires - now);
     return json({
       ok: true,
       pair: {
         pairId: p.id, otherRep, meet: p.meet, mode: p.mode, status: p.status,
-        ratingsCount: Object.keys(p.ratings || {}).length, remaining, rated,
-        nextAllowed: p.status === 'done' && bothNext(p) && bothPass(p),
+        ratingsCount: Object.keys(ratings || {}).length, remaining, rated,
+        nextAllowed: p.status === 'done' && bothNext(ratings) && bothPass(ratings),
       },
     });
   }
@@ -41,66 +41,72 @@ export async function onRequest(context) {
     const action = body.action;
 
     if (action === 'decide') {
-      const appRaw = await kv.get('app:' + body.appId);
-      if (!appRaw) return err('app_gone', 404);
-      const app = JSON.parse(appRaw);
-      const intentRaw = await kv.get('intent:' + app.intentId);
-      if (!intentRaw) return err('intent_gone', 409);
-      const intent = JSON.parse(intentRaw);
+      const app = await db.prepare('SELECT * FROM applications WHERE id=?').bind(body.appId).first();
+      if (!app) return err('app_gone', 404);
+      const intent = await db.prepare('SELECT * FROM intents WHERE id=?').bind(app.intent_id).first();
+      if (!intent) return err('intent_gone', 409);
       if (intent.owner !== r.id) return err('not_owner', 403);
 
       if (body.decision === 'accept') {
         const pairId = 'p_' + genId(12);
-        const pair = { id: pairId, a: intent.owner, b: app.applicant, intentId: app.intentId, status: 'matched', meet: intent.meet || '', mode: intent.mode, created: Date.now(), ratings: {} };
-        await kv.put('pair:' + pairId, JSON.stringify(pair), { expirationTtl: SESSION_TTL });
-        app.status = 'accepted'; await kv.put('app:' + app.id, JSON.stringify(app), { expirationTtl: 86400 });
-        intent.status = 'matched'; await kv.put('intent:' + app.intentId, JSON.stringify(intent), { expirationTtl: 86400 });
-        await kv.put('mypair:' + intent.owner, pairId, { expirationTtl: SESSION_TTL });
-        await kv.put('mypair:' + app.applicant, pairId, { expirationTtl: SESSION_TTL });
+        const now = nowSec();
+        const stmts = [
+          db.prepare(`INSERT INTO pairs (id, a, b, intent_id, mode, meet, status, ratings, created, expires)
+            VALUES (?, ?, ?, ?, ?, ?, 'matched', '{}', ?, ?)`)
+            .bind(pairId, intent.owner, app.applicant, app.intent_id, intent.mode, intent.meet || '', now, now + SESSION_TTL),
+          db.prepare("UPDATE applications SET status='accepted' WHERE id=?").bind(app.id),
+          db.prepare("UPDATE intents SET status='matched' WHERE id=?").bind(app.intent_id),
+        ];
+        await db.batch(stmts);
         return json({ ok: true, pairId });
       } else {
-        app.status = 'rejected'; await kv.put('app:' + app.id, JSON.stringify(app), { expirationTtl: 86400 });
+        await db.prepare("UPDATE applications SET status='rejected' WHERE id=?").bind(app.id).run();
         return json({ ok: true, status: 'rejected' });
       }
     }
 
     if (action === 'rate') {
-      const raw = await kv.get('pair:' + body.pairId);
-      if (!raw) return err('pair_gone', 404);
-      const p = JSON.parse(raw);
+      const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
+      if (!p) return err('pair_gone', 404);
       if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
-      if (p.ratings[r.id]) return err('already_rated', 409);
+      const ratings = safeParse(p.ratings);
+      if (ratings[r.id]) return err('already_rated', 409);
       const score = Math.max(1, Math.min(5, parseInt(body.score, 10) || 3));
       const tags = Array.isArray(body.tags) ? body.tags.slice(0, 5).map(String) : [];
       const next = !!body.next;
-      p.ratings[r.id] = { score, tags, next, at: Date.now() };
       const other = r.id === p.a ? p.b : p.a;
-      const oRaw = await kv.get('u:' + other);
-      if (oRaw) {
-        const o = JSON.parse(oRaw);
-        o.rep = clampRep((o.rep || 50) + (score - 3));
-        await refreshUser(kv, other, { rep: o.rep });
-      }
-      if (Object.keys(p.ratings).length >= 2) p.status = 'done';
-      await kv.put('pair:' + p.id, JSON.stringify(p), { expirationTtl: SESSION_TTL });
-      return json({ ok: true, done: p.status === 'done' });
+      ratings[r.id] = { score, tags, next, at: nowSec() };
+
+      const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
+      const newRep = clampRep((o ? (o.rep | 0) : 50) + (score - 3));
+
+      const done = Object.keys(ratings).length >= 2;
+      await db.batch([
+        db.prepare('UPDATE users SET rep=? WHERE id=?').bind(newRep, other),
+        db.prepare("UPDATE pairs SET ratings=?, status=? WHERE id=?").bind(JSON.stringify(ratings), done ? 'done' : 'matched', p.id),
+        db.prepare(`INSERT INTO ratings (id, pair_id, from_user, to_user, score, tags, next, created)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind('r_' + genId(12), p.id, r.id, other, score, JSON.stringify(tags), next ? 1 : 0, nowSec()),
+      ]);
+      return json({ ok: true, done });
     }
 
     if (action === 'report') {
-      const raw = await kv.get('pair:' + body.pairId);
-      if (!raw) return err('pair_gone', 404);
-      const p = JSON.parse(raw);
+      const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
+      if (!p) return err('pair_gone', 404);
       if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
       const other = r.id === p.a ? p.b : p.a;
-      const cnt = parseInt((await kv.get('report:' + other)) || '0', 10) + 1;
-      await kv.put('report:' + other, String(cnt), { expirationTtl: 86400 * 7 });
+      const now = nowSec();
+      await db.prepare(`INSERT INTO reports (id, target, by, reason, created) VALUES (?, ?, ?, ?, ?)`)
+        .bind('rep_' + genId(12), other, r.id, String(body.reason || '').slice(0, 100), now).run();
+      const cntRow = await db.prepare('SELECT COUNT(*) AS c FROM reports WHERE target=?').bind(other).first();
+      const cnt = cntRow ? cntRow.c : 0;
       let banned = false;
       if (cnt >= 3) {
-        await refreshUser(kv, other, { banned: true });
-        await kv.delete('mypair:' + other).catch(() => {});
+        await db.prepare('UPDATE users SET banned=1 WHERE id=?').bind(other).run();
         banned = true;
       }
-      return json({ ok: true, banned });
+      return json({ ok: true, banned, reports: cnt });
     }
 
     return err('unknown_action', 400);
@@ -108,5 +114,8 @@ export async function onRequest(context) {
   return err('method', 405);
 }
 
-function bothNext(p) { return p.ratings[p.a] && p.ratings[p.b] && p.ratings[p.a].next && p.ratings[p.b].next; }
-function bothPass(p) { return p.ratings[p.a] && p.ratings[p.b] && p.ratings[p.a].score >= 3 && p.ratings[p.b].score >= 3; }
+function safeParse(s) {
+  try { return JSON.parse(s || '{}') || {}; } catch (e) { return {}; }
+}
+function bothNext(ratings) { return ratings && ratings.a && ratings.b && ratings.a.next && ratings.b.next; }
+function bothPass(ratings) { return ratings && ratings.a && ratings.b && ratings.a.score >= 3 && ratings.b.score >= 3; }

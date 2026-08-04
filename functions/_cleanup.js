@@ -1,47 +1,30 @@
-import { getKV } from './_shared.js';
+import { getDB, nowSec } from './_shared.js';
 
-// FaceTalk KV 定时清理（共享逻辑）
+// FaceTalk D1 定时清理（共享逻辑）
 // 两处调用：① Pages Cron(__scheduled.js) ② GitHub Actions 定时调用 /api/cleanup
 //
-// KV 自带 TTL 已覆盖绝大多数 key 的自动过期（见各 onRequest 里的 expirationTtl）。
-// 本脚本额外主动清理，避免 TTL 边缘 GC 残留 + 让已结束的会话提前消失：
-//   1) intent: 已关闭/已匹配的意图
-//   2) app:    已拒绝/已接受的申请
-//   3) 读取为空的 key（TTL 到期后边缘残留）
-// 不处理：u:（用户信誉靠 24h TTL）、pair:/mypair:（30min TTL）、report:（7天 TTL 由 GC 兜底）
-
-const TARGETS = [
-  { prefix: 'intent:', drop: (o) => o && o.status && o.status !== 'open' },
-  { prefix: 'app:',    drop: (o) => o && o.status && (o.status === 'rejected' || o.status === 'accepted') },
-];
-const MAX_SCAN = 5000; // 单次扫描上限，防止函数超时
+// D1 不会自动过期行，这里主动清理已结束/过期的记录，避免无限堆积：
+//   1) intents: 已关闭/已匹配，或已过期
+//   2) applications: 已接受/已拒绝，或已过期
+//   3) pairs:   已过期（>30min）
+//   4) reports: 超过 7 天（封禁状态已持久化到 users.banned，report 行可清）
+//   5) rate_limits: 窗口已过的计数
 
 export async function runCleanup(env) {
-  const kv = getKV(env);
-  if (!kv) return { ok: false, error: 'KV_NOT_BOUND' };
+  const db = getDB(env);
+  if (!db) return { ok: false, error: 'DB_NOT_BOUND' };
 
-  let deleted = 0;
-  let scanned = 0;
-  for (const t of TARGETS) {
-    let cursor;
-    do {
-      const opts = { prefix: t.prefix };
-      if (cursor) opts.cursor = cursor;
-      const page = await kv.list(opts);
-      for (const k of page.keys) {
-        if (++scanned > MAX_SCAN) break;
-        const raw = await kv.get(k.name);
-        if (!raw) { await kv.delete(k.name).catch(() => {}); deleted++; continue; }
-        try {
-          const o = JSON.parse(raw);
-          if (t.drop(o)) { await kv.delete(k.name).catch(() => {}); deleted++; }
-        } catch (e) {
-          // 非 JSON 值（如计数类 key）——保留，交给 TTL
-        }
-      }
-      cursor = page.list_complete ? undefined : page.cursor;
-    } while (cursor && scanned <= MAX_SCAN);
-  }
+  const now = nowSec();
+  const weekAgo = now - 7 * 86400;
 
-  return { ok: true, deleted, scanned, at: Date.now() };
+  const ops = [
+    db.prepare("DELETE FROM intents WHERE status<>'open' OR expires < ?").bind(now),
+    db.prepare("DELETE FROM applications WHERE status<>'pending' OR expires < ?").bind(now),
+    db.prepare("DELETE FROM pairs WHERE expires < ?").bind(now),
+    db.prepare("DELETE FROM reports WHERE created < ?").bind(weekAgo),
+    db.prepare("DELETE FROM rate_limits WHERE reset_at < ?").bind(now),
+  ];
+  const res = await db.batch(ops);
+  const deleted = res.reduce((s, r) => s + ((r && r.meta && r.meta.changes) || 0), 0);
+  return { ok: true, deleted, at: Date.now() };
 }
