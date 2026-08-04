@@ -28,3 +28,6 @@ jobs:
 
       - name: 留言管理密码校验自测
         run: node scripts/selftest-wall-admin.js
+
+      - name: 房间解散后申请卡变灰+3天自动删+解锁重选 自测
+        run: node scripts/selftest-dissolved.js

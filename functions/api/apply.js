@@ -67,7 +67,8 @@ export async function onRequest(context) {
 
     if (box === 'in') {
       // 收件箱：过滤掉申请方被我屏蔽的人（LEFT JOIN blocks + WHERE NULL 经典套路）
-      const { results } = await db.prepare(`SELECT a.id AS appId, a.intent_id AS intentId, a.status, a.created, i.role, i.city, i.mode, i.note, COALESCE(u.rep,50) AS rep
+      const { results } = await db.prepare(`SELECT a.id AS appId, a.intent_id AS intentId, a.status, a.created, i.role, i.city, i.mode, i.note, COALESCE(u.rep,50) AS rep,
+          (SELECT p.status FROM pairs p WHERE p.intent_id = a.intent_id AND p.status IN ('dissolving','closed') ORDER BY p.created DESC LIMIT 1) AS roomStatus
         FROM applications a
         JOIN intents i ON i.id = a.intent_id
         LEFT JOIN users u ON u.id = a.applicant
@@ -78,7 +79,8 @@ export async function onRequest(context) {
       return json({ ok: true, list: results });
     } else {
       // 发件箱：保留全部（自己能看到自己申请过谁）；UI 侧显示对方状态
-      const { results } = await db.prepare(`SELECT a.id AS appId, a.intent_id AS intentId, a.status, a.created
+      const { results } = await db.prepare(`SELECT a.id AS appId, a.intent_id AS intentId, a.status, a.created,
+          (SELECT p.status FROM pairs p WHERE p.intent_id = a.intent_id AND p.status IN ('dissolving','closed') ORDER BY p.created DESC LIMIT 1) AS roomStatus
         FROM applications a
         WHERE a.applicant = ? AND a.expires > ?
         ORDER BY a.created DESC`)

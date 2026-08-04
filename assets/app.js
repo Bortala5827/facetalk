@@ -154,30 +154,38 @@
     var box = $('inbox-list'); var empty = $('inbox-empty'); box.innerHTML = '';
     if (r.status === 200 && r.data.list && r.data.list.length) {
       empty.hidden = true;
-      // 找出已被「选定为 a_accepted」的意图；其下其它 pending 申请灰化（避免重复确认撞车、误点拒绝）
+      // 锁定判断：仅当某意图下存在 a_accepted 且其房间还活着才锁；房间解散后解锁，房主可重新选人
       var locked = {};
-      r.data.list.forEach(function (a) { if (a.status === 'a_accepted' && a.intentId) locked[a.intentId] = true; });
+      r.data.list.forEach(function (a) { if (a.status === 'a_accepted' && a.intentId && !a.roomStatus) locked[a.intentId] = true; });
       r.data.list.forEach(function (a) {
         var div = document.createElement('div'); div.className = 'li';
-        // 双向互选：每个状态对应不同的下一步
+        // 房间已解散/解散中：匹配过的那张卡变灰 + 不可进入；pending 申请视为需求重新开放可重选
+        var dissolved = (a.roomStatus === 'closed' || a.roomStatus === 'dissolving');
         var decideHtml = '';
         if (a.status === 'pending') {
           if (locked[a.intentId]) {
             decideHtml = '<span class="muted">⏳ 你已选其他搭子，等待确认</span>';
+          } else if (dissolved) {
+            decideHtml = '<span class="muted">🔄 原房间已解散，可重新匹配：</span> ' +
+                         '<button class="btn-mini ok" data-acc="' + esc(a.appId) + '">重新匹配</button>' +
+                         '<button class="btn-mini no" data-rej="' + esc(a.appId) + '">拒绝</button>';
           } else {
             decideHtml = '<button class="btn-mini ok" data-acc="' + esc(a.appId) + '">同意</button>' +
                          '<button class="btn-mini no" data-rej="' + esc(a.appId) + '">拒绝</button>';
           }
         } else if (a.status === 'a_accepted') {
-          // A 已点头，等 B 也同意；A 可以撤回反悔
-          decideHtml = '<span class="muted">⏳ 等他也同意</span>' +
-                       '<button class="btn-mini grey" data-cancel-acc="' + esc(a.appId) + '">撤回</button>';
+          decideHtml = dissolved
+            ? '<span class="muted">🏠 房间已解散</span>'
+            : '<span class="muted">⏳ 等他也同意</span><button class="btn-mini grey" data-cancel-acc="' + esc(a.appId) + '">撤回</button>';
         } else if (a.status === 'both_accepted' || a.status === 'accepted') {
-          // 'accepted' 为旧版状态（老代码「单方匹配」遗留），当作已配对展示
-          decideHtml = '<span class="ok-mark">🤝 已配对</span> <button class="btn-mini" data-enter-room>进入房间</button>';
+          decideHtml = dissolved
+            ? '<span class="muted">🏠 房间已解散</span>'
+            : '<span class="ok-mark">🤝 已配对</span> <button class="btn-mini" data-enter-room>进入房间</button>';
         } else {
           decideHtml = '<span class="muted">' + (a.status === 'rejected' ? '已拒绝' : '已撤回') + '</span>';
         }
+        // 匹配过的卡（both_accepted/a_accepted）在房间解散后整体变灰；pending 仍可选人不变灰
+        if (dissolved && a.status !== 'pending') div.className = 'li dissolved';
         div.innerHTML = '<div class="li-main"><span class="tag">' + esc(a.role) + '</span>' +
           (a.city ? ' <span class="muted">' + esc(a.city) + '</span>' : '') +
           ' <span class="mode">' + modeLabel(a.mode) + '</span> <span class="rep">⭐' + (a.rep != null ? a.rep : '50') + '</span></div>' +
@@ -225,17 +233,17 @@
       r.data.list.forEach(function (o) {
         var s = '';
         var actions = '';
+        var dissolved = (o.roomStatus === 'closed' || o.roomStatus === 'dissolving');
         if (o.status === 'pending') {
           s = '⏳ 待对方同意';
           actions = '<button class="btn-mini grey" data-cancel-app="' + esc(o.appId) + '">撤回</button>';
         } else if (o.status === 'a_accepted') {
-          // B 看到 A 已点头的关键节点：B 现在点头 → 配对
-          s = '✅ 对方已同意你！';
-          actions = '<button class="btn-mini ok" data-bacc="' + esc(o.appId) + '">我也同意</button>' +
+          s = dissolved ? '🏠 房间已解散' : '✅ 对方已同意你！';
+          actions = dissolved ? '' : '<button class="btn-mini ok" data-bacc="' + esc(o.appId) + '">我也同意</button>' +
                     '<button class="btn-mini grey" data-cancel-app="' + esc(o.appId) + '">撤回</button>';
         } else if (o.status === 'both_accepted' || o.status === 'accepted') {
-          s = '🤝 已互选成功';
-          actions = '<button class="btn-mini" data-enter-room>进入房间</button>';
+          s = dissolved ? '🏠 房间已解散' : '🤝 已互选成功';
+          actions = dissolved ? '' : '<button class="btn-mini" data-enter-room>进入房间</button>';
         } else if (o.status === 'rejected') {
           s = '已被拒绝';
         } else if (o.status === 'cancelled') {
@@ -243,9 +251,9 @@
         } else {
           s = o.status;
         }
-        var div = document.createElement('div'); div.className = 'li';
+        var div = document.createElement('div'); div.className = 'li' + (dissolved && o.status !== 'pending' ? ' dissolved' : '');
         div.innerHTML = '<div class="li-main"><span class="muted">申请 ' + esc(o.intentId) + '</span></div>' +
-          '<div class="li-foot"><span class="' + (o.status === 'both_accepted' ? 'ok-mark' : 'muted') + '">' + s + '</span> ' + actions + '</div>';
+          '<div class="li-foot"><span class="' + (o.status === 'both_accepted' && !dissolved ? 'ok-mark' : 'muted') + '">' + s + '</span> ' + actions + '</div>';
         box.appendChild(div);
       });
       box.querySelectorAll('[data-bacc]').forEach(function (b) {

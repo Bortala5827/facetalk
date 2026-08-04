@@ -264,9 +264,16 @@ function bothNext(ratings) { return ratings && ratings.a && ratings.b && ratings
 function bothPass(ratings) { return ratings && ratings.a && ratings.b && ratings.a.score >= 3 && ratings.b.score >= 3; }
 
 // 销毁房间：清对话 + 置 closed。GET 服务端兜底与前端 close 动作共用。
+// 把 closedAt 写进 ratings JSON（该 TEXT 列已存在，无需 ALTER），供每日清理按「关闭满 3 天」硬删。
+// 同时把当初被本场匹配挤掉的「已拒绝」申请恢复为 pending —— 解锁需求，房主可重新选人。
 async function closeRoomDB(db, id) {
+  const p = await db.prepare('SELECT intent_id, ratings FROM pairs WHERE id=?').bind(id).first();
+  const rt = safeParse(p && p.ratings);
+  rt._closedAt = nowSec();
+  const intentId = (p && p.intent_id) || '';
   await db.batch([
     db.prepare('DELETE FROM messages WHERE pair_id=?').bind(id),
-    db.prepare("UPDATE pairs SET status='closed', ratings='{}', info_a='', info_b='' WHERE id=?").bind(id),
+    db.prepare("UPDATE pairs SET status='closed', ratings=?, info_a='', info_b='' WHERE id=?").bind(JSON.stringify(rt), id),
+    db.prepare("UPDATE applications SET status='pending' WHERE intent_id=? AND status='rejected'").bind(intentId),
   ]);
 }
