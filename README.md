@@ -47,7 +47,7 @@ D1 不会自动过期行，靠两层机制收敛：
 - **查询即过滤**：浏览意图 / 收件箱 / 搭子房都只取 `expires > now` 的行，过期的自然看不到。
 - **每日定时清理**（`functions/__scheduled.js` 导出 `scheduled`，逻辑共用 `functions/_cleanup.js`）：主动 `DELETE` 掉「已关闭/已匹配的意图」「已接受/已拒绝/过期的申请」「过期的搭子房」「7 天前的举报」「过期的频率计数」。
 
-**启用定时任务（推荐：GitHub Actions 方式，无需碰 CF 后台）**：Git 部署的 Pages 项目在 CF 仪表盘常不显示 Cron Triggers 入口，故改用仓库自带的定时工作流——`.github/workflows/kv-cleanup.yml` 每天 UTC `04:23` 自动 `POST https://ms.955827.xyz/api/cleanup`（带 `x-cleanup-key` 校验），触发与 CF Cron 完全等效的清理。密钥写在接口与 workflow 里（`CLEANUP_KEY` 环境变量可覆盖）。你也可以在 Actions 页面手动点 `Run workflow` 立即测试。
+**启用定时任务（推荐：GitHub Actions 方式，无需碰 CF 后台）**：Git 部署的 Pages 项目在 CF 仪表盘常不显示 Cron Triggers 入口，故改用仓库自带的定时工作流——`.github/workflows/d1-cleanup.yml` 每天 UTC `04:23` 自动 `POST https://ms.955827.xyz/api/cleanup`（带 `x-cleanup-key` 校验），触发与 CF Cron 完全等效的清理。密钥写在接口与 workflow 里（`CLEANUP_KEY` 环境变量可覆盖）。你也可以在 Actions 页面手动点 `Run workflow` 立即测试。
 
 **备用：CF 后台 Cron（若你的项目能看到入口）**：`mianshi-dazi` → **Settings → Functions → Cron Triggers → Add** → 填 `23 4 * * *`，保存后会自动调用 `functions/__scheduled.js`。两种方式二选一即可。
 

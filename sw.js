@@ -1,4 +1,4 @@
-// FaceTalk PWA service worker —— 仅缓存静态壳，/api/* 永远走网络(KV)
+// FaceTalk PWA service worker —— 仅缓存静态壳，/api/* 永远走网络(D1)
 const CACHE = 'facetalk-shell-v1';
 const SHELL = [
   '/',
