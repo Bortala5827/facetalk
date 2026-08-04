@@ -54,10 +54,12 @@ export async function onRequest(context) {
       if (body.decision === 'accept') {
         // 双向互选第 1 步：A（意图方）点了「同意」。
         // 此时不建 pair，只把这条申请置为 a_accepted，等 B 也点头。
-        // 同时把同意图下其它 pending/a_accepted 自动置 rejected，
-        // 这样 A 同一时刻只倾向一人，避免"暧昧多人"。
+        // 注意：不要再顺手把同意图下其它 pending 申请置 rejected——
+        // 否则 A 一点「同意」，其余申请瞬间全变「已拒绝」，用户会以为是"自动拒绝" bug。
+        // 改成只把之前已点过同意的其它申请回退为 pending（允许反悔改选），
+        // pending 的其它申请保持原样，等真正建房间(b-accept)时再统一清理。
         await db.batch([
-          db.prepare("UPDATE applications SET status='rejected' WHERE intent_id=? AND status IN ('pending','a_accepted') AND id<>?")
+          db.prepare("UPDATE applications SET status='pending' WHERE intent_id=? AND status='a_accepted' AND id<>?")
             .bind(app.intent_id, app.id),
           db.prepare("UPDATE applications SET status='a_accepted' WHERE id=?")
             .bind(app.id),
@@ -98,6 +100,9 @@ export async function onRequest(context) {
           .bind(pairId, intent.owner, app.applicant, intent.id, intent.mode, intent.meet || '', now, now + SESSION_TTL),
         db.prepare("UPDATE applications SET status='both_accepted' WHERE id=?")
           .bind(app.id),
+        // 真正配对成功后，才把该意图下其它申请（pending / 之前的 a_accepted）统一置为 rejected
+        db.prepare("UPDATE applications SET status='rejected' WHERE intent_id=? AND status IN ('pending','a_accepted') AND id<>?")
+          .bind(intent.id, app.id),
         db.prepare("UPDATE intents SET status='matched' WHERE id=?")
           .bind(intent.id),
       ]);
