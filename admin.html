@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>FaceTalk 管理后台</title>
+  <style>
+    :root {
+      --bg: #f7f9fc; --card: #fff; --ink: #0f172a; --ink-2: #475569; --ink-3: #94a3b8;
+      --accent: #1e88e5; --accent-d: #1565c0; --accent-soft: #e8f1fc;
+      --danger: #dc2626; --danger-soft: #fef2f2;
+      --line: #e8edf3; --radius: 16px;
+      --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+      --green: #16a34a; --green-soft: #dcfce7;
+      --amber: #d97706; --amber-soft: #fff8ec;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--ink); line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 860px; margin: 0 auto; padding: 40px 20px; }
+
+    /* Login */
+    .login-box {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 32px; max-width: 400px; margin: 60px auto; box-shadow: var(--shadow);
+    }
+    .login-box h1 { font-size: 22px; margin-bottom: 6px; }
+    .login-box .sub { color: var(--ink-3); font-size: 14px; margin-bottom: 24px; }
+    .login-box label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .login-box input {
+      width: 100%; padding: 11px 14px; font-size: 15px; border: 1px solid var(--line);
+      border-radius: 10px; outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    .login-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .login-box button {
+      width: 100%; margin-top: 18px; padding: 12px; font-size: 15px; font-weight: 600;
+      background: var(--accent); color: #fff; border: none; border-radius: 10px; cursor: pointer;
+      transition: background .2s;
+    }
+    .login-box button:hover { background: var(--accent-d); }
+    .error { background: var(--danger-soft); color: var(--danger); padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
+
+    /* Topbar */
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .topbar h1 { font-size: 22px; }
+    .topbar .actions { display: flex; gap: 10px; }
+    .btn-logout { font-size: 13px; color: var(--ink-3); cursor: pointer; background: none; border: 1px solid var(--line); padding: 6px 14px; border-radius: 999px; transition: .15s; }
+    .btn-logout:hover { color: var(--danger); border-color: var(--danger); }
+
+    /* Stats */
+    .stats { display: flex; gap: 12px; margin-bottom: 24px; }
+    .stat { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-align: center; }
+    .stat-num { font-size: 26px; font-weight: 800; color: var(--accent); }
+    .stat-label { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+    .stat.danger .stat-num { color: var(--danger); }
+    .stat.green .stat-num { color: var(--green); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--line); }
+    .tab {
+      padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer;
+      border: none; background: none; color: var(--ink-3); border-bottom: 2px solid transparent;
+      margin-bottom: -2px; transition: color .15s, border-color .15s;
+    }
+    .tab:hover { color: var(--ink); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-count {
+      display: inline-block; min-width: 20px; text-align: center; font-size: 11px;
+      background: var(--line); color: var(--ink-3); padding: 1px 6px; border-radius: 10px; margin-left: 4px;
+    }
+    .tab.active .tab-count { background: var(--accent); color: #fff; }
+
+    /* List */
+    .list { display: flex; flex-direction: column; gap: 10px; }
+    .item {
+      background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+      padding: 16px 18px; display: flex; align-items: flex-start; gap: 14px;
+      transition: box-shadow .15s;
+    }
+    .item:hover { box-shadow: var(--shadow); }
+    .item.banned { border-left: 4px solid var(--danger); }
+    .item-body { flex: 1; min-width: 0; }
+    .item-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+    .item-id { font-size: 14px; font-weight: 700; font-family: ui-monospace, "SF Mono", monospace; }
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+    .badge-banned { background: var(--danger-soft); color: var(--danger); }
+    .badge-ok { background: var(--green-soft); color: var(--green); }
+    .badge-open { background: var(--accent-soft); color: var(--accent); }
+    .badge-matched { background: var(--amber-soft); color: var(--amber); }
+    .badge-closed { background: #f1f3f5; color: var(--ink-3); }
+    .item-meta { font-size: 12px; color: var(--ink-3); display: flex; gap: 12px; flex-wrap: wrap; }
+    .item-meta span { white-space: nowrap; }
+    .item-note { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+    .rep { font-weight: 700; }
+    .rep.low { color: var(--danger); }
+    .rep.mid { color: var(--amber); }
+    .rep.high { color: var(--green); }
+    .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn {
+      padding: 7px 14px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px;
+      cursor: pointer; transition: background .15s; white-space: nowrap;
+    }
+    .btn-ban { background: var(--amber-soft); color: var(--amber); }
+    .btn-ban:hover { background: #fde4a8; }
+    .btn-unban { background: var(--green-soft); color: var(--green); }
+    .btn-unban:hover { background: #bbf7d0; }
+    .btn-delete { background: var(--danger-soft); color: var(--danger); }
+    .btn-delete:hover { background: #fecaca; }
+    .btn:disabled { opacity: .5; cursor: default; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-3); }
+    .empty-state p { font-size: 15px; }
+
+    /* Danger zone */
+    .danger-zone { margin-top: 36px; padding: 20px; background: var(--danger-soft); border: 1px solid #fecaca; border-radius: 12px; }
+    .danger-zone h3 { font-size: 15px; color: var(--danger); margin-bottom: 6px; }
+    .danger-zone p { font-size: 13px; color: var(--ink-2); margin-bottom: 14px; }
+    .danger-zone button { padding: 9px 18px; font-size: 13px; font-weight: 600; background: var(--danger); color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+    .danger-zone button:hover { background: #b91c1c; }
+  </style>
+</head>
+<body>
+<div class="container" id="app"></div>
+
+<script>
+(function(){
+  var el = document.getElementById('app');
+  var key = localStorage.getItem('facetalk_admin') || '';
+  var users = [];
+  var intents = [];
+  var currentTab = 'users';
+
+  function renderLogin(errMsg) {
+    el.innerHTML = '<div class="login-box">' +
+      '<h1>FaceTalk 管理后台</h1>' +
+      '<p class="sub">输入 ADMIN_KEY 登录</p>' +
+      (errMsg ? '<div class="error">' + esc(errMsg) + '</div>' : '') +
+      '<label>ADMIN_KEY</label>' +
+      '<input type="password" id="key-input" placeholder="输入管理员密钥…" autofocus />' +
+      '<button onclick="doLogin()">登录</button>' +
+      '</div>';
+    document.getElementById('key-input').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  }
+
+  function doLogin() {
+    var v = document.getElementById('key-input').value.trim();
+    if (!v) return;
+    key = v;
+    localStorage.setItem('facetalk_admin', v);
+    loadData();
+  }
+
+  function api(action, extra) {
+    var body = { admin: key, action: action };
+    if (extra) Object.assign(body, extra);
+    return fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function(r){ return r.json(); });
+  }
+
+  function loadData() {
+    el.innerHTML = '<p style="text-align:center;color:var(--ink-3);padding:60px">加载中…</p>';
+    Promise.all([api('list_users'), api('list_intents')])
+      .then(function(res){
+        if (res[0].error) { logout(res[0].error); return; }
+        if (res[1].error) { logout(res[1].error); return; }
+        users = res[0].list || [];
+        intents = res[1].list || [];
+        renderDashboard();
+      })
+      .catch(function(){ el.innerHTML = '<p class="error">网络错误，请刷新重试</p>'; });
+  }
+
+  function renderDashboard() {
+    var banned = users.filter(function(u){ return u.banned; }).length;
+    var openIntents = intents.filter(function(i){ return i.status === 'open'; }).length;
+
+    var html = '<div class="topbar">' +
+      '<h1>FaceTalk 管理后台</h1>' +
+      '<div class="actions"><button class="btn-logout" onclick="doLogout()">退出</button></div>' +
+      '</div>';
+
+    html += '<div class="stats">' +
+      '<div class="stat"><div class="stat-num">' + users.length + '</div><div class="stat-label">总用户</div></div>' +
+      '<div class="stat danger"><div class="stat-num">' + banned + '</div><div class="stat-label">已封禁</div></div>' +
+      '<div class="stat"><div class="stat-num">' + intents.length + '</div><div class="stat-label">总意图</div></div>' +
+      '<div class="stat green"><div class="stat-num">' + openIntents + '</div><div class="stat-label">开放中</div></div>' +
+      '</div>';
+
+    html += '<div class="tabs">' +
+      '<button class="tab' + (currentTab==='users' ? ' active' : '') + '" onclick="switchTab(\'users\')">用户<span class="tab-count">' + users.length + '</span></button>' +
+      '<button class="tab' + (currentTab==='intents' ? ' active' : '') + '" onclick="switchTab(\'intents\')">意图<span class="tab-count">' + intents.length + '</span></button>' +
+      '</div>';
+
+    if (currentTab === 'users') {
+      html += renderUsers();
+    } else {
+      html += renderIntents();
+    }
+
+    html += '<div class="danger-zone">' +
+      '<h3>危险区 · 一键清空</h3>' +
+      '<p>删除所有用户、意图、配对、消息、评价数据。不可恢复，仅用于测试重置。</p>' +
+      '<button onclick="clearAll()">清空全部数据</button>' +
+      '</div>';
+
+    el.innerHTML = html;
+  }
+
+  function renderUsers() {
+    if (!users.length) return '<div class="empty-state"><p>暂无用户</p></div>';
+    var html = '<div class="list">';
+    users.forEach(function(u){
+      var isBanned = !!u.banned;
+      var repCls = u.rep < 30 ? 'low' : u.rep < 60 ? 'mid' : 'high';
+      html += '<div class="item' + (isBanned ? ' banned' : '') + '">' +
+        '<div class="item-body">' +
+          '<div class="item-head">' +
+            '<span class="item-id">' + esc(shortId(u.id)) + '</span>' +
+            '<span class="badge ' + (isBanned ? 'badge-banned' : 'badge-ok') + '">' + (isBanned ? '已封禁' : '正常') + '</span>' +
+          '</div>' +
+          '<div class="item-meta">' +
+            '<span>信誉 <b class="rep ' + repCls + '">' + (u.rep != null ? u.rep : 50) + '</b></span>' +
+            '<span>注册 ' + fmtTime(u.created) + '</span>' +
+            '<span title="' + esc(u.id) + '">ID: ' + esc(u.id.slice(0,12)) + '…</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="item-actions">' +
+          (isBanned
+            ? '<button class="btn btn-unban" data-id="' + esc(u.id) + '" onclick="toggleBan(this,\'unban\')">解封</button>'
+            : '<button class="btn btn-ban" data-id="' + esc(u.id) + '" onclick="toggleBan(this,\'ban\')">封禁</button>') +
+          '<button class="btn btn-delete" data-id="' + esc(u.id) + '" onclick="delUser(this)">删除</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function renderIntents() {
+    if (!intents.length) return '<div class="empty-state"><p>暂无意图</p></div>';
+    var statusMap = { open: 'badge-open', matched: 'badge-matched', closed: 'badge-closed' };
+    var statusLabel = { open: '开放中', matched: '已匹配', closed: '已关闭' };
+    var html = '<div class="list">';
+    intents.forEach(function(it){
+      var expired = it.expires && it.expires < Math.floor(Date.now()/1000);
+      var badge = expired ? 'badge-closed' : (statusMap[it.status] || 'badge-closed');
+      var label = expired ? '已过期' : (statusLabel[it.status] || it.status);
+      html += '<div class="item">' +
+        '<div class="item-body">' +
+          '<div class="item-head">' +
+            '<span class="item-id">' + esc(shortId(it.id)) + '</span>' +
+            '<span class="badge ' + badge + '">' + label + '</span>' +
+          '</div>' +
+          '<div class="item-meta">' +
+            '<span>发布者 ' + esc(shortId(it.owner)) + '</span>' +
+            '<span>岗位 ' + esc(it.role || '-') + '</span>' +
+            (it.city ? '<span>城市 ' + esc(it.city) + '</span>' : '') +
+            '<span>模式 ' + esc(it.mode === 'voice' ? '语音' : it.mode) + '</span>' +
+            '<span>' + fmtTime(it.created) + '</span>' +
+          '</div>' +
+          (it.note ? '<div class="item-note">' + esc(it.note) + '</div>' : '') +
+        '</div>' +
+        '<div class="item-actions">' +
+          '<button class="btn btn-delete" data-id="' + esc(it.id) + '" onclick="delIntent(this)">删除</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  window.switchTab = function(tab) { currentTab = tab; renderDashboard(); };
+
+  window.toggleBan = function(btn, action) {
+    btn.disabled = true;
+    var id = btn.dataset.id;
+    api(action, { target: id })
+      .then(function(d){
+        if (d.ok) loadData();
+        else { alert(d.error || '失败'); btn.disabled = false; }
+      });
+  };
+
+  window.delUser = function(btn) {
+    if (!confirm('确定删除该用户及其所有意图和申请？此操作不可恢复。')) return;
+    btn.disabled = true;
+    var id = btn.dataset.id;
+    api('delete_user', { target: id })
+      .then(function(d){
+        if (d.ok) loadData();
+        else { alert(d.error || '失败'); btn.disabled = false; }
+      });
+  };
+
+  window.delIntent = function(btn) {
+    if (!confirm('确定删除这条意图？')) return;
+    btn.disabled = true;
+    var id = btn.dataset.id;
+    api('delete_intent', { intentId: id })
+      .then(function(d){
+        if (d.ok) loadData();
+        else { alert(d.error || '失败'); btn.disabled = false; }
+      });
+  };
+
+  window.clearAll = function() {
+    var c = prompt('此操作将清空全部数据（用户/意图/配对/消息/评价），不可恢复！\n输入 yes 确认：');
+    if (c !== 'yes') return;
+    api('clear_all').then(function(d){
+      if (d.ok) { alert('已清空 ' + d.cleared + ' 张表'); loadData(); }
+      else alert(d.error || '失败');
+    });
+  };
+
+  function doLogout(errMsg) {
+    key = '';
+    localStorage.removeItem('facetalk_admin');
+    renderLogin(errMsg);
+  }
+  window.doLogout = function(){ doLogout(); };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+  function shortId(id) {
+    if (!id) return '-';
+    return id.length > 10 ? id.slice(0,8) + '…' : id;
+  }
+  function fmtTime(sec) {
+    if (!sec) return '-';
+    var d = new Date(sec * 1000);
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
+      ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+
+  // init
+  if (key) loadData(); else renderLogin();
+})();
+</script>
+</body>
+</html>

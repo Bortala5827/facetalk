@@ -1,7 +1,7 @@
 import { json, err, getDB } from '../_shared.js';
 
 // 管理员接口：POST {admin, action, target, intentId}
-// action: ban | unban | delete_intent | list_intents | delete_user | clear_all
+// action: ban | unban | delete_intent | list_intents | list_users | delete_user | clear_all
 // admin 为 CF 环境变量 ADMIN_KEY（用户在控制台设置）
 export async function onRequest(context) {
   const { request, env } = context;
@@ -33,6 +33,14 @@ export async function onRequest(context) {
   if (action === 'list_intents') {
     const { results } = await db.prepare(`SELECT i.id, i.owner, i.role, i.city, i.mode, i.note, i.status, i.created, i.expires
       FROM intents i ORDER BY i.created DESC LIMIT 100`).all();
+    return json({ ok: true, list: results });
+  }
+
+  // 列出所有用户（管理员查看）
+  if (action === 'list_users') {
+    const { results } = await db.prepare(
+      'SELECT id, rep, banned, created FROM users ORDER BY created DESC LIMIT 100'
+    ).all();
     return json({ ok: true, list: results });
   }
 
