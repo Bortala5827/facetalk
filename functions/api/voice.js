@@ -10,8 +10,9 @@ import { json, err, genId, requireToken, getDB, nowSec, rateLimit, getIp, adminB
 //   * 兜底 2 小时过期强删（每日 cleanup 扫）；
 //   * 浏览器侧只用内存 Blob + revokeObjectURL，不写 localStorage/IndexedDB。
 //
-// 兼容原则：voice_* 三张表未建时，全部接口返回 ready:false，
-//           前端自动跳过试音环节，老房间与留言板不受任何影响（不会 500）。
+// 兼容原则：voice_* 三张表未建时，首次请求自动建表（详见 voiceReady）；
+//           即使建表失败也返回 ready:false，前端自动跳过试音环节，
+//           老房间与留言板不受任何影响（不会 500）。
 // ============================================================
 
 const MIN_SEC = 30;                 // 最短 30 秒（低于不让提交）
@@ -56,7 +57,53 @@ function clamp5(v) { return Math.max(1, Math.min(5, parseInt(v, 10) || 3)); }
 // voice_* 三张表是否已建（未建时整个模块降级为"不可用"，绝不影响 1.0 功能）
 async function voiceReady(db) {
   try { await db.prepare('SELECT 1 FROM voice_clips LIMIT 1').first(); return true; }
-  catch (e) { return false; }
+  catch (e) {
+    // 表未建 → 尝试运行时自动建表（D1 绑定有写权限；CREATE TABLE IF NOT EXISTS 幂等安全）
+    try { await ensureVoiceTables(db); return true; }
+    catch (e2) { return false; }
+  }
+}
+
+// 自动建表 DDL（与 voice-tables.sql 一致；CREATE TABLE IF NOT EXISTS 可重复执行）
+const VOICE_DDL = [
+  `CREATE TABLE IF NOT EXISTS voice_clips (
+    id       TEXT PRIMARY KEY,
+    pair_id  TEXT NOT NULL,
+    owner    TEXT NOT NULL,
+    mime     TEXT NOT NULL DEFAULT 'audio/webm',
+    dur      INTEGER NOT NULL DEFAULT 0,
+    bytes    INTEGER NOT NULL DEFAULT 0,
+    chunks   INTEGER NOT NULL DEFAULT 0,
+    plays    INTEGER NOT NULL DEFAULT 0,
+    ready    INTEGER NOT NULL DEFAULT 0,
+    created  INTEGER NOT NULL,
+    expires  INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_vclips_pair ON voice_clips(pair_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_vclips_expires ON voice_clips(expires)`,
+  `CREATE TABLE IF NOT EXISTS voice_chunks (
+    clip_id TEXT NOT NULL,
+    seq     INTEGER NOT NULL,
+    data    TEXT NOT NULL,
+    PRIMARY KEY (clip_id, seq)
+  )`,
+  `CREATE TABLE IF NOT EXISTS voice_reviews (
+    pair_id  TEXT NOT NULL,
+    reviewer TEXT NOT NULL,
+    target   TEXT NOT NULL,
+    clarity  INTEGER NOT NULL DEFAULT 3,
+    logic    INTEGER NOT NULL DEFAULT 3,
+    pace     INTEGER NOT NULL DEFAULT 3,
+    comment  TEXT DEFAULT '',
+    willing  INTEGER NOT NULL DEFAULT 0,
+    created  INTEGER NOT NULL,
+    PRIMARY KEY (pair_id, reviewer)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_vreviews_pair ON voice_reviews(pair_id)`,
+];
+async function ensureVoiceTables(db) {
+  for (const sql of VOICE_DDL) await db.prepare(sql).run();
+  return true;
 }
 
 export async function onRequest(context) {

@@ -9,6 +9,7 @@ const { pathToFileURL } = require('url');
 
 // ── 极简 D1 mock：按 SQL 片段分发到 JS 实现，与 voice.js 真实 SQL 语义一致 ──
 function makeDb(opts) {
+  const allowDDL = !(opts && opts.allowDDL === false); // 默认允许运行时建表；allowDDL:false 模拟 D1 拒绝 DDL
   const store = {
     users: (opts && opts.users) || [],
     pairs: (opts && opts.pairs) || [],
@@ -18,6 +19,11 @@ function makeDb(opts) {
     voice_reviews: (opts && opts.voiceTables === false) ? undefined : [],
   };
   function doWrite(sql, p) {
+    // 运行时自动建表：CREATE TABLE IF NOT EXISTS → 在 mock 里真正初始化数组；拒绝 DDL 时抛错
+    if (sql.startsWith("CREATE TABLE IF NOT EXISTS voice_clips")) { if (!allowDDL) throw new Error('DDL denied'); if (store.voice_clips === undefined) store.voice_clips = []; return 0; }
+    if (sql.startsWith("CREATE TABLE IF NOT EXISTS voice_chunks")) { if (!allowDDL) throw new Error('DDL denied'); if (store.voice_chunks === undefined) store.voice_chunks = []; return 0; }
+    if (sql.startsWith("CREATE TABLE IF NOT EXISTS voice_reviews")) { if (!allowDDL) throw new Error('DDL denied'); if (store.voice_reviews === undefined) store.voice_reviews = []; return 0; }
+    if (sql.startsWith("CREATE INDEX")) { if (!allowDDL) throw new Error('DDL denied'); return 0; }
     // 阅后即焚：dropClip（单片）
     if (sql.startsWith("DELETE FROM voice_chunks WHERE clip_id=?")) {
       const before = store.voice_chunks.length;
@@ -217,15 +223,26 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     return d;
   }
 
-  console.log('=== 1) 表缺失降级：未建 voice 表 → 跳过试音，不影响 v1.0 ===');
+  console.log('=== 1) 表缺失且 DDL 被拒 → 跳过试音，不影响 v1.0 ===');
   {
-    const db = makeDb({ voiceTables: false, users, pairs: pairBase });
+    const db = makeDb({ voiceTables: false, allowDDL: false, users, pairs: pairBase });
     const g = await gate(db, 'uA');
     check('GET 返回 ready:false', g.ready === false);
     check('GET 返回 gate:"skip"', g.gate === 'skip');
     const initRes = await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })));
     const ib = await initRes.json();
     check('POST init 返回 503 voice_not_ready（不 500）', initRes.status === 503 && ib.error === 'voice_not_ready');
+  }
+
+  console.log('\n=== 1B) 自动建表：首次请求发现表缺失 → 运行时建表 → v2.0 自动激活 ===');
+  {
+    const db = makeDb({ voiceTables: false, allowDDL: true, users, pairs: JSON.parse(JSON.stringify(pairBase)) });
+    const g0 = await gate(db, 'uA');
+    check('首次请求后 ready 变为 true（表已自动建好）', g0.ready === true);
+    check('自动建表后 gate 进入 record（试音环节可用）', g0.gate === 'record');
+    check('voice_clips 数组已被建出', Array.isArray(db._store.voice_clips));
+    const ia = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
+    check('自动建表后 init 正常返回 clipId', !!ia.clipId && ia.clipId.startsWith('vc_'));
   }
 
   console.log('\n=== 2) 完整链路：双方都愿意组队 → 解锁，且双方录音阅后即焚 ===');
