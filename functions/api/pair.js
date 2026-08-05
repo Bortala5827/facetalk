@@ -147,26 +147,43 @@ export async function onRequest(context) {
 
       const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
       const newRep = clampRep((o ? (o.rep | 0) : 50) + (score - 3));
+      const now = nowSec();
 
-      const done = Object.keys(ratings).length >= 2;
+      // === 2.1：双状态位追踪，防止一方提交就关闭房间 ===
+      const myKey = (r.id === p.a) ? 'a' : 'b';
+      const otherKey = (r.id === p.a) ? 'b' : 'a';
+      if (!ratings._evaluated) ratings._evaluated = {};
+      ratings._evaluated[myKey] = true;
+
+      // 检查 3 分钟超时兜底
+      let timedOut = false;
+      const otherRatedTime = ratings[otherKey] ? (ratings[otherKey].at || 0) : 0;
+      // 本轮我已评、对方没评但超过 3 分钟 → 强制结算，向已评方补偿
+      if (ratings._evaluated[myKey] && !ratings._evaluated[otherKey] && otherRatedTime && (now - otherRatedTime) > 180) {
+        timedOut = true;
+      }
+
+      const bothEvaluated = ratings._evaluated.a && ratings._evaluated.b;
+      const readyToClose = bothEvaluated || timedOut;
+
       // 「不想再匹配此搭子」勾选 → 写 blocks 表（幂等 INSERT OR IGNORE），后续 browse/inbox 自动过滤
       const writes = [
         db.prepare('UPDATE users SET rep=? WHERE id=?').bind(newRep, other),
-        db.prepare("UPDATE pairs SET ratings=?, status=? WHERE id=?").bind(JSON.stringify(ratings), done ? 'done' : 'matched', p.id),
+        db.prepare("UPDATE pairs SET ratings=?, status=? WHERE id=?").bind(JSON.stringify(ratings), readyToClose ? 'done' : 'matched', p.id),
         db.prepare(`INSERT INTO ratings (id, pair_id, from_user, to_user, score, tags, next, created)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-          .bind('r_' + genId(12), p.id, r.id, other, score, JSON.stringify(tags), next ? 1 : 0, nowSec()),
+          .bind('r_' + genId(12), p.id, r.id, other, score, JSON.stringify(tags), next ? 1 : 0, now),
       ];
       if (blockNext) {
         writes.push(db.prepare(`INSERT OR IGNORE INTO blocks (user_id, blocked_id, created) VALUES (?, ?, ?)`)
-          .bind(r.id, other, nowSec()));
+          .bind(r.id, other, now));
       }
       await db.batch(writes);
-      // 双方都评完 → 设 5 分钟后自动解散房间（清除对话）；closed_at 列未 ALTER 时静默跳过
-      if (done) {
-        try { await db.prepare("UPDATE pairs SET closed_at=? WHERE id=?").bind(nowSec() + 300, p.id).run(); } catch (e) {}
+      // 双方都评完或超时 → 设 5 分钟后自动解散房间（清除对话）；closed_at 列未 ALTER 时静默跳过
+      if (readyToClose) {
+        try { await db.prepare("UPDATE pairs SET closed_at=? WHERE id=?").bind(now + 300, p.id).run(); } catch (e) {}
       }
-      return json({ ok: true, done, blocked: blockNext });
+      return json({ ok: true, done: bothEvaluated, blocked: blockNext, waiting: !bothEvaluated, timedOut: timedOut });
     }
 
     if (action === 'set-info') {

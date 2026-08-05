@@ -677,10 +677,20 @@
         next:document.getElementById('r-next').checked,
         blockNext:document.getElementById('r-block').checked});
       if(r.status===200&&r.data.ok){
-        var msg = '评价已提交 ⭐';
-        if (r.data.blocked) msg += '（已屏蔽此搭子）';
-        toast(msg);
-        document.getElementById('rate-card').hidden=true;
+        if (r.data.waiting) {
+          // 2.1：等待对方评价
+          var rc = document.getElementById('rate-card');
+          rc.innerHTML = '<h2 class="sec-title">⏳ 等待对方评价</h2>' +
+            '<p class="v-state" style="text-align:center">✅ 你的评价已提交，正在等待对方完成评价...</p>' +
+            '<p class="field-hint" style="text-align:center">双方都提交后会自动揭晓结果。<br>如果超过 3 分钟对方未提交，系统会自动结束并向你单向展示对方信息。</p>' +
+            '<div style="text-align:center;padding:20px"><span style="display:inline-block;width:24px;height:24px;border:3px solid #43a047;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></span></div>';
+          rc.hidden = false;
+          toast('✅ 评价已提交，等待对方完成...');
+        } else {
+          toast('评价已提交 ⭐');
+          if (r.data.blocked) toast('（已屏蔽此搭子）');
+          document.getElementById('rate-card').hidden=true;
+        }
       }
       else toast('评价失败：'+(r.data.error||r.status), true);
     });

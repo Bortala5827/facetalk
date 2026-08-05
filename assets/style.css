@@ -442,3 +442,24 @@ a { color: inherit; text-decoration: none; }
 .v-scores { font-size: 14px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .v-comment { font-size: 14px; color: var(--ink-2); margin-top: 6px; line-height: 1.6; }
 .v-will { font-size: 13.5px; margin-top: 6px; font-weight: 600; }
+
+/* ===== FaceTalk 2.1：在线大厅 + 评价等待态 ===== */
+
+/* 在线状态指示灯 */
+.online-dot { display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:4px; }
+.online-dot.green { background:#4caf50;box-shadow:0 0 6px #4caf50;animation:pulse 2s infinite; }
+.online-dot.orange { background:#ff9800; }
+.online-label { font-size:11px;vertical-align:middle;margin-left:2px; }
+.online-label.green { color:#2e7d32;font-weight:600; }
+.online-label.orange { color:#e65100; }
+.online-label.muted { color:#999; }
+
+/* 一键试音按钮 */
+.btn-mini.ok { background:#43a047;color:#fff;border:none;margin-left:4px;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer; }
+.btn-mini.ok:hover { background:#2e7d32; }
+
+/* 评价等待旋转动画 */
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* 在线状态脉冲 */
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
