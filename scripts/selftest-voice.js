@@ -284,18 +284,18 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     const fself = await (await onRequest(ctx(db, GET('uA', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
     check('不能回放自己的录音', !fself.ok && fself.error === 'own_clip');
 
-    // A 评价 willing=1 → 应焚毁 B 的录音（peerClip = B 的）
+    // A 评价 willing=1 → 等双方都评完才统一焚毁（B 的录音暂留）
     const ra = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'review', clarity: 5, logic: 4, pace: 3, comment: '不错', willing: 1 })))).json();
     check('A 评价提交成功，未结算（B 未评）', ra.ok && ra.settled == null);
-    check('阅后即焚：A 评完 → B 的录音已从库删除', !db._store.voice_clips.find(c => c.owner === 'uB'));
-    check('阅后即焚：A 自己的录音仍在（等 B 评完才焚）', !!db._store.voice_clips.find(c => c.owner === 'uA'));
+    check('延后焚毁：A 评完 → B 的录音仍在库（等双方都评完才焚）', !!db._store.voice_clips.find(c => c.owner === 'uB'));
+    check('延后焚毁：A 自己的录音也仍在', !!db._store.voice_clips.find(c => c.owner === 'uA'));
     const ga2 = await gate(db, 'uA');
     check('A 评完 → gate="wait_review"', ga2.gate === 'wait_review');
 
-    // B 评价 willing=1 → 双方通过，解锁；焚毁 A 的录音
+    // B 评价 willing=1 → 双方都评完 → 统一焚毁双方录音
     const rb = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'review', clarity: 4, logic: 5, pace: 4, comment: '可以', willing: 1 })))).json();
     check('B 评价 → settled="passed"', rb.ok && rb.settled === 'passed');
-    check('阅后即焚：B 评完 → A 的录音也删除（库已空）', db._store.voice_clips.length === 0);
+    check('阅后即焚：双方都评完 → 所有录音清空', db._store.voice_clips.length === 0);
     const ga3 = await gate(db, 'uA');
     check('双方通过 → gate="passed" 解锁房间', ga3.gate === 'passed' && ga3.passed === true);
     check('pair.ratings 写入 _voice.passed=1', JSON.parse(db._store.pairs[0].ratings)._voice.passed === 1);
@@ -340,14 +340,15 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     await record(db, 'uA', 40);
     const retake = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
     check('对方未评 → 可重录', retake.ok && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);
-    // 重新录 + B 先评价（willing=1）→ A 的录音被焚
+    // 重新录 + B 先评价（willing=1）→ A 的录音仍在（延后焚毁），但对方已评不让重录
     await record(db, 'uA', 40);
     await record(db, 'uB', 35);
     const rb = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'review', willing: 1 })))).json();
-    check('B 评价提交成功', rb.ok);
-    // A 想重录：A 的录音已被 B 的评焚毁 → 返回 no_clip（录音已不存在，这正是阅后即焚的效果）
+    check('B 评价提交成功（cnt.c=1，未结算）', rb.ok && rb.settled == null);
+    check('延后焚毁：A 的录音仍在（等 A 评完才焚）', !!db._store.voice_clips.find(c => c.owner === 'uA'));
+    // A 想重录：对方已评 → 重录被拒（peer_already_reviewed），而非 no_clip
     const retakeA = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
-    check('对方已评且自己录音已焚 → 重录返回 no_clip', !retakeA.ok && retakeA.error === 'no_clip');
+    check('对方已评 → 重录被拒 peer_already_reviewed', !retakeA.ok && retakeA.error === 'peer_already_reviewed');
   }
 
   console.log('\n========================================');

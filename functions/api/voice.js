@@ -223,7 +223,12 @@ export async function onRequest(context) {
       return json({ ok: true });
     }
 
-    // 5) 提交互评 → 立即焚毁对方录音；双方都评完则结算（组队 or 解散）
+    // 5) 提交互评 → 等双方都评完再统一焚毁所有录音
+    // 设计要点（修复"另一方闪退"）：
+    //   若一方评完立即 dropClip(对方)，对方此时还没听完/还没评，录音就没了，会触发
+    //   「我的录音刚才还在、怎么现在让我重新录」的状态错乱（前端表现为"闪退"）。
+    //   改为延后焚毁：双方都评完（cnt.c>=2）由 dropPairClips 兜底清空所有录音。
+    //   兜底：单方评完后若对方迟迟不评，2h TTL 过期每日 cleanup 强删（不长期占用）。
     if (action === 'review') {
       if (!await rateLimit(db, 'rl:vr:' + ip, 20, 600) && !adminBypass(env, request, body)) return err('rate_limited', 429);
       const exists = await db.prepare('SELECT 1 AS x FROM voice_reviews WHERE pair_id=? AND reviewer=?').bind(pairId, m.r.id).first();
@@ -235,10 +240,8 @@ export async function onRequest(context) {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .bind(pairId, m.r.id, m.other, clamp5(body.clarity), clamp5(body.logic), clamp5(body.pace),
           String(body.comment || '').replace(/\s+/g, ' ').trim().slice(0, 100), willing, now).run();
-      // 阅后即焚：我评完 → 对方那段录音立刻从数据库物理删除
-      await dropClip(db, peerClip.id);
 
-      // 双方都评完 → 结算
+      // 双方都评完 → 结算 + 统一焚毁所有录音
       const cnt = await db.prepare('SELECT COUNT(*) AS c, COALESCE(SUM(willing),0) AS w FROM voice_reviews WHERE pair_id=?').bind(pairId).first();
       let settled = null;
       if ((cnt.c | 0) >= 2) {
@@ -259,7 +262,7 @@ export async function onRequest(context) {
           }
           settled = 'rejected';
         }
-        // 结算后把房间里残留的录音（如对方没听的那段）一并清空
+        // 双方都评完 → 把房间里所有残留录音一并清空（阅后即焚）
         await dropPairClips(db, pairId);
       }
       return json({ ok: true, settled });

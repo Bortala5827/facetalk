@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#1e88e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260804d" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260805e" />
 </head>
 <body>
   <header class="topbar">
@@ -61,13 +61,14 @@
 
       <!-- 步骤 1：录制 -->
       <div class="v-step" id="v-record" hidden>
+        <p class="v-state" id="v-peer-ready" hidden></p>
         <div class="v-rec-row">
           <button class="btn-primary" id="v-start">● 开始录音</button>
           <button class="btn-mini no" id="v-stop" hidden>■ 停止并提交</button>
           <span class="v-time" id="v-time">00:00</span>
         </div>
         <div class="v-bar"><i id="v-fill"></i></div>
-        <p class="field-hint" id="v-hint">⏱ 最短 30 秒、满 60 秒自动停止。录音只在互评期间临时存在，<strong>对方一提交评价就立刻销毁</strong>，手机和电脑本地都不保存。</p>
+        <p class="field-hint" id="v-hint">⏱ 最短 30 秒、满 60 秒自动停止。录音只在互评期间临时存在，<strong>双方都评完后立即销毁</strong>，手机和电脑本地都不保存。</p>
       </div>
 
       <!-- 步骤 2：等对方录 -->
@@ -494,6 +495,14 @@
       document.getElementById('v-topic').textContent = vMeta.topic || '';
       if (vGate === 'record') {
         vShow('v-record');
+        // 对方已录好：给用户一个正向反馈，避免录完才发现对方还没录/录音已焚
+        var pr = document.getElementById('v-peer-ready');
+        if (vMeta.peer && vMeta.peer.has) {
+          pr.hidden = false;
+          pr.textContent = '✅ 对方已录好（' + (vMeta.peer.dur || '--') + ' 秒），录完就能互听互评';
+        } else {
+          pr.hidden = true; pr.textContent = '';
+        }
       } else if (vGate === 'wait_peer') {
         vShow('v-wait');
         document.getElementById('v-mine-dur').textContent = (vMeta.mine && vMeta.mine.dur) || '--';
