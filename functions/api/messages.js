@@ -173,6 +173,7 @@ function streamMessages(env, db, member, pairId) {
                 if (st === 'done' && autoCloseIn === 0 && ratedAt > 0) autoCloseIn = Math.max(0, ratedAt + 300 - now);
                 send('pair', {
                   pairId, status: st, dissolving: st === 'dissolving', dissolveIn, autoCloseIn,
+                  remaining: Math.max(0, (p.expires || 0) - now),
                   left: !!(ratings[me] && ratings[me].left), rated: !!ratings[me],
                 });
               } else if (st !== lastPairStatus) {

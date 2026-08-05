@@ -78,11 +78,13 @@ export async function onRequest(context) {
       return { id: it.id, role: it.role, city: it.city, mode: it.mode, note: it.note, created: it.created, rep: it.rep, isOwn: false };
     });
 
-    // IP 在线提交需求人数：近 30 分钟内活跃开放意图的去重 IP 数（ip 列未 ALTER 时降级为去重 owner）
+    // 当前在线发需求人数：统计「当前仍开放且未过期」需求的去重 IP 数。
+    // 注意：不能用 created > now-1800（近30分钟发布）过滤——那样会把昨天发布、今天仍 open 的需求算成 0。
+    // 语义 = 「此刻还挂着开放需求的人」，不是「近30分钟内活跃过的人」（后者需要心跳机制，v1.0 没做）。
     let online = 0;
     try {
-      const oc = await db.prepare("SELECT COUNT(DISTINCT ip) AS c FROM intents WHERE status='open' AND expires > ? AND created > ?")
-        .bind(nowSec(), nowSec() - 1800).first();
+      const oc = await db.prepare("SELECT COUNT(DISTINCT ip) AS c FROM intents WHERE status='open' AND expires > ?")
+        .bind(nowSec()).first();
       online = oc ? oc.c : 0;
     } catch (e) {
       const oc = await db.prepare("SELECT COUNT(DISTINCT owner) AS c FROM intents WHERE status='open' AND expires > ?")

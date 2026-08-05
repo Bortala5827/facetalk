@@ -199,7 +199,9 @@
       if(p.status === 'closed'){ toast('房间已关闭'); setTimeout(function(){ location.href = '/'; }, 500); return; }
       document.getElementById('other-rep').textContent = p.otherRep != null ? p.otherRep : '--';
       document.getElementById('room-mode').textContent = p.mode === 'video' ? '📹 视频' : '🎙 语音优先';
-      remain = p.remaining || 0;
+      // 会话倒计时：只在本轮数据显式携带 remaining 时更新。
+      // SSE 的 pair 事件可能缺该字段，缺了就保持原值，避免 remain 被清零 → tick 误弹「时间到请打分」造成闪退。
+      if (p.remaining != null) remain = Math.max(0, p.remaining);
       tick();
       if(timer) clearInterval(timer);
       timer = setInterval(tick, 1000);
