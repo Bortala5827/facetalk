@@ -201,7 +201,40 @@
   sttBtn.addEventListener('click', toggleStt);
 
   // ── 原生 WebRTC 语音 ──
-  var ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
+  // STUN：国内优先（Google 的 stun.l.google.com 在境内 UDP 基本不通，只留作海外兜底）
+  var ICE = {
+    iceServers: [
+      { urls: 'stun:stun.miwifi.com:3478' },        // 小米，境内稳定
+      { urls: 'stun:stun.chat.bilibili.com:3478' }, // B站
+      { urls: 'stun:stun.qq.com:3478' },            // 腾讯
+      { urls: 'stun:stun.cloudflare.com:3478' },    // CF Anycast
+      { urls: 'stun:stun.l.google.com:19302' },     // 海外兜底
+    ],
+    iceCandidatePoolSize: 2,
+  };
+  var gotSrflx = false;   // 是否拿到过公网映射候选（没有 = NAT 穿透没戏）
+
+  // 统一创建 PeerConnection，两条路径（发起 / 应答）共用，避免逻辑漂移
+  function newPC(onFail) {
+    var p = new RTCPeerConnection(ICE);
+    p.onicecandidate = function (e) {
+      if (!e.candidate) return;
+      var c = e.candidate.candidate || '';
+      if (c.indexOf('typ srflx') >= 0 || c.indexOf('typ relay') >= 0) gotSrflx = true;
+      postSignal('ice', JSON.stringify(e.candidate));
+    };
+    p.ontrack = function (e) { try { remoteAudio.srcObject = e.streams[0]; } catch (e2) {} };
+    p.onconnectionstatechange = function () {
+      if (p.connectionState === 'connected') {
+        callBtn.textContent = '🔊 实时语音：已连通'; callTip.hidden = true;
+      } else if (p.connectionState === 'failed' || p.connectionState === 'disconnected') {
+        onFail(gotSrflx
+          ? 'P2P 直连失败（双方运营商 NAT 太严），建议改用腾讯会议链接'
+          : 'NAT 穿透失败（拿不到公网地址，常见于校园网/公司网），建议改用腾讯会议链接');
+      }
+    };
+    return p;
+  }
   callBtn.addEventListener('click', function () {
     if (callStarted) { stopCall(); return; }
     startCall();
@@ -214,8 +247,17 @@
   }
   function ensureLocalStream(cb) {
     if (callStream) return cb(callStream);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      failCall('当前浏览器拿不到麦克风 —— 微信/QQ 内置浏览器常被限制，请用手机自带浏览器或 Chrome 打开本页');
+      return;
+    }
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) { callStream = s; cb(s); })
-      .catch(function () { toast('拿不到麦克风，无法实时语音（可改用腾讯会议链接）', true); });
+      .catch(function (err) {
+        var denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+        failCall(denied
+          ? '麦克风权限被拒绝 —— 请在浏览器地址栏左侧允许麦克风后重试'
+          : '拿不到麦克风（微信内置浏览器常被限制），请换手机自带浏览器，或改用腾讯会议链接');
+      });
   }
   function startCall() {
     callStarted = true; callBtn.textContent = '🔊 实时语音：连接中…'; callBtn.classList.add('on');
@@ -223,14 +265,8 @@
     // 若对方已经发过 offer，本方直接走应答路径，不要再互发 offer（会 glare 冲突）
     if (pendingOffer) { var o = pendingOffer; pendingOffer = null; handleSignal(o); return; }
     ensureLocalStream(function (s) {
-      try { pc = new RTCPeerConnection(ICE); } catch (e) { failCall('浏览器不支持 WebRTC'); return; }
+      try { pc = newPC(failCall); } catch (e) { failCall('浏览器不支持 WebRTC'); return; }
       s.getTracks().forEach(function (t) { pc.addTrack(t, s); });
-      pc.onicecandidate = function (e) { if (e.candidate) postSignal('ice', JSON.stringify(e.candidate)); };
-      pc.ontrack = function (e) { try { remoteAudio.srcObject = e.streams[0]; } catch (e2) {} };
-      pc.onconnectionstatechange = function () {
-        if (pc.connectionState === 'connected') { callBtn.textContent = '🔊 实时语音：已连通'; callTip.hidden = true; }
-        else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') failCall('P2P 直连失败（运营商/防火墙），建议改用腾讯会议链接');
-      };
       pc.createOffer().then(function (o) { return pc.setLocalDescription(o); }).then(function () {
         postSignal('offer', JSON.stringify(pc.localDescription));
       }).catch(function () { failCall('生成 offer 失败'); });
@@ -240,14 +276,9 @@
     if (!pc && sg.kind === 'offer') {
       // 收到对方 offer：补建本地流并应答
       ensureLocalStream(function (s) {
-        try { pc = new RTCPeerConnection(ICE); } catch (e) { return; }
+        try { pc = newPC(failCall); } catch (e) { return; }
         s.getTracks().forEach(function (t) { pc.addTrack(t, s); });
-        pc.onicecandidate = function (e) { if (e.candidate) postSignal('ice', JSON.stringify(e.candidate)); };
-        pc.ontrack = function (e) { try { remoteAudio.srcObject = e.streams[0]; } catch (e2) {} };
-        pc.onconnectionstatechange = function () {
-          if (pc.connectionState === 'connected') { callBtn.textContent = '🔊 实时语音：已连通'; callTip.hidden = true; }
-          else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') failCall('P2P 直连失败，建议改用腾讯会议链接');
-        };
+        callStarted = true; callBtn.classList.add('on'); callBtn.textContent = '🔊 实时语音：连接中…';
         pc.setRemoteDescription(JSON.parse(sg.data)).then(function () { return pc.createAnswer(); })
           .then(function (a) { return pc.setLocalDescription(a); }).then(function () { postSignal('answer', JSON.stringify(pc.localDescription)); })
           .catch(function () {});
