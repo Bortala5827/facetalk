@@ -753,34 +753,56 @@ a { color: inherit; text-decoration: none; }
 @media (min-width: 700px) {
   .container { max-width: 760px; padding: 0 24px; }
 }
-/* 宽屏：容器拓宽到 1040，并把四个「搭子列表」区块排成 2 列网格，真正用上横向空间 */
+/* 宽屏（≥920px）：首屏左 Hero 右 发布搭子；状态条横铺三栏；四个 list 2x2；留言墙整行 */
 @media (min-width: 920px) {
   .container { max-width: 1040px; }
   main.container {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 22px;
-    row-gap: 22px;
+    grid-template-columns: 1.22fr 1fr;   /* 左 55% Hero + 右 45% 发布搭子，呼应首屏 */
+    column-gap: 28px;
+    row-gap: 24px;
     align-items: start;
   }
-  /* 取消旧的单列纵向 margin，改由网格 row-gap 统一控制节奏 */
   main.container > * { margin: 0; }
-  /* 这些区块在桌面端占满整行；只有 4 个 .board 进入 2 列网格 */
-  main.container > .hero,
-  main.container > .me-bar,
-  main.container > .form-card,
+
+  /* —— 首屏：Hero 与发布搭子并排 —— */
+  main.container > .hero { grid-column: 1; align-self: start; padding: 48px 0 14px; }
+  main.container > .form-card { grid-column: 2; max-width: none; justify-self: stretch; }
+
+  /* —— 状态条：整行三栏 flex，消除左对齐空洞 —— */
+  main.container > .me-bar {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 20px;
+  }
+  .me-bar > .me-cell { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+  .me-bar > .me-cell-mid { color: var(--ink-2); }
+  .me-bar > .online-pill { margin-left: 0; }
+
+  /* —— 其余整行项 —— */
   main.container > #room-card,
   main.container > #rate-card,
   main.container > .foot-note,
   main.container > .wall { grid-column: 1 / -1; }
 
-  /* 首屏在宽屏更有分量 */
-  .hero { padding: 56px 0 18px; }
-  .hero h1 { font-size: 38px; }
-  .hero-steps { max-width: 720px; }
-  .hero-steps li { font-size: 16px; }
+  /* —— 四个 .board 进 2x2 网格 —— */
+  main.container > section.board { grid-column: auto; }
 
-  /* 发布表单在宽屏收窄到舒适阅读宽度并居中，避免超宽输入框 */
-  main.container > .form-card { max-width: 760px; justify-self: center; }
+  /* Hero 在宽屏的分量（不放太大，55% 宽下 ~520px 容器内 38px 标题会挤） */
+  .hero h1 { font-size: 36px; line-height: 1.15; }
+  .hero-steps li { font-size: 15px; padding: 9px 0 9px 38px; }
+
+  /* 空 list 加 icon 引导，桌面端不再像 PPT 占位卡 */
+  .list-empty { padding: 30px 16px; font-size: 13.5px; }
+  .list-empty::before {
+    content: "👋";
+    display: block;
+    font-size: 28px;
+    margin-bottom: 8px;
+    filter: grayscale(.4);
+  }
 }
 .msg-tip-meeting b { color: #b45309; }
