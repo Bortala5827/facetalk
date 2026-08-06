@@ -362,7 +362,7 @@
       if (!lines.length) { toast('还没有对话稿，无法评价', true); return; }
       var conv = lines.map(function (ln) { return (ln.mine ? '我' : '对方') + '：' + ln.text; }).join('\n');
       var cfg = window.FTSettings.get();
-      var sys = '你是体制内面试（辅警/消防/公务员/社区等）的资深考官。请根据下面的双人面试对话稿，从「我」（答题方）的角度给结构化点评。'
+      var sys = '你是辅警/消防/公务员/社区等招录结构化面试的资深考官。请根据下面的双人面试对话稿，从「我」（答题方）的角度给结构化点评。'
         + '严格用 JSON 输出：{"summary":"一句话总评","scores":[{"dim":"内容切题","score":1-5,"reason":"..."},'
         + '{"dim":"逻辑结构","score":1-5,"reason":"..."},{"dim":"语言表达","score":1-5,"reason":"..."},'
         + '{"dim":"岗位匹配度","score":1-5,"reason":"..."},{"dim":"综合表现","score":1-5,"reason":"..."}],'
