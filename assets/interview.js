@@ -106,11 +106,9 @@
   function poll() {
     ivGet().then(function (d) {
       if (!d || !d.ok) return;
-      // 转录行
+      // 转录行（来自后端，id 是 il_xxx，1.5s 周期拉；own 发送的乐观行通过 known[] 去重，不会重复）
       (d.lines || []).forEach(function (ln) {
-        if (known[ln.id]) return;
-        known[ln.id] = 1;
-        appendLine(ln.mine ? '我' : '对方', ln.text);
+        appendLine(ln.mine ? '我' : '对方', ln.text, ln.id, { created: ln.created });
       });
       // 备选会议号（双方的另一面，回执时不是自己的）
       if (d.fallback) applyFallback(d.fallback);
@@ -129,12 +127,31 @@
       lastSignal = Math.max(0, maxC - 2);
     }).catch(function () {});
   }
-  function appendLine(who, text) {
+  // 渲染一条对话行。key=唯一键（后端 il_xxx / 临时 tmp_xxx），传了同 key 会直接 return。
+  // opts.created：秒级时间戳，缺省用本地时间
+  // opts.pending：乐观 UI 的「发送中」状态（小圆点呼吸，浅色气泡）
+  // opts.failed：发送失败状态（红底气泡 + ⚠ 角标）
+  function appendLine(who, text, key, opts) {
     if (!text) return;
+    opts = opts || {};
+    if (key && known[key]) return;
+    if (key) known[key] = 1;
     var empty = transcript.querySelector('p.muted'); if (empty) empty.remove();
     var div = document.createElement('div');
-    div.className = 'iv-line ' + (who === '我' ? 'iv-mine' : 'iv-peer');
-    div.innerHTML = '<span class="iv-who">' + esc(who) + '</span><span class="iv-txt">' + esc(text) + '</span>';
+    div.className = 'iv-msg ' + (who === '我' ? 'iv-mine' : 'iv-peer')
+      + (opts.pending ? ' iv-pending' : '')
+      + (opts.failed ? ' iv-fail' : '');
+    if (key) div.setAttribute('data-ivkey', key);
+    var ts = opts.created || Math.floor(Date.now() / 1000);
+    var t = new Date(1000 * ts);
+    var hh = ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2);
+    var pendingHtml = opts.pending ? ' <span class="iv-pending-dot">…</span>' : '';
+    var failedHtml = opts.failed ? ' <span class="iv-fail-tag">⚠ 发送失败</span>' : '';
+    div.innerHTML =
+      '<div class="iv-bubble-wrap">' +
+        '<div class="iv-bubble">' + esc(text) + pendingHtml + '</div>' +
+        '<div class="iv-meta">' + esc(who) + ' · ' + hh + failedHtml + '</div>' +
+      '</div>';
     transcript.appendChild(div);
     transcript.scrollTop = transcript.scrollHeight;
   }
@@ -238,14 +255,32 @@
   }
 
   // ── 手动补充 ──
+  // 乐观 UI：点完按钮立刻在对话稿画一条「发送中…」的气泡，POST 回来成功去掉圆点、记 il_xxx 到 known
+  // 防止 1.5s 后的轮询重画同一条；失败则去掉圆点、加红底 + ⚠ + toast
   function sendNote() {
     var v = noteInput.value.replace(/\s+/g, ' ').trim();
     if (!v) return;
     noteInput.value = '';
+    var tmpKey = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    appendLine('我', v, tmpKey, { pending: true, created: Math.floor(Date.now() / 1000) });
     fetch('/api/interview', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ me: me, pair: pairId, action: 'line', text: v }),
-    }).then(function () { /* 轮询会带回，包括自己这条 */ }).catch(function () {});
+    }).then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (d) {
+        var el = transcript.querySelector('[data-ivkey="' + tmpKey + '"]');
+        if (d && d.ok) {
+          if (d.id) known[d.id] = 1;     // 防止 1.5s 后 polling 把同一条再画一次
+          if (el) { el.classList.remove('iv-pending'); el.setAttribute('data-ivkey', d.id || tmpKey); }
+        } else {
+          if (el) { el.classList.remove('iv-pending'); el.classList.add('iv-fail'); }
+          toast('发送失败：' + (d && d.error || '未知'), true);
+        }
+      }).catch(function () {
+        var el = transcript.querySelector('[data-ivkey="' + tmpKey + '"]');
+        if (el) { el.classList.remove('iv-pending'); el.classList.add('iv-fail'); }
+        toast('网络出错，消息未送达', true);
+      });
   }
   noteSend.addEventListener('click', sendNote);
   noteInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') sendNote(); });

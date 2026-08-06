@@ -483,12 +483,23 @@ a { color: inherit; text-decoration: none; }
 .iv-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
 .iv-timer { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; color: #1565c0; letter-spacing: 1px; min-width: 84px; }
 .btn-mini.on { background: #1565c0; color: #fff; border-color: #1565c0; }
-.iv-transcript { height: 260px; overflow-y: auto; background: #f7f9fc; border: 1px solid #e3e8ef; border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.7; }
-.iv-line { margin-bottom: 10px; }
-.iv-who { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 6px; margin-right: 6px; vertical-align: middle; }
-.iv-mine .iv-who { background: #e3f2fd; color: #1565c0; }
-.iv-peer .iv-who { background: #ede7f6; color: #6a1b9a; }
-.iv-txt { color: var(--ink); }
+.iv-transcript { height: 320px; overflow-y: auto; background: #f5f7fb; border: 1px solid #e3e8ef; border-radius: 12px; padding: 14px 12px; display: flex; flex-direction: column; }
+/* 左右气泡布局：iv-mine 整体右对齐（flex row-reverse），iv-peer 左对齐 */
+.iv-msg { display: flex; margin-bottom: 14px; align-items: flex-start; }
+.iv-msg.iv-mine { flex-direction: row-reverse; }
+.iv-msg.iv-peer { flex-direction: row; }
+.iv-bubble-wrap { max-width: 78%; }
+.iv-mine .iv-bubble-wrap { text-align: right; }
+.iv-peer .iv-bubble-wrap { text-align: left; }
+.iv-bubble { display: inline-block; padding: 9px 13px; border-radius: 14px; line-height: 1.55; font-size: 14px; word-break: break-word; white-space: pre-wrap; box-shadow: 0 1px 2px rgba(0,0,0,.04); text-align: left; }
+.iv-mine .iv-bubble { background: linear-gradient(135deg,#1e88e5,#1976d2); color: #fff; border-top-right-radius: 4px; }
+.iv-peer .iv-bubble { background: #fff; color: #222; border: 1px solid #e6e9ef; border-top-left-radius: 4px; }
+.iv-meta { font-size: 11px; color: #888; margin-top: 4px; padding: 0 4px; }
+.iv-pending-dot { display: inline-block; margin-left: 4px; animation: ivBlink 1.2s ease-in-out infinite; }
+@keyframes ivBlink { 0%,100% { opacity: .25 } 50% { opacity: 1 } }
+.iv-msg.iv-pending .iv-bubble { opacity: .7; }
+.iv-msg.iv-fail .iv-bubble { background: #ffebee !important; color: #c62828 !important; border-color: #ef9a9a !important; }
+.iv-fail-tag { color: #c62828; font-weight: 600; }
 .iv-note { display: flex; gap: 8px; margin-top: 10px; }
 .iv-note input { flex: 1; }
 .iv-call-tip { margin-top: 8px; color: #c62828; font-size: 13px; background: #ffebee; border: 1px solid #ffcdd2; padding: 7px 10px; border-radius: 8px; }
