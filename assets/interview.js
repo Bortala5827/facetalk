@@ -300,7 +300,20 @@
     });
   }
   function handleSignal(sg) {
-    if (!pc && sg.kind === 'offer') {
+    if (sg.kind === 'offer') {
+      if (pc) {
+        // glare：双方几乎同时点了「实时语音」时，两端都建了 pc、都发了 offer。
+        // 原代码这里会静默丢弃对方的 offer，导致两端都等不到 answer 一直卡在"连接中"。
+        // 决策在 assets/glare.js（纯函数，Node 与浏览器共用），便于单测。
+        var decision = window.decideGlare(me, sg.from);
+        if (decision === 'ignore-self') {
+          // 对方字典序更小 → 对方会 roll back；我保持发起方，忽略这次 offer
+          return;
+        }
+        // roll-back-self：对方字典序更大 → 对方保持发起方；我放弃自己的，改应答
+        try { pc.close(); } catch (e) {}
+        pc = null;
+      }
       // 收到对方 offer：补建本地流并应答（同样要先备好中继凭证，否则应答侧只有 STUN 候选）
       withIce(function () {
         ensureLocalStream(function (s) {

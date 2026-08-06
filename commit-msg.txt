@@ -1,18 +1,27 @@
-fix: 大厅「找搭子」区只保留「申请组队」，删除「发起试音」
+fix: 实时语音 glare 场景静默丢弃对方 offer 导致两端卡死
 
-之前每条 intent 卡片同时显示「申请组队」和「🎙 发起试音」两个按钮，
-但产品流程是先双向互选通过进房间，房间内才能试音互评（听声识搭子）。
-在大厅里直接发起试音会绕过互选阶段，导致两边都没进房间就互相录音，
-产品状态机混乱。
+根因：handleSignal(sg) 收到 offer 时的判断是
+`if (!pc && sg.kind === 'offer')`——意思是只有 pc 还没建、
+且收到的是 offer 时才走应答路径。
 
-修复：
-- 找搭子区他人意图卡：只保留「申请组队」按钮
-- 删除 data-voice-trial 事件处理（约 12 行）
-- 删除 .btn-mini.ok 样式（绿色试音按钮专用）
-- 清理头部注释
+但用户两端几乎同时点「实时语音」时，两端都执行 startCall、
+都建了 pc、都发了 offer。之后轮询拉到对方的 offer：
+- pc 已建（自己刚建的）→ !pc 不满足 → 跳过应答分支
+- 走到 `if (!pc) return;` → pc 存在不 return
+- 走到 `if (sg.kind === 'answer') ... else if (ice)` → offer
+  既不是 answer 也不是 ice
+- 对方的 offer 被静默丢弃
 
-试音/录音/AI 评价都在「进房间 → 试音互评 → 通过」后才能使用，
-跟 hero 文案「先各录 60 秒试音，听声识搭子」保持一致。
+结果两端都等不到对方的 answer → 永远卡在"连接中..."。
 
-自测：apply 14/14、turn 25/25、v21 17/17、voice 41/41、dissolved 18/18、
-autosettle 14/14、wall 14/14（共 143 项）。
+修复（RFC 5245 glare 标准解法）：
+- assets/glare.js：纯函数 decideGlare(myId, peerId)，
+  字典序大的一方保持发起方，小的一方 roll back 改应答对方
+- assets/interview.js：handleSignal 收到 offer 时若 pc 已建，
+  调用 decideGlare 决定走向；roll-back-self 时关闭旧 pc 改应答
+- pair.html：interview.js 之前先加载 glare.js（提供 window.decideGlare）
+- scripts/selftest-glare.js：11 项断言（标准 glare、相同 ID、
+  缺身份、长 ID、典型 25 字符 ft_me 形态）
+
+自测：glare 11/11、apply 14/14、turn 25/25、v21 17/17、voice 41/41、
+dissolved 18/18、autosettle 14/14、wall 14/14（共 154 项）。
