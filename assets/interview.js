@@ -1,7 +1,7 @@
 // ============================================================
 // FaceTalk v2.1 面试间逻辑
 // 依赖 window.FT（me / pairId / toast / esc / setRemain / remain）与 window.FTSettings
-//   - 计时跟随搭子房间总时长（30 分钟），时间到自动 AI 评价（v2.3 取消独立 30/45/60）
+//   - 计时跟随搭子房间总时长（单场上限 10 分钟），时间到自动 AI 评价；超过 10 分钟请跳转腾讯会议/飞书会议继续对练
 //   - 实时转录：我方用 MediaRecorder 分段 → 用户自带的 Whisper 接口转文字 → 写入面试间，双方同步
 //   - 原生 WebRTC 语音（信令走 /api/interview，无 TURN 时回落腾讯会议）
 //   - 结束 → 用用户自带大模型对完整对话稿做结构化评价
@@ -743,7 +743,7 @@
       refreshSetupHint();
       try { withIce(function () {}); } catch (e) {}
       fbEnsureShown(); renderFallbackStatus();
-      startSharedTimer();   // 订阅搭子房间 30 分钟倒计时，归零自动 AI 评价
+      startSharedTimer();   // 订阅搭子房间 10 分钟倒计时，归零自动 AI 评价
       active = true; evalRequested = false; ended = false;
       startPolling();       // 立即拉转录/信令 —— 进房即就绪，不点「开始」也能收到对方的对话行与语音 offer
       try { console.log('[FaceTalk/iv] polling started, me=' + me + ', pair=' + pairId); } catch (e) {}

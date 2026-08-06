@@ -157,11 +157,11 @@
         <span class="iv-testing-mark">🚧 功能测试中</span>
         <span>WebRTC 实时语音 + 转写 + AI 评价链路尚未稳定，<b>优先建议先用腾讯会议对练</b>，稳定后这栏会自动恢复。</span>
       </div>
-      <p class="muted">进房即用，<b>跟随搭子房间总时长（30 分钟）</b>，时间到自动 AI 评价。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。<b>⚠ 录音 / 实时语音 / AI 评价按钮当前为测试态，可能不稳定，请优先用腾讯会议。</b></p>
+      <p class="muted">进房即用，<b>跟随搭子房间总时长（单场上限 10 分钟）</b>，时间到自动 AI 评价。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。<b>⚠ 录音 / 实时语音 / AI 评价按钮当前为测试态，可能不稳定，请优先用腾讯会议；网页语音仅作短时试音/破冰，超过 10 分钟请跳转腾讯会议 / 飞书会议继续对练。</b></p>
 
       <div id="iv-live">
         <div class="iv-top">
-          <span class="iv-timer" id="iv-timer">30:00</span>
+          <span class="iv-timer" id="iv-timer">10:00</span>
           <button class="btn-mini no" id="iv-end">⏹ 结束并 AI 评价</button>
           <button class="btn-mini" id="iv-stt">🎙 录音转文字：关</button>
           <button class="btn-mini" id="iv-call">🔊 实时语音</button>
@@ -935,6 +935,6 @@
   <script src="/assets/ft-util.js?v=20260806p"></script>
   <script src="/assets/settings.js?v=20260806r"></script>
   <script src="/assets/glare.js?v=20260806h"></script>
-  <script src="/assets/interview.js?v=20260806r"></script>
+  <script src="/assets/interview.js?v=20260806s"></script>
 </body>
 </html>

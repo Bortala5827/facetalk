@@ -1,6 +1,6 @@
 import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips } from '../_shared.js';
 
-const SESSION_TTL = 1800; // 单次互练软上限 30 分钟（秒）
+const SESSION_TTL = 600; // 单次互练软上限 10 分钟（秒）；更长对练请跳转腾讯会议 / 飞书会议
 
 // 配对：决定(同意/拒绝) / 状态 / 互评 / 举报
 export async function onRequest(context) {

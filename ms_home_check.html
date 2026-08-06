@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FaceTalk · 面试搭子 — 辅警/消防/书记员/社区/三支一扶在线对练</title>
+  <meta name="description" content="FaceTalk 面试搭子平台，适用于辅警、消防员、书记员、社区工作者、三支一扶等结构化面试对练。双向互选配对，语音+试音互评，免费匿名。" />
+  <meta name="theme-color" content="#1e88e5" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="/assets/icon-192.png" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260806r" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container bar-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark">搭</span>
+        <span class="brand-text">FaceTalk</span>
+        <span class="v-badge v-badge-base">v2.1</span>
+      </a>
+      <div class="bar-right">
+        <a class="brand-back" id="ctx-back" href="https://955827.xyz" hidden>← 返回</a>
+        <span class="self-wrap">
+          <a class="self-pill" href="https://fj.rcj9527.dpdns.org/sz/?from=facetalk" target="_blank" rel="noopener" title="目前仅上线辅警题库">🛡 自练</a>
+          <span class="self-hint">目前仅上线辅警题库</span>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <div id="wx-tip" class="wx-tip" hidden>
+    如按钮无法跳转到腾讯会议，请点右上角 ⋯ 选择「在浏览器打开」，或复制会议号手动入会。
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <p class="eyebrow">FaceTalk · 双向互选 · 面试对练</p>
+      <h1>找搭子，先互选</h1>
+      <ol class="hero-steps">
+        <li><b>发个意图</b>，等人来申请</li>
+        <li><b>双方都同意</b> → 进房间，各录 60 秒试音</li>
+        <li><b>听声识搭子</b>，互相评价合不合拍</li>
+        <li><b>都通过</b> → 正式组队，深度对练</li>
+      </ol>
+      <p class="hero-foot">适用于<strong>辅警 / 消防 / 书记员 / 社区 / 三支一扶</strong>等结构化面试。</p>
+    </section>
+
+    <!-- 我的信誉 -->
+    <p class="me-bar">我的信誉 <span class="rep-star">⭐</span> <strong id="my-rep">…</strong> · 匿名身份，仅本地保存
+      <span class="online-pill" id="online-count" hidden></span>
+    </p>
+
+    <!-- 发布意图 -->
+    <section class="card form-card">
+      <h2 class="sec-title">📋 发布找搭子意图</h2>
+      <form id="intent-form" autocomplete="off">
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">岗位</span>
+            <select id="i-role">
+              <option value="公务员 / 事业编">公务员 / 事业编</option>
+              <option value="辅警 / 警务辅助" selected>辅警 / 警务辅助</option>
+              <option value="消防 / 政府专职消防员">消防 / 政府专职消防员</option>
+              <option value="书记员 / 公检法聘用人员">书记员 / 公检法聘用人员</option>
+              <option value="社区工作者 / 网格员">社区工作者 / 网格员</option>
+              <option value="三支一扶 / 西部计划">三支一扶 / 西部计划</option>
+              <option value="其他">其他</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">城市</span>
+            <input id="i-city" type="text" placeholder="如：深圳 / 武汉" />
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">模式</span>
+            <select id="i-mode">
+              <option value="voice">🎙 语音优先（推荐）</option>
+              <option value="video">📹 视频</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">会议链接（选填）</span>
+            <input id="i-meet" type="text" placeholder="腾讯会议链接，留空则房间内交换" />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">一句话（选填）</span>
+          <input id="i-note" type="text" maxlength="140" placeholder="如：今晚想练结构化，互评互改" />
+        </label>
+        <button type="submit" class="btn-primary">发布意图 →</button>
+        <p class="form-msg" id="i-msg" hidden></p>
+      </form>
+    </section>
+
+    <!-- 我发布的需求 -->
+    <section class="board" id="mine-board">
+      <div class="board-head">
+        <h2 class="sec-title">📋 我发布的需求</h2>
+        <span class="muted" id="mine-hint"></span>
+      </div>
+      <div id="mine-list" class="list"></div>
+      <p class="list-empty" id="mine-empty" hidden>你还没发布意图。发布后会出现在这里，方便随时看搭子申请情况，避免重复发布。</p>
+    </section>
+
+    <!-- 浏览搭子 -->
+    <section class="board">
+      <div class="board-head">
+        <h2 class="sec-title">🔍 找搭子（他人开放意图）</h2>
+        <button class="btn-mini" id="browse-refresh">刷新</button>
+      </div>
+      <div id="browse-list" class="list"></div>
+      <p class="list-empty" id="browse-empty">加载中…</p>
+      <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px">你已发布意图，这里展示的是别人的意图。等搭子来申请，或等别人发布后刷新。</p>
+    </section>
+
+    <!-- 我的邀约：收到 -->
+    <section class="board">
+      <div class="board-head">
+        <h2 class="sec-title">📨 收到的申请</h2>
+      </div>
+      <div id="inbox-list" class="list"></div>
+      <p class="list-empty" id="inbox-empty">加载中…</p>
+    </section>
+
+    <!-- 我的邀约：发出 -->
+    <section class="board">
+      <div class="board-head">
+        <h2 class="sec-title">📤 我发出的申请</h2>
+      </div>
+      <div id="out-list" class="list"></div>
+      <p class="list-empty" id="out-empty">加载中…</p>
+    </section>
+
+    <!-- 搭子房间 -->
+    <section class="card" id="room-card" hidden>
+      <h2 class="sec-title">🤝 搭子已匹配！</h2>
+      <p class="muted">双方已互选成功，进入 1:1 房间开始互练。</p>
+      <a class="btn-primary" id="room-enter" href="#">进入搭子房间 →</a>
+    </section>
+
+    <!-- 互评 -->
+    <section class="card form-card" id="rate-card" hidden>
+      <h2 class="sec-title">⭐ 本次互练评价</h2>
+      <p class="muted">互评完成、且双方都愿意，才能解锁「再约一次」。</p>
+      <form id="rate-form" autocomplete="off">
+        <label class="field">
+          <span class="field-label">给搭子打分 <em>*</em></span>
+          <select id="r-score">
+            <option value="5">5 · 很赞，守时专业</option>
+            <option value="4">4 · 不错</option>
+            <option value="3">3 · 一般</option>
+            <option value="2">2 · 不太行</option>
+            <option value="1">1 · 割韭菜/瞎搞</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">标签（选填，逗号分隔）</span>
+          <input id="r-tags" type="text" placeholder="如：守时,点评到位,声音清晰" />
+        </label>
+        <label class="field check">
+          <input id="r-next" type="checkbox" /> <span>愿意再约一次</span>
+        </label>
+        <button type="submit" class="btn-primary">提交评价 →</button>
+        <p class="form-msg" id="r-msg" hidden></p>
+      </form>
+    </section>
+
+    <p class="foot-note">请注意隐私，勿留身份证、住址等敏感信息。本工具仅做匹配，实际连麦走腾讯会议。</p>
+
+  <!-- 全站公开留言墙（2026-08-04 升级 UI）：首页可见，7 天自动清理 -->
+  <section class="wall" id="wall">
+    <header class="wall-head">
+      <div class="wall-ttl">
+        <span class="wall-emoji">💬</span>
+        <h2>搭子留言墙</h2>
+        <span class="wall-badge">7 天自动清理</span>
+      </div>
+      <button class="wall-manage" id="wallManage">🗑 管理</button>
+    </header>
+    <p class="wall-sub">把备考心得、考场经验、组队需求留在这里，互相打气 🤝 文明留言，禁止广告与不良信息。</p>
+    <div class="wall-safety">🚨 <b>温馨提示</b>：为了彼此安全，<b>不建议</b>在留言里留手机号、微信、QQ 等联系方式，避免被骗。本站仅做陌生人面试搭子练习，私下加好友请谨慎。</div>
+    <div class="wall-form">
+      <div class="wall-form-row">
+        <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名搭子」）" maxlength="20">
+        <button class="wall-post" id="wallPost">✨ 发布留言</button>
+      </div>
+      <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300"></textarea>
+    </div>
+    <div class="wall-list" id="wallList"><div class="wall-empty"><span class="we-emoji">📝</span>正在加载留言…</div></div>
+  </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="muted ver-plan-line"><span class="ver-plan">v2.1 试音互评 · 听声识搭子 · 已上线</span></p>
+      <p class="foot-links">
+        <a href="https://955827.xyz/" target="_blank" rel="noopener" class="vibe-capsule">Vibe Coding</a>
+      </p>
+      <p class="install-tip">📲 手机浏览器打开 → 点「⋯」→「添加到主屏幕」，即可变身 FaceTalk App。</p>
+    </div>
+  </footer>
+
+  <script src="/assets/ft-util.js?v=20260806p"></script>
+  <script src="/assets/wall.js"></script>
+  <script src="/assets/app.js?v=20260806p"></script>
+  <script>
+    // 从 RCJ 任一站点（955827.xyz 任意子域）进来时，显示「← 返回」并跳回来源页，形成产品矩阵闭环
+    (function () {
+      try {
+        var r = document.referrer || '';
+        if (r.indexOf('955827.xyz') !== -1) {
+          var back = document.getElementById('ctx-back');
+          if (back) { back.href = r; back.hidden = false; }
+        }
+      } catch (e) {}
+    })();
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
