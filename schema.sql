@@ -153,3 +153,26 @@ CREATE TABLE IF NOT EXISTS blocks (
   PRIMARY KEY (user_id, blocked_id)
 );
 CREATE INDEX IF NOT EXISTS idx_blocks_user ON blocks(user_id);
+
+-- ===== FaceTalk v2.1 面试间（运行时已自动建表，这里仅供手动 D1 执行参考）=====
+-- 实时转录行：面试间双方各自的文字流（我方 STT 产出 + 手动补充），前端轮询同步
+CREATE TABLE IF NOT EXISTS interview_lines (
+  id TEXT PRIMARY KEY,
+  pair_id TEXT NOT NULL,
+  who TEXT NOT NULL,          -- 'a' | 'b'（按 pairs.a/b 判定）
+  text TEXT NOT NULL,
+  created INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_il_pair ON interview_lines(pair_id);
+
+-- WebRTC 原生 P2P 语音的信令中转（offer/answer/ice），无 TURN 时自动回落腾讯会议
+CREATE TABLE IF NOT EXISTS rtc_signals (
+  id TEXT PRIMARY KEY,
+  pair_id TEXT NOT NULL,
+  from_id TEXT NOT NULL,
+  to_id TEXT NOT NULL,
+  kind TEXT NOT NULL,          -- offer | answer | ice
+  data TEXT NOT NULL,
+  created INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sg_pair_to ON rtc_signals(pair_id, to_id);

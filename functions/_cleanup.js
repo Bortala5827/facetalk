@@ -80,5 +80,14 @@ export async function runCleanup(env) {
     db.prepare("DELETE FROM voice_chunks WHERE clip_id IN (SELECT id FROM voice_clips WHERE pair_id IN (SELECT id FROM pairs WHERE status='closed'))"),
     db.prepare("DELETE FROM voice_clips WHERE pair_id IN (SELECT id FROM pairs WHERE status='closed')"),
   ]);
+  // 2.1 面试间：对话稿属于敏感内容，房间一关就删；信令是纯瞬时数据，10 分钟即弃。
+  // 另外清掉已不存在房间的孤儿行（表未建时整段跳过，不影响其它清理）。
+  await run('interview', [
+    db.prepare("DELETE FROM interview_lines WHERE pair_id IN (SELECT id FROM pairs WHERE status='closed')"),
+    db.prepare('DELETE FROM interview_lines WHERE pair_id NOT IN (SELECT id FROM pairs)'),
+    db.prepare('DELETE FROM interview_lines WHERE created < ?').bind(now - 86400),
+    db.prepare('DELETE FROM rtc_signals WHERE created < ?').bind(now - 600),
+    db.prepare('DELETE FROM rtc_signals WHERE pair_id NOT IN (SELECT id FROM pairs)'),
+  ]);
   return { ok: true, deleted, at: Date.now() };
 }

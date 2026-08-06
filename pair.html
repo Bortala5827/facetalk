@@ -7,13 +7,14 @@
   <meta name="theme-color" content="#1e88e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260805e" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260806b" />
 </head>
 <body>
   <header class="topbar">
     <div class="container bar-inner">
       <a class="brand" href="/"><span class="brand-mark">搭</span><span class="brand-text">FaceTalk</span></a>
       <span class="brand-tag">搭子房间 · 1:1</span>
+      <button class="bar-gear" id="open-settings" title="设置大模型接口" aria-label="设置">⚙</button>
     </div>
   </header>
 
@@ -121,6 +122,43 @@
       </div>
     </section>
 
+    <!-- ===== 2.1 面试间：实时转录 + 自添加大模型评价 ===== -->
+    <section class="card" id="iv-card" hidden>
+      <h2 class="sec-title">🎤 面试间 <span class="v-badge">2.1</span></h2>
+      <p class="muted">双方进入后开始计时（30–60 分钟）。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。</p>
+
+      <div id="iv-setup">
+        <div class="iv-row">
+          <label class="field iv-dur-field"><span class="field-label">单场时长</span>
+            <select id="iv-dur">
+              <option value="30">30 分钟</option>
+              <option value="45" selected>45 分钟</option>
+              <option value="60">60 分钟</option>
+            </select>
+          </label>
+          <button class="btn-primary" id="iv-start">▶ 开始面试</button>
+        </div>
+        <p id="iv-needset" class="iv-needset" hidden></p>
+        <p class="field-hint">未配置大模型也能面试（手动记笔记）；配置后才有「录音转文字」和「AI 评价」。点右上角 ⚙ 设置你的接口。</p>
+      </div>
+
+      <div id="iv-live" hidden>
+        <div class="iv-top">
+          <span class="iv-timer" id="iv-timer">45:00</span>
+          <button class="btn-mini no" id="iv-end">⏹ 结束并 AI 评价</button>
+          <button class="btn-mini" id="iv-stt">🎙 录音转文字：关</button>
+          <button class="btn-mini" id="iv-call">🔊 实时语音</button>
+        </div>
+        <div class="iv-transcript" id="iv-transcript"><p class="muted">对话稿会实时显示在这里。开启「录音转文字」后，你说的话会自动变成文字。</p></div>
+        <div class="iv-note">
+          <input id="iv-note" type="text" maxlength="300" placeholder="手动补充一句（回车发送，记为「我」）" autocomplete="off" />
+          <button class="btn-mini ok" id="iv-note-send">记</button>
+        </div>
+        <div id="iv-eval" class="iv-eval" hidden></div>
+        <p id="iv-call-tip" class="iv-call-tip" hidden></p>
+      </div>
+    </section>
+
     <section class="card" id="msg-card">
       <h2 class="sec-title">💬 留言板</h2>
       <p class="muted">互留文字：约时间、留备用联系方式。每人只能删自己发的留言。</p>
@@ -193,6 +231,16 @@
     }
 
     var remain = 0, timer = null, infoMineInit = false, dissolveTimer = null, dissolveToasted = false;
+
+    // 暴露给 interview.js / settings.js 用的运行时句柄
+    window.FT = {
+      get me() { return me; },
+      get pairId() { return pairId; },
+      toast: toast, esc: esc, api: api, apiA: apiA,
+    };
+    document.getElementById('open-settings').addEventListener('click', function () {
+      if (window.FTSettings) window.FTSettings.open();
+    });
 
     function render(p){
       if(!p || p.pairId !== pairId){ document.getElementById('room').innerHTML='<p class="muted">无权限或房间已失效。</p>'; return; }
@@ -490,6 +538,13 @@
       var unlocked = (vGate === 'skip' || vGate === 'passed');
       document.getElementById('msg-card').hidden = !unlocked;
       document.getElementById('info-card').hidden = !unlocked;
+      // 2.1 面试间同样受试音门禁保护：没互评通过不给开面试
+      var ivc = document.getElementById('iv-card');
+      if (ivc) {
+        var wasHidden = ivc.hidden;
+        ivc.hidden = !unlocked;
+        if (wasHidden && unlocked && window.FTInterview) window.FTInterview.onUnlock();
+      }
       if (vGate === 'skip') { card.hidden = true; return; }   // voice 表未建 → 整个环节跳过，不影响老功能
       card.hidden = false;
       document.getElementById('v-topic').textContent = vMeta.topic || '';
@@ -706,5 +761,7 @@
     }, 5000);
   })();
   </script>
+  <script src="/assets/settings.js?v=20260806b"></script>
+  <script src="/assets/interview.js?v=20260806b"></script>
 </body>
 </html>
