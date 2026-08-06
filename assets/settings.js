@@ -1,50 +1,106 @@
 // ============================================================
-// FaceTalk v2.1 设置：用户自添加大模型接口（仅存本地，不上传服务器）
-// 暴露 window.FTSettings.{ get, hasLLM, hasSTT, sttOn, open }
+// FaceTalk v2.2 设置：语音转写引擎 + AI 点评（自备 Key，仅本机）
+// 对齐辅警站 ai-settings-modal 视觉/交互；本地存储 key = rcj_ft_asr_v1
+// 暴露接口与 v2.1 完全兼容：window.FTSettings.{ get, hasLLM, hasSTT,
+//   sttOn, sttMode, browserSttSupported, browserSttLang, open, close }
+//   其中 get() 仍返回 { provider, llmBase, llmKey, llmModel,
+//   sttBase, sttKey, sttModel, sttOn, sttMode }（供 interview.js /api/llm 用）
 // ============================================================
 (function () {
-  var KEY = 'ft_settings_v21';
+  var STORAGE_KEY = 'rcj_ft_asr_v1';
+  var OLD_KEY_V21 = 'ft_settings_v21';
   var PRESETS = {
-    openai:    { name: 'OpenAI',          llmBase: 'https://api.openai.com/v1',        llmModel: 'gpt-4o-mini',     sttBase: 'https://api.openai.com/v1',     sttModel: 'whisper-1' },
-    deepseek:  { name: 'DeepSeek',        llmBase: 'https://api.deepseek.com/v1',      llmModel: 'deepseek-chat',   sttBase: '',                              sttModel: '' },
-    qwen:      { name: '通义千问',         llmBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1', llmModel: 'qwen-plus', sttBase: '', sttModel: '' },
-    moonshot:  { name: 'Kimi (Moonshot)', llmBase: 'https://api.moonshot.cn/v1',       llmModel: 'moonshot-v1-8k',  sttBase: '',                              sttModel: '' },
-    silicon:   { name: 'SiliconFlow',     llmBase: 'https://api.siliconflow.cn/v1',    llmModel: 'Qwen/Qwen2.5-7B-Instruct', sttBase: 'https://api.siliconflow.cn/v1', sttModel: 'FunAudioLLM/SenseVoiceSmall' },
-    custom:    { name: '自定义（填下面的地址）', llmBase: '', llmModel: '', sttBase: '', sttModel: '' },
+    silicon: { name: '硅基流动（推荐 / 国内直连）', llmBase: 'https://api.siliconflow.cn/v1', llmModel: 'Qwen/Qwen2.5-7B-Instruct', sttBase: 'https://api.siliconflow.cn/v1', sttModel: 'FunAudioLLM/SenseVoiceSmall' },
+    deepseek: { name: 'DeepSeek', llmBase: 'https://api.deepseek.com/v1', llmModel: 'deepseek-chat', sttBase: '', sttModel: '' },
+    qwen:     { name: '通义千问（DashScope 兼容）', llmBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1', llmModel: 'qwen-plus', sttBase: '', sttModel: '' },
+    moonshot: { name: 'Kimi (Moonshot)', llmBase: 'https://api.moonshot.cn/v1', llmModel: 'moonshot-v1-8k', sttBase: '', sttModel: '' },
+    openai:   { name: 'OpenAI', llmBase: 'https://api.openai.com/v1', llmModel: 'gpt-4o-mini', sttBase: 'https://api.openai.com/v1', sttModel: 'whisper-1' },
+    custom:   { name: '自定义（填下面的地址）', llmBase: '', llmModel: '', sttBase: '', sttModel: '' },
   };
 
-  function load() {
-    try { return Object.assign({ provider: 'openai', llmBase: '', llmKey: '', llmModel: '', sttBase: '', sttKey: '', sttModel: '', sttOn: true, sttMode: 'api' }, JSON.parse(localStorage.getItem(KEY) || '{}')); }
-    catch (e) { return { provider: 'openai', llmBase: '', llmKey: '', llmModel: '', sttBase: '', sttKey: '', sttModel: '', sttOn: true, sttMode: 'api' }; }
+  function defaultS() {
+    return {
+      asrEngine: 'webspeech',                          // 'webspeech' | 'cloud'
+      asr: { baseUrl: '', key: '', model: '' },
+      llm: { enabled: false, baseUrl: '', key: '', model: '' },
+      preset: 'silicon',
+    };
   }
-  function save(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
 
+  function load() {
+    var s = defaultS();
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var p = JSON.parse(raw);
+        if (p.asr) s.asr = Object.assign(s.asr, p.asr);
+        if (p.llm) s.llm = Object.assign(s.llm, p.llm);
+        if (p.asrEngine === 'cloud' || p.asrEngine === 'webspeech') s.asrEngine = p.asrEngine;
+        if (p.preset && PRESETS[p.preset]) s.preset = p.preset;
+      } else {
+        // 从 v2.1 老 schema 升级
+        var old = JSON.parse(localStorage.getItem(OLD_KEY_V21) || '{}');
+        if (old.llmBase || old.llmKey || old.llmModel) {
+          s.llm = { enabled: true, baseUrl: old.llmBase || '', key: old.llmKey || '', model: old.llmModel || '' };
+          s.llm.enabled = !!(old.llmBase && old.llmKey && old.llmModel);
+          s.preset = 'custom';
+        }
+        if (old.sttMode === 'browser' || old.sttMode === 'api') {
+          s.asrEngine = (old.sttMode === 'browser') ? 'webspeech' : 'cloud';
+          if (s.asrEngine === 'cloud') {
+            s.asr = { baseUrl: old.sttBase || old.llmBase || '', key: old.sttKey || old.llmKey || '', model: old.sttModel || '' };
+          }
+          if (!old.llmBase && !old.llmKey && !old.llmModel && s.asrEngine === 'cloud') {
+            // 老用户只配了 STT，保留 STT 三件套，AI 不启用
+            s.asr.baseUrl = old.sttBase || '';
+          }
+        }
+      }
+    } catch (e) {}
+    return s;
+  }
+  function save(s) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {} }
+
+  // 当前内存中的设置（每次保存更新）
   var S = load();
 
-  // 兼容历史：老用户只存了 sttOn，没有 sttMode，补一个默认值
-  if (!S.sttMode) S.sttMode = S.sttOn ? 'api' : 'off';
-
-  function get() { return S; }
-  function hasLLM() { return !!(S.llmBase && S.llmKey && S.llmModel); }
-  // STT 模式判断：浏览器原生路径不需要任何 key/api，浏览器认得出来就行
-  function hasSTT() {
-    if (S.sttMode === 'off') return false;
-    if (S.sttMode === 'browser') return !!getBrowserSttCtor();
-    // 'api'：未填 sttBase/Key 时回退用大模型的 Base/Key，只有模型名必须单独填（whisper-1 等）
-    var b = S.sttBase || S.llmBase, k = S.sttKey || S.llmKey;
-    return !!(b && k && S.sttModel);
+  // 把内部 schema 映射为老 schema（interview.js 沿用的字段）
+  function toLegacySchema(s) {
+    var sttBase, sttKey, sttModel, sttMode, sttOn;
+    if (s.asrEngine === 'webspeech') {
+      sttBase = ''; sttKey = ''; sttModel = ''; sttMode = 'browser'; sttOn = true;
+    } else { // cloud
+      sttBase = s.asr.baseUrl || ''; sttKey = s.asr.key || ''; sttModel = s.asr.model || '';
+      sttMode = 'api'; sttOn = true;
+    }
+    return {
+      provider: s.preset || 'custom',
+      preset: s.preset,
+      asrEngine: s.asrEngine,
+      llmBase: s.llm.baseUrl || '',
+      llmKey: s.llm.key || '',
+      llmModel: s.llm.model || '',
+      sttBase: sttBase, sttKey: sttKey, sttModel: sttModel,
+      sttMode: sttMode, sttOn: sttOn,
+      llmEnabled: !!s.llm.enabled,
+    };
   }
-  function sttOn() { return S.sttMode !== 'off'; }
-  function sttMode() { return S.sttMode; }
-  // 检测当前浏览器是否支持原生 SpeechRecognition（Chrome / Edge 内置；Safari 仅部分版本；微信内置浏览器通常不支持）
+
+  function get() { return toLegacySchema(S); }
+
+  function hasLLM() { return !!(S.llm.enabled && S.llm.baseUrl && S.llm.key && S.llm.model); }
+  function hasSTT() {
+    if (S.asrEngine === 'webspeech') return !!getBrowserSttCtor();
+    return !!(S.asr.baseUrl && S.asr.key && S.asr.model);
+  }
+  function sttOn() { return S.asrEngine === 'webspeech' || S.asrEngine === 'cloud'; }
+  function sttMode() { return S.asrEngine === 'webspeech' ? 'browser' : 'api'; }
+
   function getBrowserSttCtor() {
-    try {
-      if (typeof window === 'undefined') return null;
-      return window.SpeechRecognition || window.webkitSpeechRecognition || null;
-    } catch (e) { return null; }
+    try { return window.SpeechRecognition || window.webkitSpeechRecognition || null; } catch (e) { return null; }
   }
   function browserSttSupported() { return !!getBrowserSttCtor(); }
-  function browserSttLang() { // 浏览器原生默认 zh-CN；保留可改
+  function browserSttLang() {
     try {
       var nav = (navigator.language || 'zh-CN').toLowerCase();
       return nav.startsWith('zh') ? 'zh-CN' : 'en-US';
@@ -60,85 +116,187 @@
     wrap.id = 'set-mask';
     wrap.innerHTML =
       '<div class="set-modal">' +
-        '<div class="set-head"><span>⚙️ 大模型接口设置</span><button class="set-x" id="set-x">✕</button></div>' +
-        '<p class="set-tip">密钥仅保存在你本机浏览器，<b>不会上传到服务器</b>。填好即可用「录音转文字」和「AI 评价」。用 OpenAI 兼容接口，国内可填 DeepSeek / 通义 / Kimi 等。</p>' +
-        '<div class="set-sec">' +
-          '<h4>🤖 大模型（AI 评价 / 对话）</h4>' +
-          '<label class="field"><span class="field-label">预设</span><select id="set-prov">' + Object.keys(PRESETS).map(function (k) { return '<option value="' + k + '">' + PRESETS[k].name + '</option>'; }).join('') + '</select></label>' +
-          '<label class="field"><span class="field-label">API Base</span><input id="set-llmBase" placeholder="https://api.xxx.com/v1" autocomplete="off" /></label>' +
-          '<label class="field"><span class="field-label">API Key</span><input id="set-llmKey" type="password" placeholder="sk-..." autocomplete="off" /></label>' +
-          '<label class="field"><span class="field-label">模型名</span><input id="set-llmModel" placeholder="如 gpt-4o-mini" autocomplete="off" /></label>' +
+        '<div class="set-head"><span>🎙 语音 & AI 点评设置（自备 Key）</span><button class="set-x" id="set-x">✕</button></div>' +
+        '<p class="set-tip">语音转写和 AI 点评需你自己的 API Key，<b>Key 仅保存在本机浏览器</b>，不会上传给任何人。</p>' +
+        '<div class="set-section-title">🎙 语音转写引擎</div>' +
+        '<div class="set-engine-opt">' +
+          '<label class="set-engine-row"><input type="radio" name="aiAsrEngine" value="webspeech" /> <span><b>🌐 浏览器内置</b>（免费，部分手机/微信不支持）</span></label>' +
+          '<label class="set-engine-row"><input type="radio" name="aiAsrEngine" value="cloud" /> <span><b>☁️ 云端 API</b>（国内直连·推荐）</span></label>' +
         '</div>' +
-        '<div class="set-sec">' +
-          '<h4>🎙 语音转文字（STT）</h4>' +
-          '<p class="set-sub">面试间里你说的每句话会自动变成文字、双方都看得到。</p>' +
-          '<div class="set-stt-row">' +
-            '<label class="set-stt-opt"><input type="radio" name="sttMode" value="api" /> <span><b>Whisper / SenseVoice API</b> · 准确度高，有配额就选这个</span></label>' +
-            '<label class="set-stt-opt"><input type="radio" name="sttMode" value="browser" /> <span><b>浏览器自带</b>（Google Chrome / Edge） · 不用 API key、不消耗配额，但不识别英文以外的语言或安静环境</span></label>' +
-            '<label class="set-stt-opt"><input type="radio" name="sttMode" value="off" /> <span><b>关闭</b> · 不自动转录，靠手动记笔记</span></label>' +
-          '</div>' +
-          '<label class="field"><span class="field-label">API Base（Whisper 兼容）</span><input id="set-sttBase" placeholder="留空则用上面的 Base" autocomplete="off" /></label>' +
-          '<label class="field"><span class="field-label">API Key（留空则用上面的 Key）</span><input id="set-sttKey" type="password" placeholder="留空则用上面的 Key" autocomplete="off" /></label>' +
-          '<label class="field"><span class="field-label">模型名</span><input id="set-sttModel" placeholder="如 whisper-1" autocomplete="off" /></label>' +
-          '<p class="set-sub">支持 OpenAI Whisper 兼容接口（OpenAI / Groq / 本地 Whisper / SiliconFlow SenseVoice 等）。</p>' +
+        '<p class="set-sub-hint">浏览器内置无需 Key，但 iOS Safari / 微信内置常无法转写；云端 API 需配置 Key，几乎全平台可用。</p>' +
+        '<div id="set-asr-cloud" hidden>' +
+          '<label class="set-field">API Base URL（Whisper 兼容）<input class="set-input" id="set-asrBase" placeholder="https://api.siliconflow.cn/v1" autocomplete="off" /></label>' +
+          '<label class="set-field">API Key<input class="set-input" id="set-asrKey" type="password" placeholder="sk-...（仅存本机）" autocomplete="off" /></label>' +
+          '<label class="set-field">模型名<input class="set-input" id="set-asrModel" placeholder="FunAudioLLM/SenseVoiceSmall" autocomplete="off" /></label>' +
+          '<p class="set-sub-hint">推荐硅基流动 SenseVoice：<code>https://api.siliconflow.cn/v1</code> + <code>FunAudioLLM/SenseVoiceSmall</code></p>' +
+        '</div>' +
+        '<div class="set-section-title">🤖 AI 点评</div>' +
+        '<label class="set-chk"><input type="checkbox" id="set-llmEnabled" /> <span>✅ 启用 AI 点评</span></label>' +
+        '<div id="set-llm-body">' +
+          '<label class="set-field">预设<select class="set-input" id="set-preset">' + Object.keys(PRESETS).map(function (k) { return '<option value="' + k + '">' + PRESETS[k].name + '</option>'; }).join('') + '</select></label>' +
+          '<label class="set-field">API Base URL<input class="set-input" id="set-llmBase" placeholder="https://api.siliconflow.cn/v1" autocomplete="off" /></label>' +
+          '<label class="set-field">API Key（sk- 开头）<input class="set-input" id="set-llmKey" type="password" placeholder="sk-...（仅存本机）" autocomplete="off" /></label>' +
+          '<label class="set-field">模型名<input class="set-input" id="set-llmModel" placeholder="Qwen/Qwen2.5-7B-Instruct 或 deepseek-chat" autocomplete="off" /></label>' +
         '</div>' +
         '<div class="set-actions">' +
-          '<button class="btn-mini grey" id="set-clear">清除全部</button>' +
-          '<button class="btn-primary" id="set-save">保存</button>' +
+          '<button class="btn-mini" id="set-test" type="button">🧪 测试连接</button>' +
+          '<span class="set-test-result" id="set-test-result"></span>' +
         '</div>' +
-        '<p class="set-status" id="set-status" hidden></p>' +
+        '<div class="set-actions set-actions-bottom">' +
+          '<button class="btn-mini grey" id="set-clear" type="button">清除全部</button>' +
+          '<button class="btn-mini grey" id="set-close" type="button">关闭</button>' +
+          '<button class="btn-primary" id="set-save" type="button">保存</button>' +
+        '</div>' +
+        '<p class="set-hint">📘 <a href="https://exam.rcj9527.dpdns.org/tutorials/api-key.html" target="_blank" rel="noopener">国内大模型免费 API 获取教程</a></p>' +
       '</div>';
     document.body.appendChild(wrap);
 
     wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
     document.getElementById('set-x').addEventListener('click', close);
-    document.getElementById('set-prov').addEventListener('change', function () {
-      var p = PRESETS[this.value]; if (!p) return;
+    document.getElementById('set-close').addEventListener('click', close);
+
+    // 切预设：自动填 baseUrl/model（仅在用户没改过的情况下覆盖）
+    document.getElementById('set-preset').addEventListener('change', function () {
+      var k = this.value;
+      var p = PRESETS[k]; if (!p) return;
       document.getElementById('set-llmBase').value = p.llmBase;
       document.getElementById('set-llmModel').value = p.llmModel;
-      if (p.sttBase) document.getElementById('set-sttBase').value = p.sttBase;
-      if (p.sttModel) document.getElementById('set-sttModel').value = p.sttModel;
+      // 顺手把 asr 也预填（如果不是云端，先不开面板）
+      if (S.asrEngine === 'cloud') {
+        document.getElementById('set-asrBase').value = p.sttBase;
+        document.getElementById('set-asrModel').value = p.sttModel;
+      }
     });
+
+    // 切引擎：显隐云端面板
+    function syncAsrPanel() {
+      var eng = (document.querySelector('input[name="aiAsrEngine"]:checked') || { value: 'webspeech' }).value;
+      var p = document.getElementById('set-asr-cloud');
+      if (p) p.hidden = (eng !== 'cloud');
+    }
+    var radios = document.querySelectorAll('input[name="aiAsrEngine"]');
+    radios.forEach(function (r) { r.addEventListener('change', syncAsrPanel); });
+
+    // 启用 AI 点评 → 显隐下方表单
+    document.getElementById('set-llmEnabled').addEventListener('change', function () {
+      document.getElementById('set-llm-body').hidden = !this.checked;
+    });
+
+    // 保存
     document.getElementById('set-save').addEventListener('click', function () {
-      S.provider = document.getElementById('set-prov').value;
-      S.llmBase = document.getElementById('set-llmBase').value.trim();
-      S.llmKey = document.getElementById('set-llmKey').value.trim();
-      S.llmModel = document.getElementById('set-llmModel').value.trim();
-      var m = document.querySelector('input[name="sttMode"]:checked');
-      S.sttMode = m ? m.value : (S.sttMode || 'api');
-      // 兼容旧字段：保留 sttOn 给老代码读
-      S.sttOn = (S.sttMode !== 'off');
-      S.sttBase = document.getElementById('set-sttBase').value.trim();
-      S.sttKey = document.getElementById('set-sttKey').value.trim();
-      S.sttModel = document.getElementById('set-sttModel').value.trim();
+      var eng = (document.querySelector('input[name="aiAsrEngine"]:checked') || { value: 'webspeech' }).value;
+      S = {
+        asrEngine: eng,
+        asr: {
+          baseUrl: document.getElementById('set-asrBase').value.trim(),
+          key: document.getElementById('set-asrKey').value.trim(),
+          model: document.getElementById('set-asrModel').value.trim(),
+        },
+        llm: {
+          enabled: document.getElementById('set-llmEnabled').checked,
+          baseUrl: document.getElementById('set-llmBase').value.trim(),
+          key: document.getElementById('set-llmKey').value.trim(),
+          model: document.getElementById('set-llmModel').value.trim(),
+        },
+        preset: document.getElementById('set-preset').value,
+      };
+      // 简单校验
+      if (S.asrEngine === 'cloud') {
+        if (!S.asr.baseUrl) { toast('已选择「云端 API」转写，必须填写 API Base URL', true); return; }
+        if (!S.asr.key) { toast('已选择「云端 API」转写，必须填写 API Key', true); return; }
+        if (!S.asr.model) { toast('已选择「云端 API」转写，必须填写模型名', true); return; }
+      }
+      if (S.llm.enabled) {
+        if (!S.llm.baseUrl) { toast('已启用 AI 点评，但缺少 API Base URL', true); return; }
+        if (!S.llm.key) { toast('已启用 AI 点评，但缺少 API Key', true); return; }
+        if (!S.llm.model) { toast('已启用 AI 点评，但缺少模型名', true); return; }
+      }
       save(S);
-      var st = document.getElementById('set-status');
-      st.hidden = false; st.textContent = '✅ 已保存（仅本机）';
-      setTimeout(function () { st.hidden = true; }, 1800);
+      var r = document.getElementById('set-test-result');
+      r.style.color = '#2e7d32'; r.textContent = '✅ 已保存（仅本机）';
+      setTimeout(function () { r.textContent = ''; }, 1800);
       if (window.FT && window.FT.onSettingsChange) window.FT.onSettingsChange();
     });
+
+    // 清除全部
     document.getElementById('set-clear').addEventListener('click', function () {
       if (!confirm('清除本机保存的全部接口设置？')) return;
-      S = { provider: 'openai', llmBase: '', llmKey: '', llmModel: '', sttBase: '', sttKey: '', sttModel: '', sttOn: true, sttMode: 'api' };
-      save(S); fill(); if (window.FT && window.FT.onSettingsChange) window.FT.onSettingsChange();
+      S = defaultS();
+      save(S); fill();
+      if (window.FT && window.FT.onSettingsChange) window.FT.onSettingsChange();
+    });
+
+    // 测试连接（两步探测 /models + /chat/completions）
+    document.getElementById('set-test').addEventListener('click', async function () {
+      var btn = this, r = document.getElementById('set-test-result');
+      var baseUrl = document.getElementById('set-llmBase').value.trim();
+      var key = document.getElementById('set-llmKey').value.trim();
+      var model = document.getElementById('set-llmModel').value.trim();
+      if (!baseUrl) { r.style.color = '#dc2626'; r.textContent = '❌ 请先填 API Base URL'; return; }
+      if (!key) { r.style.color = '#dc2626'; r.textContent = '❌ 请先填 API Key'; return; }
+      if (!model) { r.style.color = '#dc2626'; r.textContent = '❌ 请先填模型名'; return; }
+      btn.disabled = true; r.style.color = '#6b7280'; r.textContent = '⏳ 第一步：探测 /models ...';
+      var orig = baseUrl;
+      if (!/^https?:\/\//i.test(baseUrl)) baseUrl = 'https://' + baseUrl;
+      baseUrl = baseUrl.replace(/\/+$/, '');
+      function fail(msg, c) { c = c || '#dc2626'; btn.disabled = false; r.style.color = c; r.textContent = msg; }
+      try {
+        var res1 = await fetch(baseUrl + '/models', { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key } });
+        if (!res1.ok) throw new Error('HTTP ' + res1.status + '（第一步 /models 失败）');
+        r.textContent = '⏳ 第二步：验证 Key+模型 /chat/completions ...';
+        var res2 = await fetch(baseUrl + '/chat/completions', {
+          method: 'POST', mode: 'cors',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+          body: JSON.stringify({ model: model, messages: [{ role: 'user', content: '你好' }], max_tokens: 5, stream: false })
+        });
+        if (!res2.ok) throw new Error('HTTP ' + res2.status + '（第二步失败）');
+        var j = await res2.json().catch(function () { return {}; });
+        var ans = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+        fail(ans ? ('✅ 连接成功！模型回复：' + ans.slice(0, 30)) : '⚠️ 连接成功但返回为空（模型名可能不对）', ans ? '#059669' : '#b45309');
+      } catch (e) {
+        var msg = String(e.message || e || '');
+        if (/Failed to fetch|NetworkError|Network request failed|Failed to load/i.test(msg)) msg = '网络失败：请检查 URL 是否以 https:// 开头、本机能否访问外网';
+        else if (/timeout/i.test(msg)) msg = '请求超时：请检查 URL 与本机外网连接';
+        fail('❌ ' + msg);
+      }
     });
   }
+
   function fill() {
-    document.getElementById('set-prov').value = S.provider || 'openai';
-    document.getElementById('set-llmBase').value = S.llmBase || '';
-    document.getElementById('set-llmKey').value = S.llmKey || '';
-    document.getElementById('set-llmModel').value = S.llmModel || '';
-    var m = S.sttMode || (S.sttOn ? 'api' : 'off');
-    var radios = document.querySelectorAll('input[name="sttMode"]');
-    var hit = false;
-    radios.forEach(function (r) { if (r.value === m) { r.checked = true; hit = true; } });
-    if (!hit && radios[0]) radios[0].checked = true;
-    document.getElementById('set-sttBase').value = S.sttBase || '';
-    document.getElementById('set-sttKey').value = S.sttKey || '';
-    document.getElementById('set-sttModel').value = S.sttModel || '';
+    var radios = document.querySelectorAll('input[name="aiAsrEngine"]');
+    radios.forEach(function (r) { r.checked = (r.value === S.asrEngine); });
+    var eng = S.asrEngine || 'webspeech';
+    document.getElementById('set-asr-cloud').hidden = (eng !== 'cloud');
+    document.getElementById('set-asrBase').value = S.asr.baseUrl || '';
+    document.getElementById('set-asrKey').value = S.asr.key || '';
+    document.getElementById('set-asrModel').value = S.asr.model || '';
+    document.getElementById('set-llmEnabled').checked = !!S.llm.enabled;
+    document.getElementById('set-llm-body').hidden = !S.llm.enabled;
+    document.getElementById('set-preset').value = S.preset || 'custom';
+    document.getElementById('set-llmBase').value = S.llm.baseUrl || '';
+    document.getElementById('set-llmKey').value = S.llm.key || '';
+    document.getElementById('set-llmModel').value = S.llm.model || '';
+    document.getElementById('set-test-result').textContent = '';
   }
-  function open() { build(); fill(); var m = document.getElementById('set-mask'); m.style.display = 'flex'; }
+
+  function toast(m, err) {
+    if (window.FT && window.FT.toast) return window.FT.toast(m, err);
+    try { alert(m); } catch (e) {}
+  }
+
+  function open() {
+    build();
+    // 每次打开时读最新（用户在另一个 tab 改了也能生效）
+    S = load();
+    fill();
+    var m = document.getElementById('set-mask');
+    m.style.display = 'flex';
+  }
   function close() { var m = document.getElementById('set-mask'); if (m) m.style.display = 'none'; }
 
-  window.FTSettings = { get: get, hasLLM: hasLLM, hasSTT: hasSTT, sttOn: sttOn, sttMode: sttMode, browserSttSupported: browserSttSupported, browserSttLang: browserSttLang, open: open, close: close };
+  window.FTSettings = {
+    get: get, hasLLM: hasLLM, hasSTT: hasSTT, sttOn: sttOn, sttMode: sttMode,
+    browserSttSupported: browserSttSupported, browserSttLang: browserSttLang,
+    open: open, close: close,
+  };
 })();

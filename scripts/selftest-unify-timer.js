@@ -119,8 +119,8 @@ check('pair.html 倒计时说明含「时间到自动 AI 评价」',
 
 // 10. 版本号 bump
 section('10) 版本号 bump');
-check('interview.js?v=20260806n 已生效',
-  pairHtml.includes('interview.js?v=20260806n'),
+check('interview.js?v=20260806o 已生效',
+  pairHtml.includes('interview.js?v=20260806o'),
   'pair.html 没 bump interview.js 版本号');
 
 console.log('\n=== ' + pass + ' / ' + (pass + fail) + ' 通过 ===');

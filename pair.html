@@ -7,14 +7,14 @@
   <meta name="theme-color" content="#1e88e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260806l" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260806o" />
 </head>
 <body>
   <header class="topbar">
     <div class="container bar-inner">
       <a class="brand" href="/"><span class="brand-mark">搭</span><span class="brand-text">FaceTalk</span></a>
       <span class="brand-tag">搭子房间 · 1:1</span>
-      <button class="bar-gear" id="open-settings" title="设置大模型接口" aria-label="设置">⚙</button>
+      <button class="bar-gear" id="open-settings" title="🎙 语音 & AI 点评设置（自备 Key）" aria-label="设置">⚙</button>
     </div>
   </header>
 
@@ -126,13 +126,23 @@
         <p class="v-state" id="v-verdict"></p>
         <div class="v-cards" id="v-review-cards"></div>
       </div>
+
+      <!-- v2.2 路线图：闻声识搭子 预告（不在门禁逻辑里，纯展示） -->
+      <div class="v-roadmap">
+        <span class="v-roadmap-tag">下一版</span>
+        <b>闻声识搭子</b>：在你录完这段试音后，系统会顺便提取你的<b>声纹节奏特征</b>（语速/共鸣/停顿习惯），再和对面那位的声音做相似度比对，把<b>声音最合拍的搭子</b>优先推给你——不用看脸、不用尬聊开场白，开口就对味。
+      </div>
       </div><!-- /v-body -->
     </section>
 
     <!-- ===== 2.1 面试间：实时转录 + 自添加大模型评价 ===== -->
     <section class="card" id="iv-card" hidden>
       <h2 class="sec-title">🎤 面试间 <span class="v-badge">2.1</span></h2>
-      <p class="muted">进房即用，<b>跟随搭子房间总时长（30 分钟）</b>，时间到自动 AI 评价。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。</p>
+      <div class="iv-testing-banner">
+        <span class="iv-testing-mark">🚧 功能测试中</span>
+        <span>WebRTC 实时语音 + 转写 + AI 评价链路尚未稳定，<b>优先建议先用腾讯会议对练</b>，稳定后这栏会自动恢复。</span>
+      </div>
+      <p class="muted">进房即用，<b>跟随搭子房间总时长（30 分钟）</b>，时间到自动 AI 评价。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。<b>⚠ 录音 / 实时语音 / AI 评价按钮当前为测试态，可能不稳定，请优先用腾讯会议。</b></p>
 
       <div id="iv-live">
         <div class="iv-top">
@@ -598,6 +608,8 @@
       if (ivc) {
         var wasHidden = ivc.hidden;
         ivc.hidden = !unlocked;
+        // v2.2：标记「功能测试中」灰化 class（不影响开门禁，只改变按钮视觉）
+        ivc.classList.toggle('iv-testing', unlocked);
         if (wasHidden && unlocked && window.FTInterview) window.FTInterview.onUnlock();
       }
       if (vGate === 'skip') { card.hidden = true; return; }   // voice 表未建 → 整个环节跳过，不影响老功能
@@ -854,8 +866,8 @@
     }, 5000);
   })();
   </script>
-  <script src="/assets/settings.js?v=20260806h"></script>
+  <script src="/assets/settings.js?v=20260806o"></script>
   <script src="/assets/glare.js?v=20260806h"></script>
-  <script src="/assets/interview.js?v=20260806n"></script>
+  <script src="/assets/interview.js?v=20260806o"></script>
 </body>
 </html>

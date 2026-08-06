@@ -39,8 +39,8 @@ check('onUnlock 打印 polling started', /polling started/.test(src),
   'polling started 日志丢了');
 
 // 4) 版本号 bump
-check('interview.js 版本号 20260806n', /interview\.js\?v=20260806n/.test(html),
-  'pair.html 没 bump 到 20260806n');
+check('interview.js 版本号 20260806o', /interview\.js\?v=20260806o/.test(html),
+  'pair.html 没 bump 到 20260806o');
 
 console.log('\n=== 回归自测 ===');
 // 已有 selftest 也要过
