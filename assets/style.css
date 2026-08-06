@@ -747,4 +747,40 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid #fed7aa; border-radius: 10px;
   padding: 9px 12px; margin: 8px 0 12px; color: #7c2d12;
 }
+
+/* ===== 桌面端适配（2026-08-06）===== */
+/* 平板/小屏先平滑拓宽容器，避免 680px 窄条居中留大片空白 */
+@media (min-width: 700px) {
+  .container { max-width: 760px; padding: 0 24px; }
+}
+/* 宽屏：容器拓宽到 1040，并把四个「搭子列表」区块排成 2 列网格，真正用上横向空间 */
+@media (min-width: 920px) {
+  .container { max-width: 1040px; }
+  main.container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 22px;
+    row-gap: 22px;
+    align-items: start;
+  }
+  /* 取消旧的单列纵向 margin，改由网格 row-gap 统一控制节奏 */
+  main.container > * { margin: 0; }
+  /* 这些区块在桌面端占满整行；只有 4 个 .board 进入 2 列网格 */
+  main.container > .hero,
+  main.container > .me-bar,
+  main.container > .form-card,
+  main.container > #room-card,
+  main.container > #rate-card,
+  main.container > .foot-note,
+  main.container > .wall { grid-column: 1 / -1; }
+
+  /* 首屏在宽屏更有分量 */
+  .hero { padding: 56px 0 18px; }
+  .hero h1 { font-size: 38px; }
+  .hero-steps { max-width: 720px; }
+  .hero-steps li { font-size: 16px; }
+
+  /* 发布表单在宽屏收窄到舒适阅读宽度并居中，避免超宽输入框 */
+  main.container > .form-card { max-width: 760px; justify-self: center; }
+}
 .msg-tip-meeting b { color: #b45309; }
