@@ -235,8 +235,11 @@
 
   <script>
   (function () {
-    var me = localStorage.getItem('ft_me');
     var params = new URL(location.href).searchParams;
+    // v2.3 修复无痕/隐私模式丢身份：URL ?me= 优先（刷新 URL 不变 → 最强兜底），
+    // 其次 localStorage / Cookie（FTMe 双写）。拿到后立即写回存储，确保下次无痕刷新也有据可查。
+    var me = params.get('me') || (window.FTMe ? window.FTMe.get() : null) || null;
+    if (me && window.FTMe) window.FTMe.set(me);
     var pairId = params.get('pair');
     if (!me) { location.href = '/'; return; }
     if (!pairId) { document.getElementById('room').innerHTML = '<p class="muted">缺少房间参数。</p>'; return; }
@@ -866,6 +869,7 @@
     }, 5000);
   })();
   </script>
+  <script src="/assets/ft-util.js?v=20260806p"></script>
   <script src="/assets/settings.js?v=20260806o"></script>
   <script src="/assets/glare.js?v=20260806h"></script>
   <script src="/assets/interview.js?v=20260806o"></script>

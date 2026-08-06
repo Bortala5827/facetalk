@@ -60,20 +60,23 @@
     }
     if (res.status === 503 && d.error === 'DB_NOT_BOUND') toast('后端存储正在初始化：请绑定 D1 数据库', true);
     else if (res.status === 403 && d.error === 'BANNED') toast('该身份已被封禁', true);
-    else if (res.status === 401 && d.error === 'BAD_TOKEN') { localStorage.removeItem('ft_me'); location.reload(); }
+    else if (res.status === 401 && d.error === 'BAD_TOKEN') { if (window.FTMe) window.FTMe.del(); else localStorage.removeItem('ft_me'); location.reload(); }
     return { status: res.status, data: d };
   }
 
   async function ensureToken() {
-    me = localStorage.getItem('ft_me');
+    // v2.3 无痕/隐私模式兜底：URL ?me= → localStorage → Cookie（FTMe 双写）
+    var urlMe = null;
+    try { urlMe = new URL(location.href).searchParams.get('me'); } catch (e) {}
+    me = urlMe || (window.FTMe ? window.FTMe.get() : localStorage.getItem('ft_me'));
     if (me) {
       var r = await rawGet('/api/identity?id=' + encodeURIComponent(me));
-      if (r.status === 200 && !r.data.banned) return;
+      if (r.status === 200 && !r.data.banned) { if (window.FTMe) window.FTMe.set(me); return; }
     }
     var res = await fetch('/api/identity', { method: 'POST' });
     var d = {}; try { d = await res.json(); } catch (e) {}
     me = d.id;
-    localStorage.setItem('ft_me', me);
+    if (window.FTMe) window.FTMe.set(me); else localStorage.setItem('ft_me', me);
   }
 
   function renderRep() {
@@ -444,7 +447,8 @@
   async function enterRoom() {
     var r = await api('GET', '/api/pair');
     if (r.status === 200 && r.data.pair && r.data.pair.pairId) {
-      location.href = '/pair.html?pair=' + encodeURIComponent(r.data.pair.pairId);
+      // v2.3 把 me 编码进 URL，无痕模式刷新房间页时从 URL 拿身份，不依赖 localStorage
+      location.href = '/pair.html?pair=' + encodeURIComponent(r.data.pair.pairId) + '&me=' + encodeURIComponent(me);
     } else {
       toast('当前房间不可用，请到主页底部查看', true);
     }
@@ -496,7 +500,7 @@
     var left = p && p.left;
     if (p && !rated && !left) {
       $('room-card').hidden = false;
-      $('room-enter').href = '/pair.html?pair=' + encodeURIComponent(p.pairId);
+      $('room-enter').href = '/pair.html?pair=' + encodeURIComponent(p.pairId) + '&me=' + encodeURIComponent(me);
       $('room-enter').style.display = '';
       var oldTip = $('room-dissolve-tip'); if (oldTip) oldTip.hidden = true;
       if (p.status === 'done' && !rated) $('rate-card').hidden = false; else $('rate-card').hidden = true;
