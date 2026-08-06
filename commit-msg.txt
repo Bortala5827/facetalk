@@ -1,15 +1,6 @@
-fix: DELETE 请求不带身份导致撤回/删除全部失败
+style: hero 文案改为「听声识搭子」
 
-根因：assets/app.js 的 api() 只在 method === 'GET' 时把 me
-（用户身份 ID）放到 URL query；而「撤回申请」（DELETE
-/api/apply?appId=）和「删除意图」（DELETE /api/intents?id=）
-都是无 body 的 DELETE，me 没传出去 → 后端 requireToken
-拿不到 token → 401 NO_TOKEN → 前端弹「撤回失败」。
-
-修复：api() 改为 GET 与 DELETE 都带 me 与 admin 参数。
-三处 DELETE 调用（撤申请/删意图×2）全部经过 api()，一处
-修复全生效。留言删除（pair.html 手动带 me）与留言墙删除
-（走 admin key）不受影响。
-
-自测：apply 14/14、turn 25/25、v21 17/17、voice 41/41、
-dissolved 18/18、autosettle 14/14、wall 14/14（共 143 项）。
+- hero：「互相听过对方声音、互评 愿不愿意继续匹配，再决定
+  要不要正式搭」→「听声识搭子，再决定要不要正式搭」，更简洁
+  更有记忆点。
+- footer「闻声识搭子」统一为「听声识搭子」，全站口径一致。
