@@ -1,3 +1,8 @@
 node_modules/
 package-lock.json
 package.json
+# 自测/诊断产生的临时文件（curl 产物等），勿提交
+*_check.html
+ms_curl_err.txt
+turn_check.json
+turnt_err.txt
