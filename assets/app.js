@@ -1,4 +1,4 @@
-// FaceTalk v2.1 前端：找搭子大厅 + 在线心跳 + 一键试音
+// FaceTalk v2.1 前端：找搭子大厅 + 在线心跳 + 房间试音互评
 (function () {
   'use strict';
   var me = null;
@@ -145,7 +145,7 @@
     }
   });
 
-  // ======================== 浏览大厅（2.1：在线状态 + 排序 + 一键试音 CTA）========================
+  // ======================== 浏览大厅（在线状态 + 排序）========================
   async function loadBrowse() {
     var r = await api('GET', '/api/intents');
     if (r.status === 200 && typeof r.data.online === 'number') {
@@ -201,13 +201,13 @@
                      '<span class="online-label muted">' + Math.floor(delta/1440) + ' 天前</span>';
       }
 
-      // 动作按钮：自己的 → 删除；别人的 → 申请组队 + 一键试音
+      // 动作按钮：自己的 → 删除；别人的 → 申请组队
+      // 试音/录音只在「进房间后」才能发起，大厅里只做组队（避免绕过互选导致混乱）
       var actionsHtml;
       if (it.isOwn) {
         actionsHtml = '<button class="btn-mini no" data-del-own="' + esc(it.id) + '">删除</button>';
       } else {
-        actionsHtml = '<button class="btn-mini" data-apply="' + esc(it.id) + '">申请组队</button>' +
-          '<button class="btn-mini ok" data-voice-trial="' + esc(it.id) + '">🎙 发起试音</button>';
+        actionsHtml = '<button class="btn-mini" data-apply="' + esc(it.id) + '">申请组队</button>';
       }
 
       div.innerHTML = '<div class="li-main">' + statusDot +
@@ -229,21 +229,6 @@
         var rr = await api('POST', '/api/apply', { intentId: b.getAttribute('data-apply') });
         if (rr.status === 200 && rr.data.ok) toast('已申请，等对方同意');
         else toast('申请失败：' + (rr.data.error || rr.status), true);
-        loadOut();
-      });
-    });
-
-    // 一键发起试音：先申请，然后跳转试音流程
-    box.querySelectorAll('[data-voice-trial]').forEach(function (b) {
-      b.addEventListener('click', async function () {
-        var intentId = b.getAttribute('data-voice-trial');
-        // 先快速申请
-        var rr = await api('POST', '/api/apply', { intentId: intentId });
-        if (!(rr.status === 200 && rr.data.ok)) {
-          toast('发起失败：' + (rr.data.error || rr.status), true);
-          return;
-        }
-        toast('已发送试音请求，等待对方回应');
         loadOut();
       });
     });
