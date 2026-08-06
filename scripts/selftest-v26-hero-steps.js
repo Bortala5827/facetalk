@@ -66,11 +66,15 @@ ok('style.css @media ≤520px 内 .hero-steps 字号缩到 14.5 或更小',
 ok('style.css .brand-tag 样式保留（pair.html 顶部搭子房间·1:1 仍需要）',
   /\.brand-tag\s*\{/.test(styleCss));
 
-// 9. 版本号统一
-ok('index.html style.css 版本号 20260806r',
-  /\/assets\/style\.css\?v=20260806r/.test(indexHtml));
-ok('pair.html style.css 版本号 20260806r（与 v2.5 一致）',
-  /\/assets\/style\.css\?v=20260806r/.test(pairHtml));
+// 9. 版本号统一：index 与 pair 必须引用同一版本（不再写死具体号，避免未来 bump 即 FAIL）
+const idxVer = (indexHtml.match(/\/assets\/style\.css\?v=([^"']+)/) || [])[1];
+const pairVer = (pairHtml.match(/\/assets\/style\.css\?v=([^"']+)/) || [])[1];
+ok('index.html 与 pair.html 引用同一 style.css 版本号',
+  !!idxVer && idxVer === pairVer,
+  `index=${idxVer} pair=${pairVer}`);
+ok('style.css 版本号格式合法（20YYMMDD+小写后缀）',
+  /20\d{6}[a-z]/.test(idxVer || ''),
+  `idxVer=${idxVer}`);
 
 console.log('');
 console.log('━━━ v2.6 selftest ━━━');

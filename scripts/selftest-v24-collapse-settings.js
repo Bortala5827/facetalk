@@ -95,12 +95,18 @@ ok('CSS .msg-tip-meeting 引导条样式',
   /\.msg-tip-meeting\s*\{/.test(styleCss) &&
   /background\s*:\s*linear-gradient/.test(styleCss.match(/\.msg-tip-meeting\s*\{[^}]*\}/)?.[0] || ''));
 
-// 10. 版本号统一 20260806r（不能残留旧版）
-ok('style.css?v=20260806r', pairHtml.includes('style.css?v=20260806r'));
-ok('settings.js?v=20260806r', pairHtml.includes('settings.js?v=20260806r'));
-ok('interview.js?v=20260806r', pairHtml.includes('interview.js?v=20260806r'));
-ok('不允许残留 v=20260806o（除 ft-util.js 保持 v=20260806p',
-  !/20260806o['"]/.test(pairHtml.replace(/ft-util\.js\?v=20260806p/g, '')));
+// 10. 版本号统一：ft-util.js 固定保持 v=20260806p；其余资源同源统一（随部署一起 bump）
+const vAssets = {
+  'style.css': (pairHtml.match(/style\.css\?v=([^"']+)/) || [])[1],
+  'settings.js': (pairHtml.match(/settings\.js\?v=([^"']+)/) || [])[1],
+  'interview.js': (pairHtml.match(/interview\.js\?v=([^"']+)/) || [])[1],
+};
+const vFtUtil = (pairHtml.match(/ft-util\.js\?v=([^"']+)/) || [])[1];
+const vSame = vAssets['style.css'] && vAssets['style.css'] === vAssets['settings.js'] && vAssets['style.css'] === vAssets['interview.js'];
+ok('ft-util.js 固定 v=20260806p', vFtUtil === '20260806p', `ft-util.js=${vFtUtil}`);
+ok('style / settings / interview 同源统一版本', vSame, `style=${vAssets['style.css']} settings=${vAssets['settings.js']} interview=${vAssets['interview.js']}`);
+ok('统一版本格式合法（20YYMMDD+小写后缀）', /20\d{6}[a-z]/.test(vAssets['style.css'] || ''), `v=${vAssets['style.css']}`);
+ok('不允许残留旧中间版本（o/q/h/r 等）', !/20260806[ohqr]/.test(pairHtml), 'pair.html 残留旧版本号');
 
 // 11. 留言板本身没被破（wall.js 接口保留）
 ok('wall.js #wall 加载函数保留', /loadWall\b/.test(wallJs));

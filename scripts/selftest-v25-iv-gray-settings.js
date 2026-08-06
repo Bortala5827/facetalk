@@ -59,19 +59,16 @@ ok('不再出现「点右上角 ⚙ 设置」误导文案',
   !/点右上角\s*⚙\s*设置/.test(pairHtml),
   '仍残留「点右上角 ⚙ 设置」');
 
-// 5. 版本号统一到 20260806r（style/settings/interview 三者一致）
-ok('style.css 版本号 20260806r',
-  /style\.css\?v=20260806r/.test(pairHtml),
-  'pair.html style.css 没 bump 到 20260806r');
-ok('settings.js 版本号 20260806r',
-  /settings\.js\?v=20260806r/.test(pairHtml),
-  'pair.html settings.js 没 bump 到 20260806r');
-ok('interview.js 版本号 20260806r',
-  /interview\.js\?v=20260806r/.test(pairHtml),
-  'pair.html interview.js 没 bump 到 20260806r');
-ok('不允许残留中间版本 20260806q/o',
-  !/20260806q\b/.test(pairHtml) && !/20260806o\b/.test(pairHtml),
-  'pair.html 残留旧版本号');
+// 5. 版本号统一（style / settings / interview 同源；随部署一起 bump，不再写死 r）
+const v25v = {
+  style: (pairHtml.match(/style\.css\?v=([^"']+)/) || [])[1],
+  settings: (pairHtml.match(/settings\.js\?v=([^"']+)/) || [])[1],
+  interview: (pairHtml.match(/interview\.js\?v=([^"']+)/) || [])[1],
+};
+const v25same = v25v.style && v25v.style === v25v.settings && v25v.style === v25v.interview;
+ok('style / settings / interview 同源统一版本', v25same, `style=${v25v.style} settings=${v25v.settings} interview=${v25v.interview}`);
+ok('统一版本格式合法（20YYMMDD+小写后缀）', /20\d{6}[a-z]/.test(v25v.style || ''), `v=${v25v.style}`);
+ok('不允许残留中间版本 20260806q/o', !/20260806[ohqr]/.test(pairHtml), 'pair.html 残留旧版本号');
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`);
 process.exit(fail ? 1 : 0);

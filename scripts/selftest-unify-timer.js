@@ -119,9 +119,10 @@ check('pair.html 倒计时说明含「时间到自动 AI 评价」',
 
 // 10. 版本号 bump
 section('10) 版本号 bump');
-check('interview.js?v=20260806q 已生效',
-  pairHtml.includes('interview.js?v=20260806r'),
-  'pair.html 没 bump interview.js 版本号');
+const utVer = (pairHtml.match(/style\.css\?v=([^"']+)/) || [])[1];
+check('interview.js 版本号与 style.css 同源（随部署一起 bump）',
+  pairHtml.includes('interview.js?v=' + utVer),
+  'pair.html interview.js 版本号未与 style.css 同步');
 
 console.log('\n=== ' + pass + ' / ' + (pass + fail) + ' 通过 ===');
 process.exit(fail > 0 ? 1 : 0);

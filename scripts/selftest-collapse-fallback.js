@@ -29,8 +29,8 @@ t('hint 文案为「点击展开 ▾」', () => {
 t('setVoiceCollapsed 折叠时显示 hint', () => {
   assert.ok(/hint\.hidden = !collapsed/.test(pairHtml), 'setVoiceCollapsed 未管 hint');
 });
-t('CSS .v-collapse-hint 已定义（蓝底胶囊）', () => {
-  assert.ok(/\.v-collapse-hint\s*\{[^}]*color:\s*#1e88e5/.test(css), '缺 .v-collapse-hint 样式');
+t('CSS .v-collapse-hint 已定义（品牌色胶囊）', () => {
+  assert.ok(/\.v-collapse-hint\s*\{[^}]*background:/.test(css) && /\.v-collapse-hint\s*\{[^}]*border-radius:\s*999px/.test(css), '缺 .v-collapse-hint 样式');
 });
 
 console.log('— 实时语音失败 30s 跳转备选会议号卡 —');

@@ -38,9 +38,10 @@ check('onUnlock 打印每条 line', /forEach[\s\S]{0,400}ln\.id[\s\S]{0,200}ln\.
 check('onUnlock 打印 polling started', /polling started/.test(src),
   'polling started 日志丢了');
 
-// 4) 版本号 bump
-check('interview.js 版本号 20260806r', /interview\.js\?v=20260806r/.test(html),
-  'pair.html 没 bump 到 20260806r');
+// 4) 版本号 bump（与 style.css 同源，不再写死 r）
+const peVer = (html.match(/style\.css\?v=([^"']+)/) || [])[1];
+check('interview.js 版本号与 style.css 同源', html.includes('interview.js?v=' + peVer),
+  'pair.html interview.js 版本号未与 style.css 同步');
 
 console.log('\n=== 回归自测 ===');
 // 已有 selftest 也要过
