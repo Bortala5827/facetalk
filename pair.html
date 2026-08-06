@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#1e88e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260806r" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260806t" />
 </head>
 <body>
   <header class="topbar">
@@ -84,16 +84,17 @@
 
       <!-- 步骤 2：等对方录 -->
       <div class="v-step" id="v-wait" hidden>
-        <p class="v-state">✅ 你的试音已提交（<span id="v-mine-dur">--</span> 秒），正在等对方录制…</p>
-        <button class="btn-mini grey" id="v-retake">🔁 重录一遍</button>
+        <p class="v-state">✅ 你的试音已提交（<span id="v-mine-dur">--</span>），正在等对方录制…</p>
+        <div class="v-act-row">
+          <button class="btn-mini grey" id="v-retake">🔁 重录一遍</button>
+          <button class="btn-mini" id="v-append" hidden>🎙 追加再录一次</button>
+        </div>
+        <p class="field-hint" id="v-append-hint" hidden>对刚才那段不满意？可再录一段，对方能听到你<b>前后两段</b>试音，挑表现更好的一段当参考。</p>
       </div>
 
       <!-- 步骤 3：听 + 评 -->
       <div class="v-step" id="v-review" hidden>
-        <div class="v-play-row">
-          <button class="btn-primary" id="v-play">▶ 播放对方的试音</button>
-          <span class="muted" id="v-plays">最多可听 2 次</span>
-        </div>
+        <div class="v-peer-clips" id="v-peer-list"></div>
         <audio id="v-audio" controlsList="nodownload noplaybackrate" hidden></audio>
         <form id="v-form" autocomplete="off">
           <div class="v-grid">
@@ -636,7 +637,7 @@
     // 录音全程只在内存里流转：录 → base64 分片上传 → 对方听完评完，服务端立刻物理删除。
     // 本地不写 localStorage/IndexedDB，播放用 Blob URL，用完即 revoke。
     var MIN_SEC = 30, MAX_SEC = 60;
-    var vMeta = null, vGate = 'skip', vRec = null, vStream = null, vParts = [], vT0 = 0, vTimer = null, vBlobUrl = null, vBusy = false;
+    var vMeta = null, vGate = 'skip', vRec = null, vStream = null, vParts = [], vT0 = 0, vTimer = null, vBlobUrl = null, vBusy = false, vAppendMode = false;
 
     function vGet(extra) {
       var u = new URL('/api/voice', location.origin);
@@ -689,20 +690,25 @@
         vShow('v-record');
         // 对方已录好：给用户一个正向反馈，避免录完才发现对方还没录/录音已焚
         var pr = document.getElementById('v-peer-ready');
-        if (vMeta.peer && vMeta.peer.has) {
+        var peerReadyClips = (vMeta.peerClips || []).filter(function (c) { return c.ready; });
+        if (peerReadyClips.length) {
+          var pts = peerReadyClips.reduce(function (s, c) { return s + (c.dur | 0); }, 0);
           pr.hidden = false;
-          pr.textContent = '✅ 对方已录好（' + (vMeta.peer.dur || '--') + ' 秒），录完就能互听互评';
+          pr.textContent = '✅ 对方已录好（' + peerReadyClips.length + ' 段，共 ' + pts + ' 秒），录完就能互听互评';
         } else {
           pr.hidden = true; pr.textContent = '';
         }
       } else if (vGate === 'wait_peer') {
         vShow('v-wait');
-        document.getElementById('v-mine-dur').textContent = (vMeta.mine && vMeta.mine.dur) || '--';
-        document.getElementById('v-retake').hidden = !(vMeta.mine && vMeta.mine.canRetake);
+        var mineClips = (vMeta.mineClips || []);
+        var totalSec = 0; for (var mi = 0; mi < mineClips.length; mi++) totalSec += (mineClips[mi].dur | 0);
+        document.getElementById('v-mine-dur').textContent = mineClips.length + ' 段，共 ' + totalSec + ' 秒';
+        document.getElementById('v-retake').hidden = false;
+        document.getElementById('v-append').hidden = !vMeta.canAppend;
+        document.getElementById('v-append-hint').hidden = !vMeta.canAppend;
       } else if (vGate === 'review') {
         vShow('v-review');
-        var pl = (vMeta.peer && vMeta.peer.playsLeft) || 0;
-        document.getElementById('v-plays').textContent = pl > 0 ? ('最多可听 ' + pl + ' 次') : '回听次数已用完，请凭印象评价';
+        renderPeerClips();
       } else if (vGate === 'wait_review') {
         vShow('v-waitrev');
       } else {
@@ -806,8 +812,9 @@
       document.getElementById('v-stop').hidden = true;
       document.getElementById('v-time').textContent = '00:00';
       document.getElementById('v-fill').style.width = '0%';
-      if (dur < MIN_SEC) { toast('至少要录 ' + MIN_SEC + ' 秒，再来一次', true); return; }
-      await vUpload(blob, Math.min(dur, MAX_SEC));
+      if (dur < MIN_SEC) { toast('至少要录 ' + MIN_SEC + ' 秒，再来一次', true); vAppendMode = false; return; }
+      await vUpload(blob, Math.min(dur, MAX_SEC), vAppendMode);
+      vAppendMode = false;
     }
     function blobToB64(blob) {
       return blob.arrayBuffer().then(function (buf) {
@@ -816,15 +823,19 @@
         return btoa(s);
       });
     }
-    async function vUpload(blob, dur) {
+    async function vUpload(blob, dur, append) {
       vBusy = true;
       var hint = document.getElementById('v-hint'), old = hint.innerHTML;
       hint.textContent = '上传中… 0%';
       try {
         var b64 = await blobToB64(blob);
         if (b64.length > 1500000) { toast('录音体积偏大，请缩短到 45 秒内重录', true); return; }
-        var init = await vPost({ action: 'init', mime: blob.type || 'audio/webm' });
-        if (!init.ok) { toast('上传失败：' + (init.error || ''), true); return; }
+        var init = await vPost({ action: 'init', mime: blob.type || 'audio/webm', append: !!append });
+        if (!init.ok) {
+          if (init.error === 'max_attempts') toast('每段试音最多录 2 次，重录请点「重录一遍」', true);
+          else toast('上传失败：' + (init.error || ''), true);
+          return;
+        }
         var SZ = 48 * 1024, total = Math.ceil(b64.length / SZ);
         for (var i = 0, seq = 0; i < b64.length; i += SZ, seq++) {
           var r = await vPost({ action: 'chunk', clipId: init.clipId, seq: seq, data: b64.substr(i, SZ) });
@@ -837,16 +848,34 @@
         await loadVoice();
       } finally { vBusy = false; hint.innerHTML = old; }
     }
-    // ── 播放对方录音（内存播放，不落盘）──
-    async function vPlay() {
-      var btn = document.getElementById('v-play');
+    // ── 渲染对方的试音段列表（支持多段：首录 + 追加）──
+    function renderPeerClips(playsLeftFor, forClipId) {
+      var box = document.getElementById('v-peer-list');
+      if (!box) return;
+      var clips = (vMeta && vMeta.peerClips) || [];
+      if (!clips.length) { box.innerHTML = '<p class="muted">对方还没录好，稍等…</p>'; return; }
+      var html = '<p class="v-list-tip">对方共录了 ' + clips.length + ' 段试音，逐段听完再评：</p>';
+      clips.forEach(function (c, idx) {
+        var pl = (forClipId === c.id && typeof playsLeftFor === 'number') ? playsLeftFor : c.playsLeft;
+        html += '<div class="v-peer-clip">' +
+          '<button class="btn-primary v-play-btn" data-clip="' + c.id + '">▶ 播放对方第 ' + (idx + 1) + ' 段（' + (c.dur || '--') + ' 秒）</button>' +
+          '<span class="muted">' + (pl > 0 ? ('还可听 ' + pl + ' 次') : '回听次数已用完') + '</span>' +
+          '</div>';
+      });
+      box.innerHTML = html;
+      Array.prototype.forEach.call(box.querySelectorAll('.v-play-btn'), function (b) {
+        b.addEventListener('click', function () { vPlay(b.getAttribute('data-clip'), b); });
+      });
+    }
+    // ── 播放对方某一段录音（内存播放，不落盘）──
+    async function vPlay(clipId, btn) {
       btn.disabled = true; btn.textContent = '加载中…';
-      var d = await vGet({ action: 'fetch', clip: (vMeta && vMeta.peer && vMeta.peer.clipId) || '' });
-      btn.disabled = false; btn.textContent = '▶ 再听一次';
+      var d = await vGet({ action: 'fetch', clip: clipId });
+      btn.disabled = false; btn.textContent = '▶ 重听这段';
       if (!d.ok) {
-        if (d.error === 'no_plays_left') toast('回听次数已用完，请凭印象评价', true);
+        if (d.error === 'no_plays_left') { btn.textContent = '回听次数已用完'; toast('回听次数已用完，请凭印象评价', true); }
         else if (d.error === 'clip_gone') { toast('录音已销毁', true); loadVoice(); }
-        else toast('播放失败：' + (d.error || ''), true);
+        else { btn.textContent = '▶ 播放'; toast('播放失败：' + (d.error || ''), true); }
         return;
       }
       var bin = atob(d.b64), arr = new Uint8Array(bin.length);
@@ -856,7 +885,7 @@
       var au = document.getElementById('v-audio');
       au.src = vBlobUrl; au.hidden = false; au.controls = true;
       au.play().catch(function () { toast('点一下播放器的 ▶ 即可播放'); });
-      document.getElementById('v-plays').textContent = d.playsLeft > 0 ? ('还可重听 ' + d.playsLeft + ' 次') : '这是最后一次回听';
+      renderPeerClips(d.playsLeft, clipId); // 刷新该段剩余回听次数
     }
     function vKillAudio() {
       var au = document.getElementById('v-audio');
@@ -868,11 +897,18 @@
 
     document.getElementById('v-start').addEventListener('click', vStart);
     document.getElementById('v-stop').addEventListener('click', vStopRec);
-    document.getElementById('v-play').addEventListener('click', vPlay);
+    document.getElementById('v-append').addEventListener('click', function () {
+      vAppendMode = true;
+      vShow('v-record');
+      var pr = document.getElementById('v-peer-ready');
+      pr.hidden = false; pr.textContent = '🎙 追加录制中：录完这段，对方能听到你前后两段试音，挑更好的当参考。';
+      document.getElementById('v-append').hidden = true;
+      document.getElementById('v-append-hint').hidden = true;
+    });
     document.getElementById('v-retake').addEventListener('click', async function () {
-      if (!confirm('重录会删掉刚才那段试音，确定？')) return;
+      if (!confirm('重录会删掉你之前录的全部试音，确定？')) return;
       var d = await vPost({ action: 'retake' });
-      if (d.ok) { toast('已删除，重新录一段吧'); loadVoice(); }
+      if (d.ok) { toast('已删除，重新录一段吧'); vAppendMode = false; loadVoice(); }
       else toast(d.error === 'peer_already_reviewed' ? '对方已经评过了，不能再重录' : '操作失败', true);
     });
     document.getElementById('v-form').addEventListener('submit', async function (e) {

@@ -19,7 +19,8 @@ const MIN_SEC = 30;                 // 最短 30 秒（低于不让提交）
 const MAX_SEC = 65;                 // 最长 60 秒，留 5 秒容错
 const MAX_B64 = 900 * 1024;         // 单段录音 base64 上限 ≈ 675KB 原始音频
 const MAX_CHUNK = 64 * 1024;        // 单片 base64 上限，避开 D1 单值限制
-const MAX_PLAYS = 2;                // 对方最多回听 2 次
+const MAX_PLAYS = 2;                // 每段对方最多回听 2 次
+const MAX_ATTEMPTS = 2;             // 每人最多 2 段试音（首录 + 1 次追加），对方可全听到
 const CLIP_TTL = 2 * 3600;          // 无人评价时 2 小时兜底强删
 
 // 试音题库：同一房间双方抽到同一道题（按 pairId 哈希，零存储、确定性）
@@ -170,16 +171,25 @@ export async function onRequest(context) {
     // 1) 开录：建 clip 壳子，返回题目
     if (action === 'init') {
       if (!await rateLimit(db, 'rl:vc:' + ip, 30, 600) && !adminBypass(env, request, body)) return err('rate_limited', 429);
-      // 已有未评的旧录音 → 视为重录，先清干净（对方评过就不让重录）
-      const mine = await db.prepare('SELECT id FROM voice_clips WHERE pair_id=? AND owner=?').bind(pairId, m.r.id).first();
+      // 一人可有多段试音（首录 + 追加），按 created 排序；这里取全部旧段
+      const mineAll = await db.prepare('SELECT id FROM voice_clips WHERE pair_id=? AND owner=?').bind(pairId, m.r.id).all();
+      const mineRows = (mineAll && mineAll.results) || [];
       const peerReviewed = await db.prepare('SELECT 1 AS x FROM voice_reviews WHERE pair_id=? AND reviewer=?').bind(pairId, m.other).first();
-      if (mine && peerReviewed) return err('peer_already_reviewed', 409);
-      if (mine) await dropClip(db, mine.id);
+      const append = !!body.append;
+      if (append) {
+        // 追加录制：保留旧段，仅在不超上限且对方未评我时允许
+        if (peerReviewed) return err('peer_already_reviewed', 409);
+        if (mineRows.length >= MAX_ATTEMPTS) return err('max_attempts', 409);
+      } else {
+        // 首录 / 重录：对方已评不允许；否则清掉全部旧录音再录
+        if (mineRows.length && peerReviewed) return err('peer_already_reviewed', 409);
+        if (mineRows.length) await dropAllMyClips(db, pairId, m.r.id);
+      }
       const id = 'vc_' + genId(12);
       await db.prepare(`INSERT INTO voice_clips (id, pair_id, owner, mime, dur, bytes, chunks, plays, ready, created, expires)
         VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0, ?, ?)`)
         .bind(id, pairId, m.r.id, String(body.mime || 'audio/webm').slice(0, 40), now, now + CLIP_TTL).run();
-      return json({ ok: true, clipId: id, topic: topicFor(pairId), minSec: MIN_SEC, maxSec: 60 });
+      return json({ ok: true, clipId: id, topic: topicFor(pairId), minSec: MIN_SEC, maxSec: 60, attempt: mineRows.length + 1 });
     }
 
     // 2) 传片：单片 base64 ≤ 64KB
@@ -213,13 +223,13 @@ export async function onRequest(context) {
       return json({ ok: true, dur });
     }
 
-    // 4) 撤回重录（对方还没评价时允许）
+    // 4) 撤回重录（对方还没评价时允许）：删掉自己全部试音段，重新录一段
     if (action === 'retake') {
-      const mine = await db.prepare('SELECT id FROM voice_clips WHERE pair_id=? AND owner=?').bind(pairId, m.r.id).first();
-      if (!mine) return err('no_clip', 404);
+      const mine = await db.prepare('SELECT id FROM voice_clips WHERE pair_id=? AND owner=?').bind(pairId, m.r.id).all();
+      if (!mine.results || !mine.results.length) return err('no_clip', 404);
       const peerReviewed = await db.prepare('SELECT 1 AS x FROM voice_reviews WHERE pair_id=? AND reviewer=?').bind(pairId, m.other).first();
       if (peerReviewed) return err('peer_already_reviewed', 409);
-      await dropClip(db, mine.id);
+      await dropAllMyClips(db, pairId, m.r.id);
       return json({ ok: true });
     }
 
@@ -277,28 +287,40 @@ export async function onRequest(context) {
 async function metaOf(db, m, pairId) {
   const me = m.r.id, other = m.other;
   const ratings = safeParse(m.p.ratings);
-  const mine = await db.prepare('SELECT id, dur, ready, created FROM voice_clips WHERE pair_id=? AND owner=?').bind(pairId, me).first();
-  const peer = await db.prepare('SELECT id, dur, ready, plays FROM voice_clips WHERE pair_id=? AND owner=?').bind(pairId, other).first();
+  const mineAll = await db.prepare('SELECT id, dur, ready, created FROM voice_clips WHERE pair_id=? AND owner=? ORDER BY created ASC').bind(pairId, me).all();
+  const mineClips = ((mineAll && mineAll.results) || []).map(function (c) {
+    return { id: c.id, dur: c.dur | 0, ready: !!c.ready, created: c.created | 0 };
+  });
+  const peerAll = await db.prepare('SELECT id, dur, ready, plays FROM voice_clips WHERE pair_id=? AND owner=? ORDER BY created ASC').bind(pairId, other).all();
+  const peerClips = ((peerAll && peerAll.results) || []).map(function (c) {
+    return { id: c.id, dur: c.dur | 0, ready: !!c.ready, playsLeft: Math.max(0, MAX_PLAYS - (c.plays | 0)) };
+  });
   const myRev = await db.prepare('SELECT * FROM voice_reviews WHERE pair_id=? AND reviewer=?').bind(pairId, me).first();
   const peerRev = await db.prepare('SELECT * FROM voice_reviews WHERE pair_id=? AND reviewer=?').bind(pairId, other).first();
+  const peerReviewed = !!peerRev;
 
   let gate;
+  const hasMineReady = mineClips.some(function (c) { return c.ready; });
+  const hasPeerReady = peerClips.some(function (c) { return c.ready; });
   if (ratings._voice) gate = ratings._voice.passed ? 'passed' : 'rejected';
   else if (myRev) gate = 'wait_review';               // 我评完了，等对方
-  else if (!mine || !mine.ready) gate = 'record';     // 我还没录
-  else if (peer && peer.ready) gate = 'review';       // 双方都录了，该我听并评
+  else if (!mineClips.length || !hasMineReady) gate = 'record';   // 我还没录 / 正在追加录
+  else if (hasPeerReady) gate = 'review';             // 双方都录了，该我听并评
   else gate = 'wait_peer';                            // 我录完了，等对方录
 
   return {
     ok: true, ready: true, gate,
     topic: topicFor(pairId),
-    minSec: MIN_SEC, maxSec: 60, maxPlays: MAX_PLAYS,
-    mine: mine ? { has: !!mine.ready, dur: mine.dur | 0, canRetake: !peerRev } : { has: false, canRetake: true },
-    peer: peer && peer.ready ? { has: true, clipId: peer.id, dur: peer.dur | 0, playsLeft: Math.max(0, 2 - (peer.plays | 0)) } : { has: false },
+    minSec: MIN_SEC, maxSec: 60, maxPlays: MAX_PLAYS, maxAttempts: MAX_ATTEMPTS,
+    mineClips: mineClips,
+    myClipCount: mineClips.length,
+    canAppend: mineClips.length < MAX_ATTEMPTS && !peerReviewed && !ratings._voice,
+    peerClips: peerClips,
+    peerClipCount: peerClips.length,
     myReview: myRev ? pickRev(myRev) : null,
     // 对方给我的评价：双方都提交后才揭晓，避免互相看着打分
     peerReview: (myRev && peerRev) ? pickRev(peerRev) : null,
-    peerReviewed: !!peerRev,
+    peerReviewed: peerReviewed,
     passed: !!(ratings._voice && ratings._voice.passed),
   };
 }
@@ -312,5 +334,13 @@ async function dropClip(db, clipId) {
       db.prepare('DELETE FROM voice_chunks WHERE clip_id=?').bind(clipId),
       db.prepare('DELETE FROM voice_clips WHERE id=?').bind(clipId),
     ]);
+  } catch (e) { /* 表不存在时忽略 */ }
+}
+// 物理删除某人在某房间的全部试音段（重录 / 撤回时调用）
+async function dropAllMyClips(db, pairId, owner) {
+  try {
+    const r = await db.prepare('SELECT id FROM voice_clips WHERE pair_id=? AND owner=?').bind(pairId, owner).all();
+    const rows = (r && r.results) || [];
+    for (const c of rows) await dropClip(db, c.id);
   } catch (e) { /* 表不存在时忽略 */ }
 }

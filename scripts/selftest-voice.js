@@ -162,6 +162,18 @@ function makeDb(opts) {
     if (sql.startsWith("SELECT seq, data FROM voice_chunks WHERE clip_id=?")) {
       return store.voice_chunks.filter(c => c.clip_id === p[0]).sort((a, b) => a.seq - b.seq).map(c => ({ seq: c.seq, data: c.data }));
     }
+    // init / retake：读取某人全部试音段 id（不依赖 owner 唯一性，支持多段）
+    if (sql.startsWith("SELECT id FROM voice_clips WHERE pair_id=? AND owner=?")) {
+      return store.voice_clips.filter(c => c.pair_id === p[0] && c.owner === p[1]).map(c => ({ id: c.id }));
+    }
+    // metaOf：我的全部试音段（按 created 升序）
+    if (sql.startsWith("SELECT id, dur, ready, created FROM voice_clips WHERE pair_id=? AND owner=?")) {
+      return store.voice_clips.filter(c => c.pair_id === p[0] && c.owner === p[1]).map(c => ({ id: c.id, dur: c.dur | 0, ready: !!c.ready, created: c.created | 0 }));
+    }
+    // metaOf：对方的全部试音段（带每段剩余回听次数）
+    if (sql.startsWith("SELECT id, dur, ready, plays FROM voice_clips WHERE pair_id=? AND owner=?")) {
+      return store.voice_clips.filter(c => c.pair_id === p[0] && c.owner === p[1]).map(c => ({ id: c.id, dur: c.dur | 0, ready: !!c.ready, playsLeft: Math.max(0, 2 - (c.plays | 0)) }));
+    }
     return [];
   }
   const db = {
@@ -271,7 +283,7 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     const gb = await gate(db, 'uB');
     check('双方都录完 → 各自 gate="review"', ga.gate === 'review' && gb.gate === 'review');
     check('题目确定性：双方抽到同一题', ga.topic === gb.topic);
-    check('peer 录音可拉取（clipId 暴露）', gb.peer && gb.peer.has && !!gb.peer.clipId);
+    check('peer 录音可拉取（clipId 暴露）', gb.peerClips && gb.peerClips.length && !!gb.peerClips[0].id);
 
     // B 拉 A 的录音：第 1 次 playsLeft=1，第 2 次=0，第 3 次 no_plays_left
     const f1 = await (await onRequest(ctx(db, GET('uB', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
@@ -349,6 +361,45 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     // A 想重录：对方已评 → 重录被拒（peer_already_reviewed），而非 no_clip
     const retakeA = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
     check('对方已评 → 重录被拒 peer_already_reviewed', !retakeA.ok && retakeA.error === 'peer_already_reviewed');
+  }
+
+  console.log('\n=== 6) 追加试音：首录后可再录一次（最多 2 段），对方可听到前后两段 ===');
+  {
+    const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
+    await record(db, 'uA', 40);
+    let ga = await gate(db, 'uA');
+    check('首录后 mineClips 长度=1', ga.mineClips.length === 1);
+    check('首录后 canAppend=true（可追加）', ga.canAppend === true);
+    // A 追加一段（append:true）
+    const initA2 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init', append: true, mime: 'audio/webm' })))).json();
+    check('追加 init 返回 clipId', !!initA2.clipId);
+    for (let i = 0, seq = 0; i < 2; i++, seq++) await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: initA2.clipId, seq, data: CHUNK })));
+    const doneA2 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: initA2.clipId, dur: 38 })))).json();
+    check('追加 done 成功', doneA2.ok);
+    ga = await gate(db, 'uA');
+    check('追加后 mineClips 长度=2', ga.mineClips.length === 2);
+    check('追加到 2 段后 canAppend=false（达上限）', ga.canAppend === false);
+    // 第 3 段追加应被拒
+    const initA3 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init', append: true })))).json();
+    check('第 3 段追加被拒 max_attempts', !initA3.ok && initA3.error === 'max_attempts');
+    // B 录一段后，B 能看到 A 的前后两段
+    await record(db, 'uB', 35);
+    const gb = await gate(db, 'uB');
+    check('B 看到对方(=A)试音段数=2', gb.peerClips.length === 2);
+    check('B 可分段拉取 A 的两段（均 ready）', gb.peerClips.every(c => !!c.id && c.ready));
+  }
+
+  console.log('\n=== 6B) 重录（retake）删除自己的全部试音段（含追加段）===');
+  {
+    const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
+    await record(db, 'uA', 40);
+    const initA2 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init', append: true })))).json();
+    for (let i = 0, seq = 0; i < 2; i++, seq++) await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: initA2.clipId, seq, data: CHUNK })));
+    await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: initA2.clipId, dur: 38 })))).json();
+    check('重录前置：A 已有 2 段试音', db._store.voice_clips.filter(c => c.owner === 'uA').length === 2);
+    const rt = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
+    check('retake 成功且删光 A 全部 2 段', rt.ok && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);
+    check('retake 后 mineClips 长度=0，可重新首录', (await gate(db, 'uA')).mineClips.length === 0);
   }
 
   console.log('\n========================================');
