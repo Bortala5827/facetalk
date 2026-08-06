@@ -202,17 +202,40 @@
 
   // ── 原生 WebRTC 语音 ──
   // STUN：国内优先（Google 的 stun.l.google.com 在境内 UDP 基本不通，只留作海外兜底）
-  var ICE = {
-    iceServers: [
-      { urls: 'stun:stun.miwifi.com:3478' },        // 小米，境内稳定
-      { urls: 'stun:stun.chat.bilibili.com:3478' }, // B站
-      { urls: 'stun:stun.qq.com:3478' },            // 腾讯
-      { urls: 'stun:stun.cloudflare.com:3478' },    // CF Anycast
-      { urls: 'stun:stun.l.google.com:19302' },     // 海外兜底
-    ],
-    iceCandidatePoolSize: 2,
-  };
+  var BASE_ICE = [
+    { urls: 'stun:stun.miwifi.com:3478' },        // 小米，境内稳定
+    { urls: 'stun:stun.chat.bilibili.com:3478' }, // B站
+    { urls: 'stun:stun.qq.com:3478' },            // 腾讯
+    { urls: 'stun:stun.cloudflare.com:3478' },    // CF Anycast
+    { urls: 'stun:stun.l.google.com:19302' },     // 海外兜底
+  ];
+  var ICE = { iceServers: BASE_ICE.slice(), iceCandidatePoolSize: 2 };
   var gotSrflx = false;   // 是否拿到过公网映射候选（没有 = NAT 穿透没戏）
+  var turnOn = false;     // 是否成功挂上 TURN 中继
+
+  // TURN 中继凭证：向 /api/turn 换一份 TTL 到期即失效的短期凭证。
+  // 后台没配 TURN Key 时接口返回 configured:false，这里静默退回纯 STUN，功能不受影响。
+  // 只取一次，取完缓存；超过 3 秒没结果就先用 STUN 起连，不让用户干等。
+  var turnState = 0, turnWaiters = [];   // 0 未取 / 1 取中 / 2 已完成
+  function withIce(cb) {
+    if (turnState === 2) return cb();
+    turnWaiters.push(cb);
+    if (turnState === 1) return;
+    turnState = 1;
+    var settled = false;
+    var done = function () {
+      if (settled) return; settled = true; turnState = 2;
+      var w = turnWaiters; turnWaiters = [];
+      w.forEach(function (f) { try { f(); } catch (e) {} });
+    };
+    var timer = setTimeout(done, 3000);
+    fetch('/api/turn').then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.configured && d.iceServers && d.iceServers.length) {
+        ICE.iceServers = d.iceServers.concat(BASE_ICE);
+        turnOn = true;
+      }
+    }).catch(function () {}).then(function () { clearTimeout(timer); done(); });
+  }
 
   // 统一创建 PeerConnection，两条路径（发起 / 应答）共用，避免逻辑漂移
   function newPC(onFail) {
@@ -228,9 +251,11 @@
       if (p.connectionState === 'connected') {
         callBtn.textContent = '🔊 实时语音：已连通'; callTip.hidden = true;
       } else if (p.connectionState === 'failed' || p.connectionState === 'disconnected') {
-        onFail(gotSrflx
-          ? 'P2P 直连失败（双方运营商 NAT 太严），建议改用腾讯会议链接'
-          : 'NAT 穿透失败（拿不到公网地址，常见于校园网/公司网），建议改用腾讯会议链接');
+        onFail(turnOn
+          ? '语音连接中断（中继已启用，多半是网络不稳定），可点一次重连；反复失败请改用腾讯会议链接'
+          : (gotSrflx
+            ? 'P2P 直连失败（双方运营商 NAT 太严）—— 站长未配置中继服务，建议改用腾讯会议链接'
+            : 'NAT 穿透失败（拿不到公网地址，常见于校园网/公司网），建议改用腾讯会议链接'));
       }
     };
     return p;
@@ -264,24 +289,28 @@
     callTip.hidden = true;
     // 若对方已经发过 offer，本方直接走应答路径，不要再互发 offer（会 glare 冲突）
     if (pendingOffer) { var o = pendingOffer; pendingOffer = null; handleSignal(o); return; }
-    ensureLocalStream(function (s) {
-      try { pc = newPC(failCall); } catch (e) { failCall('浏览器不支持 WebRTC'); return; }
-      s.getTracks().forEach(function (t) { pc.addTrack(t, s); });
-      pc.createOffer().then(function (o) { return pc.setLocalDescription(o); }).then(function () {
-        postSignal('offer', JSON.stringify(pc.localDescription));
-      }).catch(function () { failCall('生成 offer 失败'); });
+    withIce(function () {
+      ensureLocalStream(function (s) {
+        try { pc = newPC(failCall); } catch (e) { failCall('浏览器不支持 WebRTC'); return; }
+        s.getTracks().forEach(function (t) { pc.addTrack(t, s); });
+        pc.createOffer().then(function (o) { return pc.setLocalDescription(o); }).then(function () {
+          postSignal('offer', JSON.stringify(pc.localDescription));
+        }).catch(function () { failCall('生成 offer 失败'); });
+      });
     });
   }
   function handleSignal(sg) {
     if (!pc && sg.kind === 'offer') {
-      // 收到对方 offer：补建本地流并应答
-      ensureLocalStream(function (s) {
-        try { pc = newPC(failCall); } catch (e) { return; }
-        s.getTracks().forEach(function (t) { pc.addTrack(t, s); });
-        callStarted = true; callBtn.classList.add('on'); callBtn.textContent = '🔊 实时语音：连接中…';
-        pc.setRemoteDescription(JSON.parse(sg.data)).then(function () { return pc.createAnswer(); })
-          .then(function (a) { return pc.setLocalDescription(a); }).then(function () { postSignal('answer', JSON.stringify(pc.localDescription)); })
-          .catch(function () {});
+      // 收到对方 offer：补建本地流并应答（同样要先备好中继凭证，否则应答侧只有 STUN 候选）
+      withIce(function () {
+        ensureLocalStream(function (s) {
+          try { pc = newPC(failCall); } catch (e) { return; }
+          s.getTracks().forEach(function (t) { pc.addTrack(t, s); });
+          callStarted = true; callBtn.classList.add('on'); callBtn.textContent = '🔊 实时语音：连接中…';
+          pc.setRemoteDescription(JSON.parse(sg.data)).then(function () { return pc.createAnswer(); })
+            .then(function (a) { return pc.setLocalDescription(a); }).then(function () { postSignal('answer', JSON.stringify(pc.localDescription)); })
+            .catch(function () {});
+        });
       });
       return;
     }
@@ -399,7 +428,8 @@
 
   // 供 pair.html 的试音门禁调用：互评通过、面试间刚露出来时刷新一次提示
   window.FTInterview = {
-    onUnlock: function () { refreshSetupHint(); },
+    // 解锁面试间时顺手预热中继凭证，等用户真点「实时语音」时已经在手，省掉一次等待
+    onUnlock: function () { refreshSetupHint(); try { withIce(function () {}); } catch (e) {} },
     // 房间解散 / 页面离开时兜底收拾麦克风与连接，避免录音灯常亮
     teardown: function () { stopStt(); stopCall(); stopPolling(); if (tickTimer) { clearInterval(tickTimer); tickTimer = null; } },
     isRunning: function () { return running && !ended; },
