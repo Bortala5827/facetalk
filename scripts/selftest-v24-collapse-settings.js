@@ -95,10 +95,10 @@ ok('CSS .msg-tip-meeting 引导条样式',
   /\.msg-tip-meeting\s*\{/.test(styleCss) &&
   /background\s*:\s*linear-gradient/.test(styleCss.match(/\.msg-tip-meeting\s*\{[^}]*\}/)?.[0] || ''));
 
-// 10. 版本号统一 20260806q（不能残留旧版）
-ok('style.css?v=20260806q', pairHtml.includes('style.css?v=20260806q'));
-ok('settings.js?v=20260806q', pairHtml.includes('settings.js?v=20260806q'));
-ok('interview.js?v=20260806q', pairHtml.includes('interview.js?v=20260806q'));
+// 10. 版本号统一 20260806r（不能残留旧版）
+ok('style.css?v=20260806r', pairHtml.includes('style.css?v=20260806r'));
+ok('settings.js?v=20260806r', pairHtml.includes('settings.js?v=20260806r'));
+ok('interview.js?v=20260806r', pairHtml.includes('interview.js?v=20260806r'));
 ok('不允许残留 v=20260806o（除 ft-util.js 保持 v=20260806p',
   !/20260806o['"]/.test(pairHtml.replace(/ft-util\.js\?v=20260806p/g, '')));
 

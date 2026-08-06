@@ -630,6 +630,23 @@ a { color: inherit; text-decoration: none; }
 .iv-collapsed .iv-collapse-toggle:hover .iv-collapse-hint { color: #1565c0; }
 .iv-collapse-body { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e2e8f0; }
 
+/* v2.5 面试间整体灰度（功能未实现，避免误导）+ 面试间内 AI 设置入口 */
+/* 灰度只作用于标题行与展开体（所有失灵控件），AI 设置入口按钮作为兄弟节点保持彩色可点 */
+.iv-testing .iv-collapse-toggle,
+.iv-testing .iv-collapse-body { filter: grayscale(1); opacity: .72; }
+.iv-testing .iv-collapse-toggle { cursor: pointer; }
+.iv-set-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0 2px; }
+.iv-set-label { font-size: 12.5px; color: #64748b; }
+.iv-set-entry {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 15px; font-size: 13.5px; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none; border-radius: 999px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(124,58,237,.32); transition: filter .15s, transform .1s;
+}
+.iv-set-entry:hover { filter: brightness(1.07); }
+.iv-set-entry:active { transform: translateY(1px); }
+
 /* v2.4 顶栏「接口」按钮：加文字+未配置红角标 */
 .bar-gear { gap: 6px; display: inline-flex; align-items: center; }
 .bar-gear-icon { font-size: 17px; line-height: 1; }

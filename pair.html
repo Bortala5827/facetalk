@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#1e88e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260806q" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260806r" />
 </head>
 <body>
   <header class="topbar">
@@ -148,6 +148,10 @@
         <span class="iv-collapse-sub" id="iv-collapse-sub">🚧 功能测试中 · 实时语音 + 转写 + AI 评价链路不稳定</span>
         <span class="iv-collapse-hint" id="iv-collapse-hint">点击展开 ▸</span>
       </button>
+      <div class="iv-set-row">
+        <span class="iv-set-label">🛠 面试间功能未开放，先在这里配置接口备用：</span>
+        <button class="iv-set-entry" id="iv-open-settings" type="button">🎙 打开 AI 设置（自备 Key）→</button>
+      </div>
       <div class="iv-collapse-body" id="iv-collapse-body" hidden>
       <div class="iv-testing-banner">
         <span class="iv-testing-mark">🚧 功能测试中</span>
@@ -163,7 +167,7 @@
           <button class="btn-mini" id="iv-call">🔊 实时语音</button>
         </div>
         <p id="iv-needset" class="iv-needset" hidden></p>
-        <p class="field-hint">点「🔊 实时语音」可立即连麦对练；点「🎙 录音转文字」自动把麦克风转成对话稿；没配大模型也能用（手动记笔记），配后才有「AI 评价」。点右上角 ⚙ 设置你的接口。</p>
+        <p class="field-hint">点「🔊 实时语音」可立即连麦对练；点「🎙 录音转文字」自动把麦克风转成对话稿；没配大模型也能用（手动记笔记），配后才有「AI 评价」。点本栏「🎙 打开 AI 设置（自备 Key）」设好你自己的接口。</p>
         <div class="iv-transcript" id="iv-transcript"><p class="muted">对话稿会实时显示在这里。开启「录音转文字」后，你说的话会自动变成文字。</p></div>
         <div class="iv-note">
           <input id="iv-note" type="text" maxlength="300" placeholder="手动补充一句（回车发送，记为「我」）" autocomplete="off" />
@@ -314,6 +318,12 @@
       resetRemainZero: function () { remainZeroFired = false; },
     };
     document.getElementById('open-settings').addEventListener('click', function () {
+      if (window.FTSettings) window.FTSettings.open();
+    });
+    // v2.5 面试间内 AI 设置入口（常驻可见，折叠/展开态都在）
+    var ivSetBtn = document.getElementById('iv-open-settings');
+    if (ivSetBtn) ivSetBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
       if (window.FTSettings) window.FTSettings.open();
     });
 
@@ -923,8 +933,8 @@
   })();
   </script>
   <script src="/assets/ft-util.js?v=20260806p"></script>
-  <script src="/assets/settings.js?v=20260806q"></script>
+  <script src="/assets/settings.js?v=20260806r"></script>
   <script src="/assets/glare.js?v=20260806h"></script>
-  <script src="/assets/interview.js?v=20260806q"></script>
+  <script src="/assets/interview.js?v=20260806r"></script>
 </body>
 </html>
