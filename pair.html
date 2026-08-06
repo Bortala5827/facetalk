@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260806t" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260806u" />
 </head>
 <body>
   <header class="topbar">
@@ -95,6 +95,10 @@
       <!-- 步骤 3：听 + 评 -->
       <div class="v-step" id="v-review" hidden>
         <div class="v-peer-clips" id="v-peer-list"></div>
+        <div id="v-append-review-row" class="v-act-row" hidden style="align-items:flex-start; flex-direction:column; gap:6px; margin-top:10px">
+          <button class="btn-mini" id="v-append-review">🎙 追加再录一次</button>
+          <p class="field-hint" style="margin-left:0">听完后觉得第一段不够好？可再录一段，对方能听到你<b>前后两段</b>试音，挑更好的当参考。</p>
+        </div>
         <audio id="v-audio" controlsList="nodownload noplaybackrate" hidden></audio>
         <form id="v-form" autocomplete="off">
           <div class="v-grid">
@@ -684,7 +688,7 @@
       document.getElementById('v-topic').textContent = vMeta.topic || '';
       // 只在用户能操作的阶段（record / review）保持展开；其它阶段自动折叠成一行摘要
       // 给面试间留出更多屏幕空间，避免长篇试音流程把屏幕占满。
-      var shouldCollapse = (vGate === 'wait_peer' || vGate === 'wait_review' || vGate === 'result' || vGate === 'passed');
+      var shouldCollapse = (vGate === 'wait_review' || vGate === 'result' || vGate === 'passed');
       setVoiceCollapsed(shouldCollapse);
       if (vGate === 'record') {
         vShow('v-record');
@@ -708,6 +712,7 @@
         document.getElementById('v-append-hint').hidden = !vMeta.canAppend;
       } else if (vGate === 'review') {
         vShow('v-review');
+        document.getElementById('v-append-review-row').hidden = !vMeta.canAppend;
         renderPeerClips();
       } else if (vGate === 'wait_review') {
         vShow('v-waitrev');
@@ -897,14 +902,16 @@
 
     document.getElementById('v-start').addEventListener('click', vStart);
     document.getElementById('v-stop').addEventListener('click', vStopRec);
-    document.getElementById('v-append').addEventListener('click', function () {
+    function vStartAppend() {
       vAppendMode = true;
       vShow('v-record');
       var pr = document.getElementById('v-peer-ready');
       pr.hidden = false; pr.textContent = '🎙 追加录制中：录完这段，对方能听到你前后两段试音，挑更好的当参考。';
       document.getElementById('v-append').hidden = true;
       document.getElementById('v-append-hint').hidden = true;
-    });
+    }
+    document.getElementById('v-append').addEventListener('click', vStartAppend);
+    document.getElementById('v-append-review').addEventListener('click', vStartAppend);
     document.getElementById('v-retake').addEventListener('click', async function () {
       if (!confirm('重录会删掉你之前录的全部试音，确定？')) return;
       var d = await vPost({ action: 'retake' });
@@ -969,8 +976,8 @@
   })();
   </script>
   <script src="/assets/ft-util.js?v=20260806p"></script>
-  <script src="/assets/settings.js?v=20260806t"></script>
-  <script src="/assets/glare.js?v=20260806t"></script>
-  <script src="/assets/interview.js?v=20260806t"></script>
+  <script src="/assets/settings.js?v=20260806u"></script>
+  <script src="/assets/glare.js?v=20260806u"></script>
+  <script src="/assets/interview.js?v=20260806u"></script>
 </body>
 </html>
