@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#1e88e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260806i" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260806k" />
 </head>
 <body>
   <header class="topbar">
@@ -59,6 +59,7 @@
       <button class="v-collapse" id="v-collapse" aria-expanded="true" type="button">
         <h2 class="sec-title">🎙 30 秒试音互评 <span class="v-badge">2.0</span></h2>
         <span class="v-collapse-sub" id="v-collapse-sub"></span>
+        <span class="v-collapse-hint" id="v-collapse-hint" hidden>点击展开 ▾</span>
         <span class="v-chev">▾</span>
       </button>
       <div class="v-body" id="v-body">
@@ -171,6 +172,7 @@
           </button>
           <div class="iv-fb-body" id="iv-fb-body" hidden>
             <p class="iv-fb-hint">WebRTC 在双方都是校园网 / 公司内网 / 部分 4G 环境下打不通。把你们俩各自常用的会议号贴在下面，<b>对方只能看到对方那一面的</b>，互不干扰。录音转文字和 AI 评价照常可用。</p>
+            <div class="iv-fb-reminder" id="iv-fb-reminder" hidden>⚠️ 实时语音没连上？在这里填你的<b>腾讯会议号</b>或<b>飞书会议号</b>，发给对方，约个外部会议继续练 —— 转录和 AI 点评照常可用。</div>
             <div class="iv-fb-grid">
               <label class="field"><span class="field-label">我的腾讯会议号</span>
                 <input id="iv-fb-tencent" type="text" maxlength="200" placeholder="如：123-456-789 或会议链接" autocomplete="off" />
@@ -617,11 +619,14 @@
       var body = document.getElementById('v-body');
       var btn = document.getElementById('v-collapse');
       var sub = document.getElementById('v-collapse-sub');
+      var hint = document.getElementById('v-collapse-hint');
       var chev = btn && btn.querySelector('.v-chev');
       if (vManuallyExpanded !== null) collapsed = !vManuallyExpanded;
       if (body) body.hidden = collapsed;
       if (chev) chev.textContent = collapsed ? '▸' : '▾';
       if (btn) btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      // 折叠后标注「可点击展开」，提示用户这里能点开
+      if (hint) hint.hidden = !collapsed;
       if (sub) {
         // 摘要文案
         var verdictText = (vGate === 'passed') ? '🎉 已组队' : (vGate === 'result' ? '🙅 有一方婉拒' : '');
@@ -833,6 +838,6 @@
   </script>
   <script src="/assets/settings.js?v=20260806h"></script>
   <script src="/assets/glare.js?v=20260806h"></script>
-  <script src="/assets/interview.js?v=20260806j"></script>
+  <script src="/assets/interview.js?v=20260806k"></script>
 </body>
 </html>

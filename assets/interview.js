@@ -222,6 +222,35 @@
       fbSetExpanded(false, true);
     }
   }
+  // 失败 / 超时的升级提醒：30 秒后自动滚动到备选会议号卡，并高亮提示填腾讯/飞书会议号
+  var fbEscTimer = null;
+  function showFbReminder() {
+    var r = document.getElementById('iv-fb-reminder');
+    if (r) r.hidden = false;
+    if (fbChev) fbChev.textContent = '▾';
+    if (fbCard) {
+      fbCard.classList.add('iv-fb-flash');
+      setTimeout(function () { if (fbCard) fbCard.classList.remove('iv-fb-flash'); }, 2400);
+    }
+  }
+  function hideFbReminder() {
+    var r = document.getElementById('iv-fb-reminder');
+    if (r) r.hidden = true;
+  }
+  function fbEscalateAfter30s() {
+    if (fbEscTimer) return;
+    fbEscTimer = setTimeout(function () {
+      fbEscTimer = null;
+      if (pc && pc.connectionState === 'connected') return;   // 已经连上就不用跳了
+      fbAutoExpand();                                          // 确保卡展开了
+      if (fbCard) fbCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showFbReminder();                                        // 高亮 + 填号提醒
+    }, 30000);
+  }
+  function clearFbEscalation() {
+    if (fbEscTimer) { clearTimeout(fbEscTimer); fbEscTimer = null; }
+    hideFbReminder();
+  }
 
   if (fbToggle) {
     fbToggle.addEventListener('click', function () { fbSetExpanded(!fbExpanded, false); });
@@ -472,6 +501,7 @@
       if (p.connectionState === 'connected') {
         if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
         callBtn.textContent = '🔊 实时语音：已连通'; callTip.hidden = true;
+        clearFbEscalation();       // 连通了就取消 30s 跳转与提醒
         fbAutoCollapseIfAuto();   // 连通后如果之前是自动展开的，就自动收回（用户主动展开过的不会被收回）
       } else if (p.connectionState === 'failed' || p.connectionState === 'disconnected') {
         if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
@@ -520,7 +550,7 @@
     callConnTimer = setTimeout(function () {
       if (pc && pc.connectionState === 'connected') return;
       toast('⌛ 30 秒还没连上，建议填一下会议号、走腾讯会议或飞书会议继续练', true);
-      fbAutoExpand();
+      fbEscalateAfter30s();
     }, 30000);
     // 若对方已经发过 offer，本方直接走应答路径，不要再互发 offer（会 glare 冲突）
     if (pendingOffer) { var o = pendingOffer; pendingOffer = null; handleSignal(o); return; }
@@ -582,11 +612,13 @@
     callBtn.textContent = '🔊 实时语音'; callBtn.classList.remove('on');
     callStarted = false;
     if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
-    fbAutoExpand();   // 任何 fail 都把 fallback 展开
+    fbAutoExpand();            // 任何 fail 先把备选会议号卡展开（可见但不打断）
+    fbEscalateAfter30s();      // 30 秒后自动滚动到该卡并高亮提醒填腾讯/飞书会议号
   }
   function stopCall() {
     callStarted = false;
     if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
+    clearFbEscalation();
     if (pc) { try { pc.close(); } catch (e) {} pc = null; }
     if (callStream) { callStream.getTracks().forEach(function (t) { t.stop(); }); callStream = null; }
     callBtn.textContent = '🔊 实时语音'; callBtn.classList.remove('on');
