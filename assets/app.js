@@ -30,7 +30,8 @@
   async function api(method, path, body) {
     var admin = sessionStorage.getItem('ft_admin') || '';
     var url = new URL(path, location.origin);
-    if (method === 'GET') { url.searchParams.set('me', me); if (admin) url.searchParams.set('admin', admin); }
+    // GET 与 DELETE 都带 me（DELETE 无 body，身份必须放 URL；否则后端 requireToken 拿不到 token 直接 401）
+    if (method === 'GET' || method === 'DELETE') { url.searchParams.set('me', me); if (admin) url.searchParams.set('admin', admin); }
     var opt = { method: method, headers: {} };
     if (body) {
       var b = Object.assign({ me: me }, body);

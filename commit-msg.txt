@@ -1,21 +1,15 @@
-fix: 收件箱去重 + 状态文案优化
+fix: DELETE 请求不带身份导致撤回/删除全部失败
 
-用户反馈首页"收到的申请"出现两条一模一样的卡片（同一对方
-对同一意图多次申请产生），且"你已选其他搭子"与"等他也同意"
-状态语义模糊互相矛盾。
+根因：assets/app.js 的 api() 只在 method === 'GET' 时把 me
+（用户身份 ID）放到 URL query；而「撤回申请」（DELETE
+/api/apply?appId=）和「删除意图」（DELETE /api/intents?id=）
+都是无 body 的 DELETE，me 没传出去 → 后端 requireToken
+拿不到 token → 401 NO_TOKEN → 前端弹「撤回失败」。
 
-后端 apply.js box=in 查询加 (intent_id, applicant) 维度的
-相关子查询去重，按 created DESC 取最新一条。同对方对同意图的
-「撤回→再申请」不会产生重复卡片了。
+修复：api() 改为 GET 与 DELETE 都带 me 与 admin 参数。
+三处 DELETE 调用（撤申请/删意图×2）全部经过 api()，一处
+修复全生效。留言删除（pair.html 手动带 me）与留言墙删除
+（走 admin key）不受影响。
 
-前端 app.js
-- loadInbox 渲染前防御性 dedupe（兜底，万一后端漏了）
-- 「你已选其他搭子」改为「该意图已同意别的申请，等对方都点头」
-  + title 提示，等用户一眼看明白。
-
-scripts/selftest-apply.js 新增 14 项断言（合并去重 / 屏蔽过滤 /
-发件箱 / pending 重复申请 / self-apply / a_accepted 后再申请），
-跑通用 mock D1。
-
-自测：apply 14/14、turn 25/25、v21 17/17、voice 41/41、dissolved 18/18、
-autosettle 14/14、wall 14/14（共 143 项）。
+自测：apply 14/14、turn 25/25、v21 17/17、voice 41/41、
+dissolved 18/18、autosettle 14/14、wall 14/14（共 143 项）。
