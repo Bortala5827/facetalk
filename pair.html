@@ -132,30 +132,17 @@
     <!-- ===== 2.1 面试间：实时转录 + 自添加大模型评价 ===== -->
     <section class="card" id="iv-card" hidden>
       <h2 class="sec-title">🎤 面试间 <span class="v-badge">2.1</span></h2>
-      <p class="muted">双方进入后开始计时（30–60 分钟）。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。</p>
+      <p class="muted">进房即用，<b>跟随搭子房间总时长（30 分钟）</b>，时间到自动 AI 评价。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。</p>
 
-      <div id="iv-setup">
-        <div class="iv-row">
-          <label class="field iv-dur-field"><span class="field-label">单场时长</span>
-            <select id="iv-dur">
-              <option value="30">30 分钟</option>
-              <option value="45" selected>45 分钟</option>
-              <option value="60">60 分钟</option>
-            </select>
-          </label>
-          <button class="btn-primary" id="iv-start">▶ 开始面试</button>
-        </div>
-        <p id="iv-needset" class="iv-needset" hidden></p>
-        <p class="field-hint">未配置大模型也能面试（手动记笔记）；配置后才有「录音转文字」和「AI 评价」。点右上角 ⚙ 设置你的接口。</p>
-      </div>
-
-      <div id="iv-live" hidden>
+      <div id="iv-live">
         <div class="iv-top">
-          <span class="iv-timer" id="iv-timer">45:00</span>
+          <span class="iv-timer" id="iv-timer">30:00</span>
           <button class="btn-mini no" id="iv-end">⏹ 结束并 AI 评价</button>
           <button class="btn-mini" id="iv-stt">🎙 录音转文字：关</button>
           <button class="btn-mini" id="iv-call">🔊 实时语音</button>
         </div>
+        <p id="iv-needset" class="iv-needset" hidden></p>
+        <p class="field-hint">点「🔊 实时语音」可立即连麦对练；点「🎙 录音转文字」自动把麦克风转成对话稿；没配大模型也能用（手动记笔记），配后才有「AI 评价」。点右上角 ⚙ 设置你的接口。</p>
         <div class="iv-transcript" id="iv-transcript"><p class="muted">对话稿会实时显示在这里。开启「录音转文字」后，你说的话会自动变成文字。</p></div>
         <div class="iv-note">
           <input id="iv-note" type="text" maxlength="300" placeholder="手动补充一句（回车发送，记为「我」）" autocomplete="off" />
@@ -268,12 +255,37 @@
     }
 
     var remain = 0, timer = null, infoMineInit = false, dissolveTimer = null, dissolveToasted = false;
+    var remainListeners = [];   // 订阅 remain 变化（如 interview.js 用）—— 每秒 tick 时 fire 一次
+    var remainZeroFired = false; // 同一轮房间 0 触发一次 onTimeUp，避免重复弹评价
+    function fireRemain(n) {
+      remainListeners.forEach(function (cb) {
+        try { cb(n); } catch (_) {}
+      });
+    }
+    function fireRemainZero() {
+      if (remainZeroFired) return; remainZeroFired = true;
+      remainListeners.forEach(function (cb) {
+        try { if (cb.onZero) cb.onZero(); } catch (_) {}
+      });
+    }
 
     // 暴露给 interview.js / settings.js 用的运行时句柄
     window.FT = {
       get me() { return me; },
       get pairId() { return pairId; },
+      get remain() { return remain; },
       toast: toast, esc: esc, api: api, apiA: apiA,
+      // 注册倒计时订阅；返回解绑函数。cb(n) 每秒触发一次，cb.onZero() 在归零时触发一次（直到 remain 重置回非零）
+      setRemain: function (cb) {
+        remainListeners.push(cb);
+        // 立即把当前值塞给订阅者，避免 UI 等一秒才更新
+        try { cb(remain); } catch (_) {}
+        return function () {
+          remainListeners = remainListeners.filter(function (x) { return x !== cb; });
+        };
+      },
+      // 房间从 0 重新激活时调（如再次进入房间），让 onZero 能再次触发
+      resetRemainZero: function () { remainZeroFired = false; },
     };
     document.getElementById('open-settings').addEventListener('click', function () {
       if (window.FTSettings) window.FTSettings.open();
@@ -287,7 +299,11 @@
       document.getElementById('room-mode').textContent = p.mode === 'video' ? '📹 视频' : '🎙 语音优先';
       // 会话倒计时：只在本轮数据显式携带 remaining 时更新。
       // SSE 的 pair 事件可能缺该字段，缺了就保持原值，避免 remain 被清零 → tick 误弹「时间到请打分」造成闪退。
-      if (p.remaining != null) remain = Math.max(0, p.remaining);
+      if (p.remaining != null) {
+        var next = Math.max(0, p.remaining);
+        if (next > 0 && remain === 0) remainZeroFired = false;   // 房间重新激活 → 解锁 onZero 一次性触发
+        remain = next;
+      }
       tick();
       if(timer) clearInterval(timer);
       timer = setInterval(tick, 1000);
@@ -387,11 +403,13 @@
           rc.scrollIntoView({behavior:'smooth', block:'center'});
           toast('⏰ 时间到，请给搭子打个分吧');
         }
+        fireRemainZero();   // 通知面试间「时间到」跑 AI 评价
         return;
       }
       var m = Math.floor(remain/60), s = remain%60;
       document.getElementById('timer').textContent = (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
       remain--;
+      fireRemain(Math.max(0, remain));
     }
 
     // ===== 留言板 =====
@@ -838,6 +856,6 @@
   </script>
   <script src="/assets/settings.js?v=20260806h"></script>
   <script src="/assets/glare.js?v=20260806h"></script>
-  <script src="/assets/interview.js?v=20260806l"></script>
+  <script src="/assets/interview.js?v=20260806m"></script>
 </body>
 </html>

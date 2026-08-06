@@ -1,7 +1,7 @@
 // ============================================================
 // FaceTalk v2.1 面试间逻辑
-// 依赖 window.FT（me / pairId / toast / esc）与 window.FTSettings
-//   - 计时（30/45/60 分钟）
+// 依赖 window.FT（me / pairId / toast / esc / setRemain / remain）与 window.FTSettings
+//   - 计时跟随搭子房间总时长（30 分钟），时间到自动 AI 评价（v2.3 取消独立 30/45/60）
 //   - 实时转录：我方用 MediaRecorder 分段 → 用户自带的 Whisper 接口转文字 → 写入面试间，双方同步
 //   - 原生 WebRTC 语音（信令走 /api/interview，无 TURN 时回落腾讯会议）
 //   - 结束 → 用用户自带大模型对完整对话稿做结构化评价
@@ -13,9 +13,9 @@
 
   var $ = function (id) { return document.getElementById(id); };
 
-  // 元素
-  var setup = $('iv-setup'), live = $('iv-live'), timerEl = $('iv-timer'),
-      startBtn = $('iv-start'), durSel = $('iv-dur'), needset = $('iv-needset'),
+  // 元素（v2.3 删掉 iv-setup / iv-start / iv-dur；iv-live 直接显示，所有按钮即时可用）
+  var live = $('iv-live'), timerEl = $('iv-timer'),
+      needset = $('iv-needset'),
       endBtn = $('iv-end'), sttBtn = $('iv-stt'), callBtn = $('iv-call'),
       transcript = $('iv-transcript'), noteInput = $('iv-note'), noteSend = $('iv-note-send'),
       evalBox = $('iv-eval'), callTip = $('iv-call-tip');
@@ -26,8 +26,8 @@
       fbToast = $('iv-fb-toast'), fbPeer = $('iv-fb-peer'),
       fbPeerTen = $('iv-fb-peer-tencent'), fbPeerFei = $('iv-fb-peer-feishu');
 
-  // 状态
-  var running = false, remainSec = 0, tickTimer = null, pollTimer = null;
+  // 状态（v2.3 取消独立 remainSec/tickTimer，计时与搭子房间共享）
+  var active = false, ended = false, evalRequested = false, pollTimer = null;
   var known = {};                 // 已渲染的转录行 id
   var lastSignal = 0;             // 信令轮询游标（秒级，回退 2 秒重叠取，靠 seenSig 去重）
   var seenSig = {};               // 已处理过的信令 id，防重叠区间重复处理
@@ -36,7 +36,6 @@
   // 浏览器原生 STT（Web Speech API）状态
   var sttBrowser = null, sttBrowserOn = false, sttBrowserLast = '', sttBrowserLastEmit = 0;
   var pc = null, callStream = null, callStarted = false, callConnTimer = null;
-  var ended = false;
   // 备选会议号状态：fbUserOpen=true 表示用户/系统已经把 fallback 卡展开了；false 表示当前是折叠状态
   var fbExpanded = false, fbFilledMine = false, fbLast = { tencent: '', feishu: '' };
   var fbShown = false;            // fallback 卡是否被允许显示（30s 未连通 / 用户手动 / 始终显示策略）
@@ -50,44 +49,28 @@
   // 进场即刷新设置提示
   refreshSetupHint();
 
-  // ── 开始面试 ──
-  startBtn.addEventListener('click', function () {
-    var dur = parseInt(durSel.value, 10) || 45;
-    remainSec = dur * 60;
-    running = true; ended = false;
-    setup.hidden = true; live.hidden = false;
-    evalBox.hidden = true; evalBox.innerHTML = '';
-    renderTimer();
-    tickTimer = setInterval(renderTick, 1000);
-    startPolling();
-    // 若已配置 STT，自动开启录音转文字（最省事）
-    if (window.FTSettings && window.FTSettings.hasSTT()) {
-      setTimeout(function () { if (!sttOn) toggleStt(); }, 400);
-    } else {
-      toast('未配置语音转文字，可手动记笔记；结束后仍可 AI 评价');
-    }
-    toast('面试开始，计时 ' + dur + ' 分钟');
-  });
-
-  // ── 计时 ──
-  function renderTimer() {
-    var m = Math.floor(remainSec / 60), s = remainSec % 60;
+  // ── 计时：订阅搭子房间共享 remain（v2.3 取消独立计时）──
+  // iv-timer 只读不写 — 不自 -1，完全跟搭子房间的 30 分钟倒计时同步
+  function paintTimer(n) {
+    if (n == null || n < 0) n = 0;
+    var m = Math.floor(n / 60), s = n % 60;
     timerEl.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
   }
-  function renderTick() {
-    if (remainSec <= 0) {
-      renderTimer();
-      if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
-      onTimeUp();
-      return;
-    }
-    remainSec--; renderTimer();
-  }
-  function onTimeUp() {
+  // 归零时跑 AI 评价（一次性，evalRequested 防重入）
+  function onRemainZero() {
+    if (evalRequested) return; evalRequested = true;
     toast('⏰ 时间到');
     stopStt();
     if (window.FTSettings && window.FTSettings.hasLLM()) runEval();
-    else { toast('已自动停止录音；点「结束并 AI 评价」可在配置模型后生成点评'); }
+    else { toast('时间到 — 点「结束并 AI 评价」可在配置模型后生成点评'); }
+  }
+  // v2.3：onUnlock 时调，订阅搭子房间倒计时（pair.html 每秒 tick 会 fire 一次）
+  var unsubRemain = null;
+  var remainListener = function (n) { paintTimer(n); };
+  remainListener.onZero = function () { onRemainZero(); };
+  function startSharedTimer() {
+    if (unsubRemain) return;
+    unsubRemain = window.FT.setRemain(remainListener);
   }
 
   // ── 轮询转录 + 信令 ──
@@ -662,13 +645,13 @@
 
   // ── 结束并评价 ──
   endBtn.addEventListener('click', function () {
-    if (!confirm('结束本场面试并生成 AI 评价？结束后会停止录音与计时。')) return;
+    if (!confirm('结束本场面试并生成 AI 评价？结束后会停止录音。')) return;
     finishInterview(true);
   });
   function finishInterview(doEval) {
     if (ended) return; ended = true;
     stopStt(); stopCall();
-    if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+    if (unsubRemain) { try { unsubRemain(); } catch (_) {} unsubRemain = null; }
     stopPolling();
     if (doEval && window.FTSettings && window.FTSettings.hasLLM()) runEval();
     else if (doEval) { toast('未配置大模型，无法生成评价；点 ⚙ 设置后可重跑', true); refreshSetupHint(); }
@@ -747,14 +730,23 @@
 
   // 供 pair.html 的试音门禁调用：互评通过、面试间刚露出来时刷新一次提示
   window.FTInterview = {
-    // 解锁面试间时顺手预热中继凭证，等用户真点「实时语音」时已经在手，省掉一次等待
-    onUnlock: function () { refreshSetupHint(); try { withIce(function () {}); } catch (e) {} fbEnsureShown(); renderFallbackStatus(); },
+    // 解锁面试间时顺手预热中继凭证 + 订阅搭子房间倒计时 + 启动转录轮询
+    // v2.3 取消「点开始面试」门槛 —— 解锁即 ready，录音转文字/实时语音/AI 评价全部即时可用
+    onUnlock: function () {
+      refreshSetupHint();
+      try { withIce(function () {}); } catch (e) {}
+      fbEnsureShown(); renderFallbackStatus();
+      startSharedTimer();   // 订阅搭子房间 30 分钟倒计时，归零自动 AI 评价
+      active = true; evalRequested = false; ended = false;
+      startPolling();       // 立即拉转录/信令 —— 进房即就绪，不点「开始」也能收到对方的对话行与语音 offer
+    },
     // 房间解散 / 页面离开时兜底收拾麦克风与连接，避免录音灯常亮
     teardown: function () {
       if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
-      stopStt(); stopCall(); stopPolling(); if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+      if (unsubRemain) { try { unsubRemain(); } catch (_) {} unsubRemain = null; }
+      stopStt(); stopCall(); stopPolling();
     },
-    isRunning: function () { return running && !ended; },
+    isRunning: function () { return active && !ended; },
   };
   window.addEventListener('beforeunload', function () { try { window.FTInterview.teardown(); } catch (e) {} });
 })();
