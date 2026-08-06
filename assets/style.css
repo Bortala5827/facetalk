@@ -501,6 +501,8 @@ a { color: inherit; text-decoration: none; }
 .iv-msg.iv-pending .iv-bubble { opacity: .7; }
 .iv-msg.iv-fail .iv-bubble { background: #ffebee !important; color: #c62828 !important; border-color: #ef9a9a !important; }
 .iv-fail-tag { color: #c62828; font-weight: 600; }
+.iv-retry { margin-left: 8px; padding: 2px 9px; font-size: 12px; background: #fff; border: 1px solid #ef9a9a; border-radius: 999px; color: #c62828; cursor: pointer; }
+.iv-retry:hover { background: #ffebee; }
 .iv-note { display: flex; gap: 8px; margin-top: 10px; }
 .iv-note input { flex: 1; }
 .iv-call-tip { margin-top: 8px; color: #c62828; font-size: 13px; background: #ffebee; border: 1px solid #ffcdd2; padding: 7px 10px; border-radius: 8px; }

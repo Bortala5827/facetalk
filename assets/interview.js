@@ -284,32 +284,68 @@
   }
 
   // ── 手动补充 ──
-  // 乐观 UI：点完按钮立刻在对话稿画一条「发送中…」的气泡，POST 回来成功去掉圆点、记 il_xxx 到 known
-  // 防止 1.5s 后的轮询重画同一条；失败则去掉圆点、加红底 + ⚠ + toast
+  // 乐观 UI：点完按钮立刻在对话稿画一条「发送中…」的气泡，POST 回来成功去掉圆点 + 移除气泡内 ... span、记 il_xxx 到 known
+  // 防止 1.5s 后的轮询重画同一条；失败则去掉圆点 + 移除 ... span、加红底 + ⚠ + 重发按钮 + toast
+  // 10 秒超时：网络真挂时主动标记失败（避免「永远卡在发送中」的体验）
+  function clearPending(el) {
+    if (!el) return;
+    el.classList.remove('iv-pending');
+    var dot = el.querySelector('.iv-pending-dot');
+    if (dot) dot.remove();
+  }
+  function markFailed(el, reason) {
+    if (!el) return;
+    clearPending(el);
+    el.classList.add('iv-fail');
+    var meta = el.querySelector('.iv-meta');
+    if (meta && !meta.querySelector('.iv-fail-tag')) {
+      var tag = document.createElement('span');
+      tag.className = 'iv-fail-tag';
+      tag.textContent = '⚠ 发送失败';
+      meta.appendChild(tag);
+      var btn = document.createElement('button');
+      btn.className = 'iv-retry';
+      btn.type = 'button';
+      btn.textContent = '🔄 重发';
+      btn.addEventListener('click', function () {
+        var text = el.querySelector('.iv-bubble').textContent.replace(/…/g, '').trim();
+        el.remove();
+        if (known[tmpKey]) delete known[tmpKey];
+        noteInput.value = text;
+        sendNote();
+      });
+      meta.appendChild(btn);
+    }
+    toast(reason || '发送失败', true);
+  }
   function sendNote() {
     var v = noteInput.value.replace(/\s+/g, ' ').trim();
     if (!v) return;
     noteInput.value = '';
     var tmpKey = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
     appendLine('我', v, tmpKey, { pending: true, created: Math.floor(Date.now() / 1000) });
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 10000) : null;   // 10s 超时
     fetch('/api/interview', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ me: me, pair: pairId, action: 'line', text: v }),
-    }).then(function (r) { return r.json().catch(function () { return {}; }); })
-      .then(function (d) {
-        var el = transcript.querySelector('[data-ivkey="' + tmpKey + '"]');
-        if (d && d.ok) {
-          if (d.id) known[d.id] = 1;     // 防止 1.5s 后 polling 把同一条再画一次
-          if (el) { el.classList.remove('iv-pending'); el.setAttribute('data-ivkey', d.id || tmpKey); }
-        } else {
-          if (el) { el.classList.remove('iv-pending'); el.classList.add('iv-fail'); }
-          toast('发送失败：' + (d && d.error || '未知'), true);
-        }
-      }).catch(function () {
-        var el = transcript.querySelector('[data-ivkey="' + tmpKey + '"]');
-        if (el) { el.classList.remove('iv-pending'); el.classList.add('iv-fail'); }
-        toast('网络出错，消息未送达', true);
-      });
+      signal: ctrl ? ctrl.signal : undefined,
+    }).then(function (r) {
+      if (timer) clearTimeout(timer);
+      return r.json().catch(function () { return {}; });
+    }).then(function (d) {
+      var el = transcript.querySelector('[data-ivkey="' + tmpKey + '"]');
+      if (d && d.ok) {
+        if (d.id) known[d.id] = 1;     // 防止 1.5s 后 polling 把同一条再画一次
+        if (el) { clearPending(el); el.setAttribute('data-ivkey', d.id || tmpKey); }
+      } else {
+        markFailed(el, '发送失败：' + (d && d.error || '未知'));
+      }
+    }).catch(function (e) {
+      if (timer) clearTimeout(timer);
+      var el = transcript.querySelector('[data-ivkey="' + tmpKey + '"]');
+      markFailed(el, e && e.name === 'AbortError' ? '10 秒没回应，可能网络不通' : '网络出错，消息未送达');
+    });
   }
   noteSend.addEventListener('click', sendNote);
   noteInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') sendNote(); });
