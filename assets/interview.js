@@ -19,6 +19,12 @@
       endBtn = $('iv-end'), sttBtn = $('iv-stt'), callBtn = $('iv-call'),
       transcript = $('iv-transcript'), noteInput = $('iv-note'), noteSend = $('iv-note-send'),
       evalBox = $('iv-eval'), callTip = $('iv-call-tip');
+  // 备选会议号元素
+  var fbCard = $('iv-fallback'), fbToggle = $('iv-fb-toggle'), fbBody = $('iv-fb-body'),
+      fbStatus = $('iv-fb-status'), fbChev = $('iv-fb-chev'),
+      fbTen = $('iv-fb-tencent'), fbFei = $('iv-fb-feishu'), fbSave = $('iv-fb-save'),
+      fbToast = $('iv-fb-toast'), fbPeer = $('iv-fb-peer'),
+      fbPeerTen = $('iv-fb-peer-tencent'), fbPeerFei = $('iv-fb-peer-feishu');
 
   // 状态
   var running = false, remainSec = 0, tickTimer = null, pollTimer = null;
@@ -27,8 +33,14 @@
   var seenSig = {};               // 已处理过的信令 id，防重叠区间重复处理
   var pendingOffer = null;        // 对方发起语音但本方还没接听时暂存
   var sttOn = false, sttStream = null, sttRec = null, sttErrShown = false;
-  var pc = null, callStream = null, callStarted = false;
+  // 浏览器原生 STT（Web Speech API）状态
+  var sttBrowser = null, sttBrowserOn = false, sttBrowserLast = '', sttBrowserLastEmit = 0;
+  var pc = null, callStream = null, callStarted = false, callConnTimer = null;
   var ended = false;
+  // 备选会议号状态：fbUserOpen=true 表示用户/系统已经把 fallback 卡展开了；false 表示当前是折叠状态
+  var fbExpanded = false, fbFilledMine = false, fbLast = { tencent: '', feishu: '' };
+  var fbShown = false;            // fallback 卡是否被允许显示（30s 未连通 / 用户手动 / 始终显示策略）
+  var fbAutoShown = false;        // 是否因 30s 未连通被自动展开过（连通后再次自动折叠会用到）
 
   // 隐藏的远端音频（WebRTC）
   var remoteAudio = document.createElement('audio');
@@ -100,6 +112,8 @@
         known[ln.id] = 1;
         appendLine(ln.mine ? '我' : '对方', ln.text);
       });
+      // 备选会议号（双方的另一面，回执时不是自己的）
+      if (d.fallback) applyFallback(d.fallback);
       // WebRTC 信令
       // 注意：created 是秒级，同一秒内可能有多条 ICE。若直接把游标推到 max(created)，
       // 同秒内后到的候选会被 `created > sinceSignal` 永久过滤掉 → 连不通。
@@ -125,6 +139,104 @@
     transcript.scrollTop = transcript.scrollHeight;
   }
 
+  // ── 备选会议号（fallback 卡）──
+  // 渲染规则：
+  //  - 后端给的是「对方的面」：我自己填的存在本地 input，不让服务器回显覆盖
+  //  - 顶部摘要条里的状态：自己是否填过、对方是否填过
+  //  - 控制：默认折叠；30s 未连通自动展开（标记 fbAutoShown），连通成功后自动再次折叠
+  //  - 用户手动展开/折叠会清除 fbAutoShown 标记，避免系统再覆盖其意图
+  function applyFallback(other) {
+    var peerT = (other && other.tencent) || '';
+    var peerF = (other && other.feishu) || '';
+    var changed = false;
+    if (peerT !== fbLast.tencent || peerF !== fbLast.feishu) {
+      fbLast.tencent = peerT;
+      fbLast.feishu = peerF;
+      changed = true;
+    }
+    if (changed) renderFallbackStatus();
+  }
+  function renderFallbackStatus() {
+    if (!fbCard) return;
+    fbCard.hidden = !fbShown;
+    // 我这边是否填过
+    var mineHas = !!(fbTen && fbTen.value.trim()) || !!(fbFei && fbFei.value.trim());
+    fbFilledMine = mineHas;
+    var peerT = fbLast.tencent.trim(), peerF = fbLast.feishu.trim();
+    var peerHas = !!(peerT || peerF);
+    // 摘要条文案
+    if (!mineHas && !peerHas) { fbStatus.textContent = '未填'; fbStatus.className = 'iv-fb-status none'; }
+    else if (mineHas && !peerHas) { fbStatus.textContent = '你已填 · 等对方'; fbStatus.className = 'iv-fb-status wait'; }
+    else if (!mineHas && peerHas) { fbStatus.textContent = '对方已填 · 你未填'; fbStatus.className = 'iv-fb-status wait'; }
+    else { fbStatus.textContent = '双方都填好了 ✅'; fbStatus.className = 'iv-fb-status ok'; }
+    fbChev.textContent = fbExpanded ? '▾' : '▸';
+    fbToggle.setAttribute('aria-expanded', fbExpanded ? 'true' : 'false');
+    fbBody.hidden = !fbExpanded;
+    // 对方填的：放在卡里给双方看，不能编辑
+    var showPeer = peerHas && fbExpanded;
+    fbPeer.hidden = !showPeer;
+    if (showPeer) {
+      fbPeerTen.textContent = peerT ? ('📞 腾讯会议：' + peerT) : '📞 腾讯会议：（未填）';
+      fbPeerFei.textContent = peerF ? ('📞 飞书会议：' + peerF) : '📞 飞书会议：（未填）';
+      fbPeerTen.className = peerT ? '' : 'muted';
+      fbPeerFei.className = peerF ? '' : 'muted';
+    }
+    // 已经填过的，不再清空 input（极简：用 value 持有）
+    if (mineHas) {
+      if (fbTen && !fbTen.dataset.touched) fbTen.value = fbTen.value;
+      if (fbFei && !fbFei.dataset.touched) fbFei.value = fbFei.value;
+    }
+  }
+  function fbSetExpanded(open, fromAuto) {
+    if (!fbCard || fbCard.hidden) { fbExpanded = false; return; }
+    fbExpanded = !!open;
+    if (!fromAuto) fbAutoShown = false;   // 用户主动操作：接管，不再被系统自动折叠
+    renderFallbackStatus();
+  }
+  function fbEnsureShown() { fbShown = true; if (fbCard) { fbCard.hidden = false; renderFallbackStatus(); } }
+  function fbAutoExpand() { if (!fbCard) return; fbEnsureShown(); fbAutoShown = true; fbSetExpanded(true, true); }
+  function fbAutoCollapseIfAuto() {
+    if (!fbCard) return;
+    if (fbAutoShown && !fbLast.tencent && !fbLast.feishu && !fbFilledMine) {
+      // 自动展开是为应急、自动收回条件：双方都没填、用户没主动操作
+      fbSetExpanded(false, true);
+    } else if (fbAutoShown && pc && pc.connectionState === 'connected') {
+      // 连通后自动收回
+      fbSetExpanded(false, true);
+    }
+  }
+
+  if (fbToggle) {
+    fbToggle.addEventListener('click', function () { fbSetExpanded(!fbExpanded, false); });
+    [fbTen, fbFei].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener('input', function () { el.dataset.touched = '1'; renderFallbackStatus(); });
+    });
+    if (fbSave) {
+      fbSave.addEventListener('click', function () {
+        var t = (fbTen && fbTen.value || '').replace(/\s+/g, ' ').trim();
+        var f = (fbFei && fbFei.value || '').replace(/\s+/g, ' ').trim();
+        if (!t && !f) { fbToast.textContent = '至少填一项'; setTimeout(function () { fbToast.textContent = ''; }, 1500); return; }
+        fbSave.disabled = true;
+        fetch('/api/interview', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ me: me, pair: pairId, action: 'set-fallback', tencent: t, feishu: f }),
+        }).then(function (r) { return r.json().catch(function () { return {}; }); })
+          .then(function (d) {
+            fbSave.disabled = false;
+            if (d && d.ok) {
+              fbToast.textContent = '已保存';
+              setTimeout(function () { fbToast.textContent = ''; }, 1500);
+              renderFallbackStatus();
+            } else {
+              fbToast.textContent = '保存失败：' + (d.error || '未知');
+            }
+          })
+          .catch(function () { fbSave.disabled = false; fbToast.textContent = '保存失败'; });
+      });
+    }
+  }
+
   // ── 手动补充 ──
   function sendNote() {
     var v = noteInput.value.replace(/\s+/g, ' ').trim();
@@ -139,20 +251,34 @@
   noteInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') sendNote(); });
 
   // ── 录音转文字（STT）──
+  // 三种模式：
+  //   api     → MediaRecorder 每 20 秒产一段，发到用户自带的 Whisper 兼容接口转写（路径 1，老逻辑）
+  //   browser → 浏览器原生 SpeechRecognition（continuous + interimResults），适合不想配 API 的电脑用户
+  //   off     → 完全关闭，靠手动记笔记
   function pickMime() {
     var c = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
     for (var i = 0; i < c.length; i++) { try { if (window.MediaRecorder && MediaRecorder.isTypeSupported(c[i])) return c[i]; } catch (e) {} }
     return '';
   }
   function toggleStt() {
-    if (sttOn) { stopStt(); return; }
+    if (sttOn || sttBrowserOn) { stopStt(); return; }
+    if (!window.FTSettings || !window.FTSettings.sttOn()) {
+      toast('请先点右上角 ⚙ 开启录音转文字', true);
+      if (window.FTSettings) window.FTSettings.open();
+      return;
+    }
+    var mode = (window.FTSettings && window.FTSettings.sttMode) || 'api';
+    if (mode === 'browser') startSttBrowser();
+    else startSttApi();
+  }
+  function startSttApi() {
     if (!window.FTSettings || !window.FTSettings.hasSTT()) {
-      toast('请先点右上角 ⚙ 配置语音转文字接口', true);
+      toast('请先点右上角 ⚙ 配置 Whisper 兼容接口', true);
       if (window.FTSettings) window.FTSettings.open();
       return;
     }
     if (!navigator.mediaDevices || !window.MediaRecorder) {
-      toast('当前浏览器不支持录音，请用 Chrome / Edge / 系统浏览器', true); return;
+      toast('当前浏览器不支持 MediaRecorder，请改用「浏览器自带」模式', true); return;
     }
     navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } })
       .then(function (s) {
@@ -163,16 +289,76 @@
         sttRec.ondataavailable = function (e) { if (e.data && e.data.size) sttSend(e.data); };
         sttRec.start(20000);   // 每 20 秒产出一段，增量转写
         sttOn = true; updateSttBtn();
-        toast('🎙 已开启录音转文字');
+        toast('🎙 已开启录音转文字（API）');
       })
       .catch(function () { toast('没拿到麦克风权限，请在浏览器允许', true); });
+  }
+  function startSttBrowser() {
+    // 浏览器原生 STT：必须先拿麦克风（Chrome 强制要求），再启 SpeechRecognition
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast('当前浏览器拿不到麦克风，无法启用浏览器自带转录', true); return;
+    }
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      toast('当前浏览器不支持 SpeechRecognition，请改 Chrome / Edge 或用 API 模式', true); return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+      // 立刻停掉流：SpeechRecognition 自管麦克风，长期占着会让用户以为录音灯常亮
+      s.getTracks().forEach(function (t) { t.stop(); });
+      sttBrowser = new SR();
+      sttBrowser.continuous = true;
+      sttBrowser.interimResults = true;
+      sttBrowser.lang = (window.FTSettings && window.FTSettings.browserSttLang) ? window.FTSettings.browserSttLang() : 'zh-CN';
+      sttBrowserLast = '';
+      sttBrowserLastEmit = 0;
+      // 兼容：onresult 一次返回多个 result（含 isFinal=false 的和 isFinal=true 的）
+      sttBrowser.onresult = function (e) {
+        var finalText = '';
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+          var r = e.results[i];
+          if (r.isFinal) finalText += (finalText ? '\n' : '') + r[0].transcript.trim();
+        }
+        if (!finalText) return;
+        var t = finalText.replace(/\s+/g, ' ').trim();
+        if (!t || t === sttBrowserLast) return;
+        sttBrowserLast = t;
+        // 同一秒内多次 final 结果不会重复发送
+        var now = Date.now();
+        if (now - sttBrowserLastEmit < 500) return;
+        sttBrowserLastEmit = now;
+        fetch('/api/interview', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ me: me, pair: pairId, action: 'line', text: t }),
+        }).catch(function () {});
+      };
+      sttBrowser.onerror = function (e) {
+        if (!sttErrShown) { sttErrShown = true; toast('浏览器语音识别出错：' + (e.error || '未知') + '（检查麦克风权限）', true); }
+      };
+      sttBrowser.onend = function () {
+        // 用户停掉、Chrome 长时间没声音会自动 end；这时只有"开着"才续
+        if (sttBrowserOn) {
+          try { sttBrowser.start(); } catch (e) {}
+        }
+      };
+      try {
+        sttBrowser.start();
+        sttBrowserOn = true; sttOn = true; sttErrShown = false;
+        updateSttBtn();
+        toast('🎙 已开启浏览器自带转文字（Chrome / Edge）');
+      } catch (e) { toast('浏览器语音识别启动失败', true); }
+    }).catch(function () { toast('没拿到麦克风权限，请在浏览器允许', true); });
   }
   function stopStt() {
     if (sttRec) { try { if (sttRec.state !== 'inactive') sttRec.stop(); } catch (e) {} sttRec = null; }
     if (sttStream) { sttStream.getTracks().forEach(function (t) { t.stop(); }); sttStream = null; }
+    if (sttBrowser) { sttBrowserOn = false; try { sttBrowser.onend = null; sttBrowser.stop(); } catch (e) {} sttBrowser = null; }
     sttOn = false; updateSttBtn();
   }
-  function updateSttBtn() { sttBtn.textContent = sttOn ? '🎙 录音转文字：开' : '🎙 录音转文字：关'; sttBtn.classList.toggle('on', sttOn); }
+  function updateSttBtn() {
+    var on = sttOn || sttBrowserOn;
+    sttBtn.textContent = on ? '🎙 录音转文字：开' : '🎙 录音转文字：关';
+    sttBtn.classList.toggle('on', !!on);
+  }
   function sttSend(blob) {
     var cfg = window.FTSettings.get();
     var base = (cfg.sttBase || cfg.llmBase || '').trim();
@@ -249,13 +435,18 @@
     p.ontrack = function (e) { try { remoteAudio.srcObject = e.streams[0]; } catch (e2) {} };
     p.onconnectionstatechange = function () {
       if (p.connectionState === 'connected') {
+        if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
         callBtn.textContent = '🔊 实时语音：已连通'; callTip.hidden = true;
+        fbAutoCollapseIfAuto();   // 连通后如果之前是自动展开的，就自动收回（用户主动展开过的不会被收回）
       } else if (p.connectionState === 'failed' || p.connectionState === 'disconnected') {
+        if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
         onFail(turnOn
           ? '语音断开了，多半是网络波动 —— 再点一次可重连'
           : (gotSrflx
-            ? '直连没打通（双方网络限制较严）—— 一方切 4G/5G 重试多半能成；不想折腾就往下滑到「🔗 联机信息」交换腾讯会议号，转录和 AI 点评照常可用'
-            : '当前网络拿不到公网地址（校园网 / 公司内网常见），直连打不通 —— 一方切 4G/5G 重试，或往下滑到「🔗 联机信息」交换腾讯会议号，转录和 AI 点评照常可用'));
+            ? '直连没打通（双方网络限制较严）—— 一方切 4G/5G 重试多半能成；不想折腾就往下滑到「📡 备选会议号」交换腾讯会议号，转录和 AI 点评照常可用'
+            : '当前网络拿不到公网地址（校园网 / 公司内网常见），直连打不通 —— 一方切 4G/5G 重试，或往下滑到「📡 备选会议号」交换腾讯会议号，转录和 AI 点评照常可用'));
+        // 直连失败时立刻展开 fallback，应急换走腾讯会议
+        fbAutoExpand();
       }
     };
     return p;
@@ -287,6 +478,15 @@
   function startCall() {
     callStarted = true; callBtn.textContent = '🔊 实时语音：连接中…'; callBtn.classList.add('on');
     callTip.hidden = true;
+    // 30 秒未连通 → 兜底：自动展开「备选会议号」卡，让用户把腾讯/飞书会议号填上，转走外部通话。
+    // 节流设计：5~8 秒才在 UI 上出现 log（callTip 一直可见，便于看进度），到 30s 强制展开 fallback。
+    // 已经 connected 时由 onconnectionstatechange 清掉计时器。
+    if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
+    callConnTimer = setTimeout(function () {
+      if (pc && pc.connectionState === 'connected') return;
+      toast('⌛ 30 秒还没连上，建议填一下会议号、走腾讯会议或飞书会议继续练', true);
+      fbAutoExpand();
+    }, 30000);
     // 若对方已经发过 offer，本方直接走应答路径，不要再互发 offer（会 glare 冲突）
     if (pendingOffer) { var o = pendingOffer; pendingOffer = null; handleSignal(o); return; }
     withIce(function () {
@@ -346,9 +546,12 @@
     callTip.hidden = false; callTip.textContent = '⚠️ ' + msg;
     callBtn.textContent = '🔊 实时语音'; callBtn.classList.remove('on');
     callStarted = false;
+    if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
+    fbAutoExpand();   // 任何 fail 都把 fallback 展开
   }
   function stopCall() {
     callStarted = false;
+    if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
     if (pc) { try { pc.close(); } catch (e) {} pc = null; }
     if (callStream) { callStream.getTracks().forEach(function (t) { t.stop(); }); callStream = null; }
     callBtn.textContent = '🔊 实时语音'; callBtn.classList.remove('on');
@@ -442,9 +645,12 @@
   // 供 pair.html 的试音门禁调用：互评通过、面试间刚露出来时刷新一次提示
   window.FTInterview = {
     // 解锁面试间时顺手预热中继凭证，等用户真点「实时语音」时已经在手，省掉一次等待
-    onUnlock: function () { refreshSetupHint(); try { withIce(function () {}); } catch (e) {} },
+    onUnlock: function () { refreshSetupHint(); try { withIce(function () {}); } catch (e) {} fbEnsureShown(); renderFallbackStatus(); },
     // 房间解散 / 页面离开时兜底收拾麦克风与连接，避免录音灯常亮
-    teardown: function () { stopStt(); stopCall(); stopPolling(); if (tickTimer) { clearInterval(tickTimer); tickTimer = null; } },
+    teardown: function () {
+      if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
+      stopStt(); stopCall(); stopPolling(); if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+    },
     isRunning: function () { return running && !ended; },
   };
   window.addEventListener('beforeunload', function () { try { window.FTInterview.teardown(); } catch (e) {} });

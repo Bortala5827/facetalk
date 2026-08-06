@@ -27,7 +27,7 @@ export async function onRequest(context) {
     const url = new URL(request.url);
     const m = await memberCheck(url.searchParams.get('me'), url.searchParams.get('pair'));
     if (m.error) return err(m.error, m.status);
-    if (!await interviewReady(db)) return json({ ok: true, lines: [], signals: [] }); // 表未建：降级为空
+    if (!await interviewReady(db)) return json({ ok: true, lines: [], signals: [], fallback: emptyFallback() }); // 表未建：降级为空
 
     const sinceSignal = parseInt(url.searchParams.get('sinceSignal') || '0', 10) || 0;
     const { results: lines } = await db.prepare(
@@ -36,6 +36,12 @@ export async function onRequest(context) {
     const { results: sigs } = await db.prepare(
       'SELECT id, from_id, kind, data, created FROM rtc_signals WHERE pair_id=? AND to_id=? AND created > ? ORDER BY created ASC LIMIT 50'
     ).bind(m.p.id, m.r.id, sinceSignal).all();
+    // 备选会议号（双方共用）：只取"对方"那一面的，对方没填时该字段为空
+    const fbRow = await db.prepare('SELECT tencent_a, tencent_b, feishu_a, feishu_b, updated FROM interview_fallback WHERE pair_id=?')
+      .bind(m.p.id).first();
+    const fallback = fbRow
+      ? { tencent: m.side === 'a' ? (fbRow.tencent_b || '') : (fbRow.tencent_a || ''), feishu: m.side === 'a' ? (fbRow.feishu_b || '') : (fbRow.feishu_a || ''), updated: fbRow.updated }
+      : emptyFallback();
 
     return json({
       ok: true,
@@ -45,6 +51,7 @@ export async function onRequest(context) {
       signals: (sigs || []).map(function (x) {
         return { id: x.id, from: x.from_id, kind: x.kind, data: x.data, created: x.created };
       }),
+      fallback: fallback,
       serverNow: nowSec(),
     });
   }
@@ -82,12 +89,30 @@ export async function onRequest(context) {
       return json({ ok: true, id, created: now });
     }
 
+    // 备选会议号（WebRTC 连不上时的兜底：腾讯会议号 / 飞书会议号），各存一面，对方只能看到对面的
+    if (action === 'set-fallback') {
+      const tencent = String(body.tencent || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+      const feishu = String(body.feishu || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+      const colTen = m.side === 'a' ? 'tencent_a' : 'tencent_b';
+      const colFei = m.side === 'a' ? 'feishu_a' : 'feishu_b';
+      // upsert：先看有没有行，没行 INSERT，有行 UPDATE 自己的两列
+      const ex = await db.prepare('SELECT pair_id FROM interview_fallback WHERE pair_id=?').bind(m.p.id).first();
+      if (!ex) {
+        await db.prepare('INSERT INTO interview_fallback (pair_id, ' + colTen + ', ' + colFei + ', updated) VALUES (?, ?, ?, ?)')
+          .bind(m.p.id, tencent, feishu, now).run();
+      } else {
+        await db.prepare('UPDATE interview_fallback SET ' + colTen + '=?, ' + colFei + '=?, updated=? WHERE pair_id=?')
+          .bind(tencent, feishu, now, m.p.id).run();
+      }
+      return json({ ok: true, tencent: tencent, feishu: feishu, updated: now });
+    }
+
     return err('unknown_action', 400);
   }
   return err('method', 405);
 }
 
-// 自动建表（两张），失败则整模块降级
+// 自动建表（三张），失败则整模块降级
 async function interviewReady(db) {
   try {
     await db.prepare('SELECT 1 FROM interview_lines LIMIT 1').first();
@@ -96,6 +121,7 @@ async function interviewReady(db) {
     try { await ensureTables(db); return true; } catch (e2) { return false; }
   }
 }
+function emptyFallback() { return { tencent: '', feishu: '', updated: 0 }; }
 const DDL = [
   `CREATE TABLE IF NOT EXISTS interview_lines (
     id TEXT PRIMARY KEY,
@@ -115,6 +141,15 @@ const DDL = [
     created INTEGER NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS idx_sg_pair_to ON rtc_signals(pair_id, to_id)`,
+  // 备选会议号：双方各存自己的一面；GET 时只回对方那一面，避免看自己的键回显覆盖
+  `CREATE TABLE IF NOT EXISTS interview_fallback (
+    pair_id TEXT PRIMARY KEY,
+    tencent_a TEXT DEFAULT '',
+    tencent_b TEXT DEFAULT '',
+    feishu_a TEXT DEFAULT '',
+    feishu_b TEXT DEFAULT '',
+    updated INTEGER DEFAULT 0
+  )`,
 ];
 async function ensureTables(db) {
   for (const sql of DDL) await db.prepare(sql).run();

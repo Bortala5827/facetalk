@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#1e88e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260806g" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260806h" />
 </head>
 <body>
   <header class="topbar">
@@ -56,7 +56,12 @@
 
     <!-- ===== 2.0 试音互评：匹配后先各录 30–60 秒，互听互评，双方点头才解锁下面的功能 ===== -->
     <section class="card" id="voice-card" hidden>
-      <h2 class="sec-title">🎙 30 秒试音互评 <span class="v-badge">2.0</span></h2>
+      <button class="v-collapse" id="v-collapse" aria-expanded="true" type="button">
+        <h2 class="sec-title">🎙 30 秒试音互评 <span class="v-badge">2.0</span></h2>
+        <span class="v-collapse-sub" id="v-collapse-sub"></span>
+        <span class="v-chev">▾</span>
+      </button>
+      <div class="v-body" id="v-body">
       <p class="muted">双方各录一段答同一道题，互听互评。<strong>都点「愿意组队」才解锁留言板和联机信息</strong>——不合适就早点各找各的，别互相耽误时间。</p>
       <div class="v-topic"><span class="v-topic-tag">本场题目</span><p id="v-topic">加载中…</p></div>
 
@@ -120,6 +125,7 @@
         <p class="v-state" id="v-verdict"></p>
         <div class="v-cards" id="v-review-cards"></div>
       </div>
+      </div><!-- /v-body -->
     </section>
 
     <!-- ===== 2.1 面试间：实时转录 + 自添加大模型评价 ===== -->
@@ -154,8 +160,37 @@
           <input id="iv-note" type="text" maxlength="300" placeholder="手动补充一句（回车发送，记为「我」）" autocomplete="off" />
           <button class="btn-mini ok" id="iv-note-send">记</button>
         </div>
-        <div id="iv-eval" class="iv-eval" hidden></div>
         <p id="iv-call-tip" class="iv-call-tip" hidden></p>
+        <!-- 备选会议号：WebRTC 在对称 NAT/校园网下连不上时的兜底。每方填自己的，对方才能看到。
+             默认折叠在条状摘要里：30 秒未连通自动展开，连通后自动折叠，但用户可手动再展开。 -->
+        <section class="iv-fallback" id="iv-fallback" hidden>
+          <button class="iv-fb-toggle" id="iv-fb-toggle" aria-expanded="false" type="button">
+            <span>📡 备选会议号（连不上时改走腾讯会议 / 飞书会议）</span>
+            <span class="iv-fb-status" id="iv-fb-status">未填</span>
+            <span class="iv-fb-chev">▸</span>
+          </button>
+          <div class="iv-fb-body" id="iv-fb-body" hidden>
+            <p class="iv-fb-hint">WebRTC 在双方都是校园网 / 公司内网 / 部分 4G 环境下打不通。把你们俩各自常用的会议号贴在下面，<b>对方只能看到对方那一面的</b>，互不干扰。录音转文字和 AI 评价照常可用。</p>
+            <div class="iv-fb-grid">
+              <label class="field"><span class="field-label">我的腾讯会议号</span>
+                <input id="iv-fb-tencent" type="text" maxlength="200" placeholder="如：123-456-789 或会议链接" autocomplete="off" />
+              </label>
+              <label class="field"><span class="field-label">我的飞书会议号</span>
+                <input id="iv-fb-feishu" type="text" maxlength="200" placeholder="如：飞书会议链接 / 会议室 ID" autocomplete="off" />
+              </label>
+            </div>
+            <div class="iv-fb-actions">
+              <button class="btn-mini ok" id="iv-fb-save">保存我的会议号</button>
+              <span class="iv-fb-toast" id="iv-fb-toast"></span>
+            </div>
+            <div class="iv-fb-peer" id="iv-fb-peer" hidden>
+              <h4>对方提供的会议号</h4>
+              <p id="iv-fb-peer-tencent" class="muted"></p>
+              <p id="iv-fb-peer-feishu" class="muted"></p>
+            </div>
+          </div>
+        </section>
+        <div id="iv-eval" class="iv-eval" hidden></div>
       </div>
     </section>
 
@@ -548,6 +583,10 @@
       if (vGate === 'skip') { card.hidden = true; return; }   // voice 表未建 → 整个环节跳过，不影响老功能
       card.hidden = false;
       document.getElementById('v-topic').textContent = vMeta.topic || '';
+      // 只在用户能操作的阶段（record / review）保持展开；其它阶段自动折叠成一行摘要
+      // 给面试间留出更多屏幕空间，避免长篇试音流程把屏幕占满。
+      var shouldCollapse = (vGate === 'wait_peer' || vGate === 'wait_review' || vGate === 'result' || vGate === 'passed');
+      setVoiceCollapsed(shouldCollapse);
       if (vGate === 'record') {
         vShow('v-record');
         // 对方已录好：给用户一个正向反馈，避免录完才发现对方还没录/录音已焚
@@ -571,6 +610,37 @@
       } else {
         vShow('v-result'); renderVerdict();
       }
+    }
+    // 试音卡折叠/展开：点 chevron 可手动切换；状态自动跟当前 voice 阶段挂钩
+    var vManuallyExpanded = null; // 用户主动操作过吗？null=系统控制；true/false=固定值
+    function setVoiceCollapsed(collapsed) {
+      var body = document.getElementById('v-body');
+      var btn = document.getElementById('v-collapse');
+      var sub = document.getElementById('v-collapse-sub');
+      var chev = btn && btn.querySelector('.v-chev');
+      if (vManuallyExpanded !== null) collapsed = !vManuallyExpanded;
+      if (body) body.hidden = collapsed;
+      if (chev) chev.textContent = collapsed ? '▸' : '▾';
+      if (btn) btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      if (sub) {
+        // 摘要文案
+        var verdictText = (vGate === 'passed') ? '🎉 已组队' : (vGate === 'result' ? '🙅 有一方婉拒' : '');
+        if (vGate === 'wait_peer') sub.textContent = '✅ 你的试音已提交，等对方录制…';
+        else if (vGate === 'wait_review') sub.textContent = '📨 等对方评价…';
+        else if (vGate === 'result') sub.textContent = verdictText;
+        else if (vGate === 'passed') sub.textContent = verdictText;
+        else sub.textContent = '';
+      }
+    }
+    var vCollBtn = document.getElementById('v-collapse');
+    if (vCollBtn) {
+      vCollBtn.addEventListener('click', function (e) {
+        // 仅当用户主动点 chevron 或标题区时切手动；点 v-record/v-wait 内的元素不动
+        var t = e.target;
+        if (t.closest('.v-step') || t.closest('.v-play-row')) return;
+        vManuallyExpanded = (document.getElementById('v-body').hidden) ? true : false;
+        setVoiceCollapsed(!vManuallyExpanded);
+      });
     }
     function renderVerdict() {
       var v = document.getElementById('v-verdict');
@@ -761,8 +831,8 @@
     }, 5000);
   })();
   </script>
-  <script src="/assets/settings.js?v=20260806g"></script>
-  <script src="/assets/glare.js?v=20260806g"></script>
-  <script src="/assets/interview.js?v=20260806h"></script>
+  <script src="/assets/settings.js?v=20260806h"></script>
+  <script src="/assets/glare.js?v=20260806h"></script>
+  <script src="/assets/interview.js?v=20260806i"></script>
 </body>
 </html>

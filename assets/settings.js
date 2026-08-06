@@ -14,23 +14,42 @@
   };
 
   function load() {
-    try { return Object.assign({ provider: 'openai', llmBase: '', llmKey: '', llmModel: '', sttBase: '', sttKey: '', sttModel: '', sttOn: true }, JSON.parse(localStorage.getItem(KEY) || '{}')); }
-    catch (e) { return { provider: 'openai', llmBase: '', llmKey: '', llmModel: '', sttBase: '', sttKey: '', sttModel: '', sttOn: true }; }
+    try { return Object.assign({ provider: 'openai', llmBase: '', llmKey: '', llmModel: '', sttBase: '', sttKey: '', sttModel: '', sttOn: true, sttMode: 'api' }, JSON.parse(localStorage.getItem(KEY) || '{}')); }
+    catch (e) { return { provider: 'openai', llmBase: '', llmKey: '', llmModel: '', sttBase: '', sttKey: '', sttModel: '', sttOn: true, sttMode: 'api' }; }
   }
   function save(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
 
   var S = load();
 
+  // 兼容历史：老用户只存了 sttOn，没有 sttMode，补一个默认值
+  if (!S.sttMode) S.sttMode = S.sttOn ? 'api' : 'off';
+
   function get() { return S; }
   function hasLLM() { return !!(S.llmBase && S.llmKey && S.llmModel); }
-  // STT 的 Base / Key 留空时回退用大模型那一组（和 interview.js 的 sttSend 保持一致），
-  // 只有模型名必须单独填（whisper-1 / SenseVoice 等和 chat 模型不同）。
+  // STT 模式判断：浏览器原生路径不需要任何 key/api，浏览器认得出来就行
   function hasSTT() {
-    if (!S.sttOn) return false;
+    if (S.sttMode === 'off') return false;
+    if (S.sttMode === 'browser') return !!getBrowserSttCtor();
+    // 'api'：未填 sttBase/Key 时回退用大模型的 Base/Key，只有模型名必须单独填（whisper-1 等）
     var b = S.sttBase || S.llmBase, k = S.sttKey || S.llmKey;
     return !!(b && k && S.sttModel);
   }
-  function sttOn() { return !!S.sttOn; }
+  function sttOn() { return S.sttMode !== 'off'; }
+  function sttMode() { return S.sttMode; }
+  // 检测当前浏览器是否支持原生 SpeechRecognition（Chrome / Edge 内置；Safari 仅部分版本；微信内置浏览器通常不支持）
+  function getBrowserSttCtor() {
+    try {
+      if (typeof window === 'undefined') return null;
+      return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    } catch (e) { return null; }
+  }
+  function browserSttSupported() { return !!getBrowserSttCtor(); }
+  function browserSttLang() { // 浏览器原生默认 zh-CN；保留可改
+    try {
+      var nav = (navigator.language || 'zh-CN').toLowerCase();
+      return nav.startsWith('zh') ? 'zh-CN' : 'en-US';
+    } catch (e) { return 'zh-CN'; }
+  }
 
   // ── 弹窗 DOM ──
   var built = false;
@@ -52,7 +71,12 @@
         '</div>' +
         '<div class="set-sec">' +
           '<h4>🎙 语音转文字（STT）</h4>' +
-          '<label class="field check"><input id="set-sttOn" type="checkbox" /> <span>开启录音转文字（关闭则面试间不自动转录）</span></label>' +
+          '<p class="set-sub">面试间里你说的每句话会自动变成文字、双方都看得到。</p>' +
+          '<div class="set-stt-row">' +
+            '<label class="set-stt-opt"><input type="radio" name="sttMode" value="api" /> <span><b>Whisper / SenseVoice API</b> · 准确度高，有配额就选这个</span></label>' +
+            '<label class="set-stt-opt"><input type="radio" name="sttMode" value="browser" /> <span><b>浏览器自带</b>（Google Chrome / Edge） · 不用 API key、不消耗配额，但不识别英文以外的语言或安静环境</span></label>' +
+            '<label class="set-stt-opt"><input type="radio" name="sttMode" value="off" /> <span><b>关闭</b> · 不自动转录，靠手动记笔记</span></label>' +
+          '</div>' +
           '<label class="field"><span class="field-label">API Base（Whisper 兼容）</span><input id="set-sttBase" placeholder="留空则用上面的 Base" autocomplete="off" /></label>' +
           '<label class="field"><span class="field-label">API Key（留空则用上面的 Key）</span><input id="set-sttKey" type="password" placeholder="留空则用上面的 Key" autocomplete="off" /></label>' +
           '<label class="field"><span class="field-label">模型名</span><input id="set-sttModel" placeholder="如 whisper-1" autocomplete="off" /></label>' +
@@ -80,7 +104,10 @@
       S.llmBase = document.getElementById('set-llmBase').value.trim();
       S.llmKey = document.getElementById('set-llmKey').value.trim();
       S.llmModel = document.getElementById('set-llmModel').value.trim();
-      S.sttOn = document.getElementById('set-sttOn').checked;
+      var m = document.querySelector('input[name="sttMode"]:checked');
+      S.sttMode = m ? m.value : (S.sttMode || 'api');
+      // 兼容旧字段：保留 sttOn 给老代码读
+      S.sttOn = (S.sttMode !== 'off');
       S.sttBase = document.getElementById('set-sttBase').value.trim();
       S.sttKey = document.getElementById('set-sttKey').value.trim();
       S.sttModel = document.getElementById('set-sttModel').value.trim();
@@ -92,7 +119,7 @@
     });
     document.getElementById('set-clear').addEventListener('click', function () {
       if (!confirm('清除本机保存的全部接口设置？')) return;
-      S = { provider: 'openai', llmBase: '', llmKey: '', llmModel: '', sttBase: '', sttKey: '', sttModel: '', sttOn: true };
+      S = { provider: 'openai', llmBase: '', llmKey: '', llmModel: '', sttBase: '', sttKey: '', sttModel: '', sttOn: true, sttMode: 'api' };
       save(S); fill(); if (window.FT && window.FT.onSettingsChange) window.FT.onSettingsChange();
     });
   }
@@ -101,7 +128,11 @@
     document.getElementById('set-llmBase').value = S.llmBase || '';
     document.getElementById('set-llmKey').value = S.llmKey || '';
     document.getElementById('set-llmModel').value = S.llmModel || '';
-    document.getElementById('set-sttOn').checked = !!S.sttOn;
+    var m = S.sttMode || (S.sttOn ? 'api' : 'off');
+    var radios = document.querySelectorAll('input[name="sttMode"]');
+    var hit = false;
+    radios.forEach(function (r) { if (r.value === m) { r.checked = true; hit = true; } });
+    if (!hit && radios[0]) radios[0].checked = true;
     document.getElementById('set-sttBase').value = S.sttBase || '';
     document.getElementById('set-sttKey').value = S.sttKey || '';
     document.getElementById('set-sttModel').value = S.sttModel || '';
@@ -109,5 +140,5 @@
   function open() { build(); fill(); var m = document.getElementById('set-mask'); m.style.display = 'flex'; }
   function close() { var m = document.getElementById('set-mask'); if (m) m.style.display = 'none'; }
 
-  window.FTSettings = { get: get, hasLLM: hasLLM, hasSTT: hasSTT, sttOn: sttOn, open: open, close: close };
+  window.FTSettings = { get: get, hasLLM: hasLLM, hasSTT: hasSTT, sttOn: sttOn, sttMode: sttMode, browserSttSupported: browserSttSupported, browserSttLang: browserSttLang, open: open, close: close };
 })();
