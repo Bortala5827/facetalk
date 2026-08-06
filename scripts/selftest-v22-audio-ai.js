@@ -48,9 +48,9 @@ ok('设置按钮 title 改「🎙 语音 & AI 点评设置（自备 Key）」', 
 ok('iv-card 加 .iv-testing 切换', /ivc\.classList\.toggle\(['"]iv-testing['"]/.test(pair));
 ok('注释 v2.2 「功能测试中」灰化', /v2\.2.*功能测试中|功能测试中.*v2\.2/.test(pair));
 ok('注释 v2.2 「闻声识搭子」预告', /v2\.2.*闻声识搭子|闻声识搭子.*v2\.2/.test(pair));
-ok('style.css 版本号 20260806o', /style\.css\?v=20260806o/.test(pair));
-ok('settings.js 版本号 20260806o', /settings\.js\?v=20260806o/.test(pair));
-ok('interview.js 版本号 20260806o', /interview\.js\?v=20260806o/.test(pair));
+ok('style.css 版本号 20260806q', /style\.css\?v=20260806q/.test(pair));
+ok('settings.js 版本号 20260806q', /settings\.js\?v=20260806q/.test(pair));
+ok('interview.js 版本号 20260806q', /interview\.js\?v=20260806q/.test(pair));
 ok('style.css 不再带 20260806l 旧版', !/style\.css\?v=20260806l/.test(pair));
 ok('settings.js 不再带 20260806h 旧版', !/settings\.js\?v=20260806h/.test(pair));
 ok('interview.js 不再带 20260806n 旧版', !/interview\.js\?v=20260806n/.test(pair));

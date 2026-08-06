@@ -89,6 +89,15 @@
   function get() { return toLegacySchema(S); }
 
   function hasLLM() { return !!(S.llm.enabled && S.llm.baseUrl && S.llm.key && S.llm.model); }
+  // v2.4 顶栏「接口」按钮角标：没配任何东西（LLM 没启用 + ASR 也不是浏览器内置/没配云端）→ 返回 true
+  // 配合 pair.html 顶栏 badge 显示「未配置」红字提示
+  function unconfigured() {
+    if (hasLLM()) return false;
+    // ASR 至少要支持其一：浏览器内置 STT 可用，或云端 STT 配齐了
+    if (S.asrEngine === 'webspeech' && typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)) return false;
+    if (S.asrEngine === 'cloud' && S.asr.baseUrl && S.asr.key && S.asr.model) return false;
+    return true;
+  }
   function hasSTT() {
     if (S.asrEngine === 'webspeech') return !!getBrowserSttCtor();
     return !!(S.asr.baseUrl && S.asr.key && S.asr.model);
@@ -295,7 +304,7 @@
   function close() { var m = document.getElementById('set-mask'); if (m) m.style.display = 'none'; }
 
   window.FTSettings = {
-    get: get, hasLLM: hasLLM, hasSTT: hasSTT, sttOn: sttOn, sttMode: sttMode,
+    get: get, hasLLM: hasLLM, hasSTT: hasSTT, sttOn: sttOn, sttMode: sttMode, unconfigured: unconfigured,
     browserSttSupported: browserSttSupported, browserSttLang: browserSttLang,
     open: open, close: close,
   };

@@ -7,14 +7,18 @@
   <meta name="theme-color" content="#1e88e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260806o" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260806q" />
 </head>
 <body>
   <header class="topbar">
     <div class="container bar-inner">
       <a class="brand" href="/"><span class="brand-mark">搭</span><span class="brand-text">FaceTalk</span></a>
       <span class="brand-tag">搭子房间 · 1:1</span>
-      <button class="bar-gear" id="open-settings" title="🎙 语音 & AI 点评设置（自备 Key）" aria-label="设置">⚙</button>
+      <button class="bar-gear" id="open-settings" title="🎙 语音 & AI 点评设置（自备 Key）" aria-label="设置">
+        <span class="bar-gear-icon">⚙</span>
+        <span class="bar-gear-text">接口</span>
+        <span class="bar-gear-badge" id="bar-gear-badge" hidden></span>
+      </button>
     </div>
   </header>
 
@@ -36,11 +40,11 @@
       <div id="meet-box" class="meet-box"></div>
 
       <section class="card" id="info-card" style="margin-top:14px">
-        <h2 class="sec-title">🔗 联机信息</h2>
-        <p class="muted">交换腾讯会议 / 联系方式，置顶常驻，不被聊天刷走。双方都能看到对方填的。</p>
+        <h2 class="sec-title">🔗 联机信息 / 📡 备选会议号</h2>
+        <p class="muted">实时语音暂时不稳定？<b class="iv-callout">强烈建议把你的腾讯会议号 / 飞书会议号 / 微信贴在下方</b>，双方互留后直接入会继续练，对练不中断。</p>
         <label class="field">
           <span class="field-label">我的联机信息（选填）</span>
-          <input id="info-mine" type="text" maxlength="500" placeholder="如：腾讯会议 123-456-789 / 微信号 xxx / 备注" autocomplete="off" />
+          <input id="info-mine" type="text" maxlength="500" placeholder="💡 推荐：腾讯会议 123-456-789 或飞书会议链接 — 互留后直接入会对练" autocomplete="off" />
         </label>
         <button class="btn-mini ok" id="info-save">保存我的信息</button>
         <div id="info-peer-box" class="meet-box" style="margin-top:10px"></div>
@@ -135,9 +139,16 @@
       </div><!-- /v-body -->
     </section>
 
-    <!-- ===== 2.1 面试间：实时转录 + 自添加大模型评价 ===== -->
-    <section class="card" id="iv-card" hidden>
-      <h2 class="sec-title">🎤 面试间 <span class="v-badge">2.1</span></h2>
+    <!-- ===== 2.1 面试间：实时转录 + 自添加大模型评价 =====
+         v2.4 默认折叠：WebRTC 实时语音链路尚未稳定，避免用户点进来看到一堆无效按钮。
+         只显示一行提示「点此展开」，真要研究再点开。 -->
+    <section class="card iv-collapsed" id="iv-card" hidden>
+      <button class="iv-collapse-toggle" id="iv-collapse-toggle" aria-expanded="false" type="button">
+        <h2 class="sec-title">🎤 面试间 <span class="v-badge">2.1</span></h2>
+        <span class="iv-collapse-sub" id="iv-collapse-sub">🚧 功能测试中 · 实时语音 + 转写 + AI 评价链路不稳定</span>
+        <span class="iv-collapse-hint" id="iv-collapse-hint">点击展开 ▸</span>
+      </button>
+      <div class="iv-collapse-body" id="iv-collapse-body" hidden>
       <div class="iv-testing-banner">
         <span class="iv-testing-mark">🚧 功能测试中</span>
         <span>WebRTC 实时语音 + 转写 + AI 评价链路尚未稳定，<b>优先建议先用腾讯会议对练</b>，稳定后这栏会自动恢复。</span>
@@ -191,15 +202,17 @@
         </section>
         <div id="iv-eval" class="iv-eval" hidden></div>
       </div>
+      </div><!-- /iv-collapse-body -->
     </section>
 
     <section class="card" id="msg-card">
       <h2 class="sec-title">💬 留言板</h2>
       <p class="muted">互留文字：约时间、留备用联系方式。每人只能删自己发的留言。</p>
+      <div class="msg-tip-meeting">⚠ 实时语音暂时走不通？<b>在这里直接贴上你的腾讯会议号 / 飞书会议号</b>，对方点一下就能入会继续练。</div>
       <div id="msg-list" class="msg-list"><p class="muted">加载中…</p></div>
       <label class="msg-burn"><input id="msg-burn" type="checkbox" /> 🔥 阅后即焚</label>
       <div class="msg-input">
-        <input id="msg-text" type="text" maxlength="300" placeholder="写点什么…" autocomplete="off" />
+        <input id="msg-text" type="text" maxlength="300" placeholder="写点什么…（💡 也可贴上你的腾讯会议号直接约时间）" autocomplete="off" />
         <button class="btn-mini ok" id="msg-send">发送</button>
       </div>
     </section>
@@ -303,6 +316,46 @@
     document.getElementById('open-settings').addEventListener('click', function () {
       if (window.FTSettings) window.FTSettings.open();
     });
+
+    // v2.4 面试间折叠：默认收起，用户点标题才展开；展开态 localStorage 记忆
+    (function ivCollapseInit(){
+      var KEY = 'rcj_ft_iv_collapsed_v1'; // true=收起，false=已展开过
+      var card = document.getElementById('iv-card');
+      var btn = document.getElementById('iv-collapse-toggle');
+      var body = document.getElementById('iv-collapse-body');
+      var hint = document.getElementById('iv-collapse-hint');
+      if (!card || !btn || !body) return;
+      // 默认收起；用户主动展开过则记忆为 false
+      var saved = localStorage.getItem(KEY);
+      var expanded = saved === 'false';
+      function set(open){
+        card.classList.toggle('iv-collapsed', !open);
+        btn.setAttribute('aria-expanded', String(open));
+        body.hidden = !open;
+        if (hint) hint.textContent = open ? '点击折叠 ▾' : '点击展开 ▸';
+        try { localStorage.setItem(KEY, String(!open)); } catch(_){}
+      }
+      btn.addEventListener('click', function(e){ e.preventDefault(); set(body.hidden); });
+      set(expanded); // v2.4 默认 collapsed；用户主动展开才会变 false
+    })();
+
+    // v2.4 顶栏接口角标：未填 LLM Key 时挂红点；填了则隐藏
+    function refreshGearBadge(){
+      var b = document.getElementById('bar-gear-badge'); if (!b) return;
+      var unconfigured = true;
+      try {
+        if (window.FTSettings) {
+          unconfigured = !!(typeof window.FTSettings.unconfigured === 'function' ? window.FTSettings.unconfigured() : !window.FTSettings.hasLLM());
+        }
+      } catch(_){}
+      b.hidden = !unconfigured;
+      b.textContent = unconfigured ? '未配置' : '';
+      b.title = unconfigured ? '点击 → 语音 & AI 点评设置（自备 Key）' : '语音 & AI 点评设置';
+    }
+    refreshGearBadge();
+    // 用户进过 settings 弹窗后，每秒轮询一次 badge（双击设置打开/关闭后 badge 自动收起）
+    setInterval(refreshGearBadge, 1500);
+
 
     function render(p){
       if(!p || p.pairId !== pairId){ document.getElementById('room').innerHTML='<p class="muted">无权限或房间已失效。</p>'; return; }
@@ -870,8 +923,8 @@
   })();
   </script>
   <script src="/assets/ft-util.js?v=20260806p"></script>
-  <script src="/assets/settings.js?v=20260806o"></script>
+  <script src="/assets/settings.js?v=20260806q"></script>
   <script src="/assets/glare.js?v=20260806h"></script>
-  <script src="/assets/interview.js?v=20260806o"></script>
+  <script src="/assets/interview.js?v=20260806q"></script>
 </body>
 </html>
