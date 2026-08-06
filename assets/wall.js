@@ -127,7 +127,7 @@
       var on = manage.classList.toggle('on');
       if (wallEl) wallEl.classList.toggle('manager', on);
       if (on) {
-        var key = String(window.prompt('输入管理员密码（与限流解锁密码一致，即 MS_ADMIN_KEY；未设置时默认 rcj9527）：') || '').trim();
+        var key = String(window.prompt('输入管理员密码（与管理后台 ADMIN_KEY / 限流解锁 MS_ADMIN_KEY 一致；都没设时默认 rcj9527）：') || '').trim();
         if (!key) { manage.classList.remove('on'); if (wallEl) wallEl.classList.remove('manager'); return; }
         window.__wallAdminKey = key;
       } else {

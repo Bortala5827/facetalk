@@ -1,12 +1,13 @@
 // FaceTalk 全站公开留言墙 API（Cloudflare Pages Functions + D1）
 // GET    /api/wall                 -> 留言列表（最新在前）
 // POST   /api/wall                 -> 发帖（body: {name, text}），60s + 每日 20 条限流，敏感词过滤，5min 去重
-// DELETE /api/wall?id=xxx&admin=口令 -> 管理员删除（口令优先取 env.MS_ADMIN_KEY 即全站限流解锁密码，
-// 再回退 env.WALL_ADMIN 旧名，最后默认 rcj9527；任一匹配即通过，避免两套密码割裂）
+// DELETE /api/wall?id=xxx&admin=口令 -> 管理员删除（口令统一取以下任一即视为通过，避免多套密码割裂：
+// env.MS_ADMIN_KEY（全站限流解锁密码，同 cf-manual-steps 文档）、env.ADMIN_KEY（管理后台 admin.html 同款）、
+// 旧名 env.WALL_ADMIN，最后默认 rcj9527。任一匹配即通过）
 const adminPassOk = function(env, admin) {
   const a = String(admin || '').trim();
   if (!a) return false;
-  const list = [env && env.MS_ADMIN_KEY, env && env.WALL_ADMIN, 'rcj9527']
+  const list = [env && env.MS_ADMIN_KEY, env && env.ADMIN_KEY, env && env.WALL_ADMIN, 'rcj9527']
     .map(s => s && String(s)).filter(Boolean);
   return list.includes(a);
 };
