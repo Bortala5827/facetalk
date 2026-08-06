@@ -265,15 +265,24 @@
     var box = $('inbox-list'); var empty = $('inbox-empty'); box.innerHTML = '';
     if (r.status === 200 && r.data.list && r.data.list.length) {
       empty.hidden = true;
-      var locked = {};
-      r.data.list.forEach(function (a) { if (a.status === 'a_accepted' && a.intentId && !a.roomStatus) locked[a.intentId] = true; });
+      // 兜底去重：后端已按 (intent_id, applicant) 合并，但若返回里仍有重复，
+      // 防御性按 (intentId, applicant) 再 dedupe 一次，保留 created 最大的
+      var seen = {};
       r.data.list.forEach(function (a) {
+        var k = (a.intentId || '') + '|' + (a.applicant || a.appId);
+        if (!seen[k] || (a.created || 0) > (seen[k].created || 0)) seen[k] = a;
+      });
+      var list = Object.values(seen);
+
+      var locked = {};
+      list.forEach(function (a) { if (a.status === 'a_accepted' && a.intentId && !a.roomStatus) locked[a.intentId] = true; });
+      list.forEach(function (a) {
         var div = document.createElement('div'); div.className = 'li';
         var dissolved = (a.roomStatus === 'closed' || a.roomStatus === 'dissolving');
         var decideHtml = '';
         if (a.status === 'pending') {
           if (locked[a.intentId]) {
-            decideHtml = '<span class="muted">⏳ 你已选其他搭子，等待确认</span>';
+            decideHtml = '<span class="muted" title="你已同意了这条意图下的另一个申请，对方也会去同意你。等他点头即进入房间。">⏳ 该意图已同意别的申请，等对方都点头</span>';
           } else if (dissolved) {
             decideHtml = '<span class="muted">🔄 原房间已解散，可重新匹配：</span> ' +
                          '<button class="btn-mini ok" data-acc="' + esc(a.appId) + '">重新匹配</button>' +

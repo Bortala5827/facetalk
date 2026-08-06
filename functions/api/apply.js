@@ -66,7 +66,9 @@ export async function onRequest(context) {
     if (r.error) return err(r.error, r.status);
 
     if (box === 'in') {
-      // 收件箱：过滤掉申请方被我屏蔽的人（LEFT JOIN blocks + WHERE NULL 经典套路）
+      // 收件箱：按 (intent_id, applicant) 合并去重——同一对方对同一意图可能因
+      // 「撤回再申请」产生多条 application，UI 只展示最新一条即可
+      // 过滤掉申请方被我屏蔽的人（LEFT JOIN blocks + WHERE NULL 经典套路）
       const { results } = await db.prepare(`SELECT a.id AS appId, a.intent_id AS intentId, a.status, a.created, i.role, i.city, i.mode, i.note, COALESCE(u.rep,50) AS rep,
           (SELECT p.status FROM pairs p WHERE p.intent_id = a.intent_id AND p.status IN ('dissolving','closed') ORDER BY p.created DESC LIMIT 1) AS roomStatus
         FROM applications a
@@ -74,6 +76,11 @@ export async function onRequest(context) {
         LEFT JOIN users u ON u.id = a.applicant
         LEFT JOIN blocks b ON b.user_id = ? AND b.blocked_id = a.applicant
         WHERE i.owner = ? AND a.expires > ? AND b.user_id IS NULL
+          AND a.id = (
+            SELECT a2.id FROM applications a2
+            WHERE a2.intent_id = a.intent_id AND a2.applicant = a.applicant
+            ORDER BY a2.created DESC LIMIT 1
+          )
         ORDER BY a.created DESC`)
         .bind(r.id, r.id, nowSec()).all();
       return json({ ok: true, list: results });
