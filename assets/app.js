@@ -11,6 +11,15 @@
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
   }); }
   function modeLabel(m) { return m === 'video' ? '📹 视频' : '🎙 语音'; }
+  // 申请的「失效」终态：用户不需要再做任何操作——变灰，淡化视觉权重
+  // dissolved（房间已解散）已是失效；已配对（matched）/已拒/已撤也都是失效
+  // pending / a_accepted（待我自己点头/撤回）不算失效
+  function isInactive(a) {
+    if (!a) return false;
+    if (a.roomStatus === 'closed' || a.roomStatus === 'dissolving') return true;
+    var s = a.status;
+    return s === 'both_accepted' || s === 'accepted' || s === 'rejected' || s === 'cancelled';
+  }
 
   function toast(msg, isErr) {
     var el = document.createElement('div');
@@ -265,6 +274,7 @@
       list.forEach(function (a) {
         var div = document.createElement('div'); div.className = 'li';
         var dissolved = (a.roomStatus === 'closed' || a.roomStatus === 'dissolving');
+        var inactive = isInactive(a);
         var decideHtml = '';
         if (a.status === 'pending') {
           if (locked[a.intentId]) {
@@ -289,6 +299,8 @@
           decideHtml = '<span class="muted">' + (a.status === 'rejected' ? '已拒绝' : '已撤回') + '</span>';
         }
         if (dissolved && a.status !== 'pending') div.className = 'li dissolved';
+        if (inactive && !div.classList.contains('dissolved')) div.className = 'li inactive';
+        else if (inactive && div.classList.contains('dissolved')) div.className = 'li dissolved inactive';
         div.innerHTML = '<div class="li-main"><span class="tag">' + esc(a.role) + '</span>' +
           (a.city ? ' <span class="muted">' + esc(a.city) + '</span>' : '') +
           ' <span class="mode">' + modeLabel(a.mode) + '</span> <span class="rep">⭐' + (a.rep != null ? a.rep : '50') + '</span></div>' +
@@ -354,7 +366,11 @@
         } else {
           s = o.status;
         }
-        var div = document.createElement('div'); div.className = 'li' + (dissolved && o.status !== 'pending' ? ' dissolved' : '');
+        var div = document.createElement('div');
+        var cls = ['li'];
+        if (dissolved && o.status !== 'pending') cls.push('dissolved');
+        if (isInactive(o) && o.status !== 'pending') cls.push('inactive');
+        div.className = cls.join(' ');
         div.innerHTML = '<div class="li-main"><span class="muted">申请 ' + esc(o.intentId) + '</span></div>' +
           '<div class="li-foot"><span class="' + (o.status === 'both_accepted' && !dissolved ? 'ok-mark' : 'muted') + '">' + s + '</span> ' + actions + '</div>';
         box.appendChild(div);

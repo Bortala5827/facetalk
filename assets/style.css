@@ -309,6 +309,9 @@ a { color: inherit; text-decoration: none; }
 /* 房间已解散/解散中：匹配过的那张申请卡整体变灰，提示「房间已解散」且不可进入 */
 .li.dissolved { opacity: .55; filter: grayscale(.65); border-style: dashed; }
 .li.dissolved .li-main { text-decoration: line-through; text-decoration-color: #cbd5e1; }
+/* 已配对/已拒/已撤等终态——不再需要用户决策，淡化但保留可点击（重进房间） */
+.li.inactive:not(.dissolved) { opacity: .5; filter: grayscale(.35); background: #fafbfc; }
+.li.inactive:not(.dissolved):hover { opacity: .8; filter: none; }
 .li-main { display: block; }
 .li-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .li-time { margin-left: auto; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
