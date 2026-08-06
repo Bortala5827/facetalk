@@ -86,8 +86,10 @@
     u.searchParams.set('sinceSignal', lastSignal);
     return fetch(u).then(function (r) { return r.json().catch(function () { return {}; }); });
   }
+  var pollFailCount = 0;   // 连续失败计数；连续 3 次（约 4.5 秒）才报警，避免抖动
   function poll() {
     ivGet().then(function (d) {
+      pollFailCount = 0;
       if (!d || !d.ok) return;
       // 转录行（来自后端，id 是 il_xxx，1.5s 周期拉；own 发送的乐观行通过 known[] 去重，不会重复）
       (d.lines || []).forEach(function (ln) {
@@ -108,7 +110,12 @@
         else if (sg.kind === 'offer') promptIncomingCall(sg);
       });
       lastSignal = Math.max(0, maxC - 2);
-    }).catch(function () {});
+    }).catch(function () {
+      // 之前 .catch(function(){}) 静默吞所有 GET 错误：后端拉失败时用户毫无感知，
+      // 误以为"消息没发出去"。改成连续 3 次失败（约 4.5 秒）才报警，避免网络抖动假阳性
+      pollFailCount++;
+      if (pollFailCount === 3) toast('对话稿轮询中断，对方消息可能拉不到了（看 F12 Console）', true);
+    });
   }
   // 渲染一条对话行。key=唯一键（后端 il_xxx / 临时 tmp_xxx），传了同 key 会直接 return。
   // opts.created：秒级时间戳，缺省用本地时间
@@ -739,6 +746,18 @@
       startSharedTimer();   // 订阅搭子房间 30 分钟倒计时，归零自动 AI 评价
       active = true; evalRequested = false; ended = false;
       startPolling();       // 立即拉转录/信令 —— 进房即就绪，不点「开始」也能收到对方的对话行与语音 offer
+      try { console.log('[FaceTalk/iv] polling started, me=' + me + ', pair=' + pairId); } catch (e) {}
+      // 立即拉一次（不等 1.5s 周期），并把"我方前 5 条对话历史"也打印出来，便于用户对照 Network
+      ivGet().then(function (d) {
+        try {
+          console.log('[FaceTalk/iv] first poll ok=' + (d && d.ok) + ', lines=' + ((d && d.lines) || []).length
+            + ', signals=' + ((d && d.signals) || []).length
+            + ', fallbackTen=' + (d && d.fallback && d.fallback.tencent));
+          if (d && d.lines) d.lines.forEach(function (ln) {
+            console.log('  line ' + ln.id + ' who=' + ln.who + ' mine=' + ln.mine + ' text=' + JSON.stringify(ln.text));
+          });
+        } catch (e) {}
+      }).catch(function (e) { try { console.warn('[FaceTalk/iv] first poll failed', e); } catch (_) {} });
     },
     // 房间解散 / 页面离开时兜底收拾麦克风与连接，避免录音灯常亮
     teardown: function () {
