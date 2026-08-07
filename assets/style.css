@@ -809,42 +809,49 @@ a { color: inherit; text-decoration: none; }
 
 /* ===== 自我练习 · Google Mic 三态录音按钮（skill: google-mic-recorder） ===== */
 .mic-card {
-  --mic-size: 128px;
-  --mic-idle: #7a7a8a;
+  --mic-size: 120px;
+  --mic-idle-bg: #e8e9f0;
+  --mic-idle-icon: #636680;
   --mic-hover-bg: #ffffff;
+  --mic-hover-icon: #ea4335;
   --mic-rec: #ea4335;
-  --mic-ring: #9ca3af;
-  --card-bg: #1e1e2e;
+  --mic-ring: #c9c9dd;
 
-  background: var(--card-bg);
-  border-radius: 20px;
+  /* 浅色底，与页面白色卡片风格统一 */
+  background: linear-gradient(180deg, #f6f7fc 0%, #eeeef5 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 40px 24px 32px;
+  box-shadow: var(--shadow);
 }
 .mic-stage { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 
-/* 按钮基础：状态① 空闲 = 灰底 + 白图标 */
+/* 按钮基础：状态① 空闲 = 浅灰底 + 深灰图标 */
 .mic-btn {
   width: var(--mic-size); height: var(--mic-size);
   border-radius: 50%; border: none; cursor: pointer;
-  background: var(--mic-idle); color: #ffffff;
+  background: var(--mic-idle-bg); color: var(--mic-idle-icon);
   display: flex; align-items: center; justify-content: center;
   position: relative;
-  transition: background .25s ease, color .25s ease, transform .12s ease;
+  transition: background .25s ease, color .25s ease, transform .12s ease, box-shadow .25s ease;
   -webkit-tap-highlight-color: transparent; outline: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
 }
-/* 状态② 悬停 = 白底 + 红图标 */
+/* 状态② 悬停 = 白底 + 红图标 + 轻微上浮 */
 .mic-btn:hover {
-  background: var(--mic-hover-bg); color: var(--mic-rec);
-  transform: scale(1.03);
+  background: var(--mic-hover-bg); color: var(--mic-hover-icon);
+  transform: scale(1.04);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
 }
 .mic-btn:active { transform: scale(.97); }
 
 /* 状态③ 录音中 = 红底 + 白图标 + 浅灰外环 */
 .mic-btn.recording {
   background: var(--mic-rec); color: #ffffff; transform: scale(1);
+  box-shadow: 0 8px 28px rgba(234,67,53,.35);
 }
 .mic-btn.recording::before {
-  content: ''; position: absolute; inset: -7px;
+  content: ''; position: absolute; inset: -8px;
   border-radius: 50%; border: 3px solid var(--mic-ring);
   animation: mic-ring-breathe 2.4s ease-in-out infinite;
   pointer-events: none;
@@ -858,11 +865,13 @@ a { color: inherit; text-decoration: none; }
 .mic-icon { width: 52px; height: 52px; pointer-events: none; transition: transform .2s ease; }
 .mic-btn:hover .mic-icon { transform: scale(1.06); }
 
-/* 文案 & 计时器 */
-.mic-caption { font-size: 14.5px; font-weight: 600; color: #9ca3af; margin: 0; min-height: 22px; transition: color .25s ease; }
-.mic-timer { font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 800; color: #9ca3af; transition: color .25s ease; }
+/* 文案 & 计时器 — 浅底配深色文字 */
+.mic-caption { font-size: 14.5px; font-weight: 600; color: var(--ink-3); margin: 0; min-height: 22px; transition: color .25s ease; }
+.mic-timer { font-variant-numeric: tabular-nums; font-size: 24px; font-weight: 800; color: var(--ink-2); transition: color .25s ease; }
+.mic-btn.recording ~ .mic-caption { color: #dc2626; }
+.mic-btn.recording ~ .mic-timer { color: #dc2626; }
 
-#rec-hint { color: #6b7280 !important; }
+#rec-hint { color: var(--ink-3) !important; }
 
 /* ===== 练习题库分类筛选 ===== */
 .topic-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
