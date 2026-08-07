@@ -6,7 +6,7 @@
   <title>自言自语练习间 · FaceTalk 面试搭子</title>
   <meta name="description" content="FaceTalk 面试搭子 — 一个人也能练：录 30–90 秒即兴作答，AI 帮你点评。" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260807b" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260807c" />
 </head>
 <body>
   <header class="topbar">
@@ -23,16 +23,28 @@
 
     <section class="card" id="topic-card">
       <div class="topic-head">
-        <span class="topic-tag">今日练习题</span>
+        <span class="topic-tag" id="topic-cat">今日练习题</span>
         <button class="btn-mini" id="shuffle">换一题</button>
+      </div>
+      <div class="topic-chips" id="chips">
+        <button class="chip on" data-cat="all">全部</button>
+        <button class="chip" data-cat="sz">深圳辅警</button>
+        <button class="chip" data-cat="fire">消防</button>
+        <button class="chip" data-cat="gen">通用</button>
       </div>
       <p id="topic" class="topic-text">加载中…</p>
     </section>
 
     <section class="card" id="rec-card">
-      <div class="rec-row">
-        <button class="rec-btn" id="rec">● 开始录音</button>
-        <span id="rec-time" class="rec-time">00:00</span>
+      <div class="rec-stage" id="rec-stage">
+        <button class="rec-mic" id="rec" aria-label="开始录音">
+          <span class="rec-mic-ico" id="rec-ico">🎙️</span>
+        </button>
+        <div class="rec-caption" id="rec-caption">点击开始录音</div>
+        <div class="rec-wave" id="rec-wave">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="rec-timer" id="rec-time">00:00</div>
       </div>
       <p class="field-hint" id="rec-hint">⏱ 至少录 <strong>30 秒</strong>（最多 90 秒，约满自动停止）。全程本地录音，不上传服务器。</p>
 
@@ -58,39 +70,100 @@
   <script src="/assets/settings.js?v=20260807a"></script>
   <script>
   (function () {
+    // c: 'sz'=深圳辅警真题, 'fire'=消防结构化, 'gen'=通用模拟
     var TOPICS = [
-      '请用 30–90 秒即兴介绍你自己，重点讲清楚为什么你适合这个岗位。',
-      '你认为一名合格的辅警/公职人员应该具备哪些素质？请结合自身谈。',
-      '单位安排你长期做最基础的窗口登记工作，同事说没前途，你怎么看？',
-      '巡逻时发现两人在路边争吵，围观群众越来越多，你如何处置？',
-      '群众来办事情绪激动，当众指责你们办事拖沓，你如何应对？',
-      '领导交给你一项时间紧、任务重的工作，同事却不太配合，你怎么办？',
-      '有人说"辅警没有执法权，干得再多也白搭"，你怎么看这种说法？',
-      '请讲一次你在高压下完成任务的真实经历，以及你从中学到了什么。',
-      '单位要在社区办一次反诈宣传活动，由你牵头，你打算怎么组织？',
-      '值班时接到群众电话，反映邻居深夜噪音扰民，你如何处理？',
-      '你和一位资历比你老的同事在工作方法上有分歧，你怎么处理？',
-      '谈谈你对"枫桥经验"或"矛盾不上交"的理解。',
-      '执勤时被群众用手机全程拍摄并质疑你的执法，你怎么办？',
-      '你最大的缺点是什么？会不会影响这份工作？',
-      '如果这次没有被录用，你接下来会怎么打算？',
-      '一位老人走失，家属非常着急但能提供的信息很少，你如何开展工作？',
-      '你如何理解"人民群众满意"是衡量工作的第一标准？',
-      '同事工作中出现失误，领导却误以为是你造成的，你怎么办？',
-      '早高峰路口信号灯突然故障，现场严重拥堵，你如何疏导？',
-      '请用 30–90 秒即兴回答：你为什么报考辅警？'
+      // ===== 深圳辅警·真题（2018–2025 考生回忆版）=====
+      { c:'sz', q:'小张做了辅警，邻居家有事情就找小张处理，小张带邻居找社区民警和物业，邻居却说"你不就是警察吗？有事不就是找你吗？"小张很语塞。对此你有什么看法？' },
+      { c:'sz', q:'小明是你的朋友且知道你做辅警。一天你街头执勤恰好遇见他车辆违章，他下车恳求你别抄车牌号，你会怎么做？' },
+      { c:'sz', q:'古代作战包围敌军时会特意留出逃生缺口、再在外围设伏。这对你的辅警工作有什么启示？' },
+      { c:'sz', q:'学校上下学期间大量家长接送孩童，驾乘电动车不戴头盔的占比很高，对此你怎么看？' },
+      { c:'sz', q:'群众居家久闷情绪失控、产生轻生念头，接到报警之后你如何处置？' },
+      { c:'sz', q:'诈骗分子冒充警务人员致电群众，民警回电澄清骗局反被斥责为骗子，认定民警是骗子。请现场模拟与群众的沟通话术。' },
+      { c:'sz', q:'结合辅警岗位，谈一谈你的人生价值观，以及价值观会如何指引你的日常工作。' },
+      { c:'sz', q:'老辅警告诫新人要做到"知足、知不足、不知足"，结合工作谈谈你的理解。' },
+      { c:'sz', q:'牡丹花外形艳丽却无法结实，麦花朴素不起眼却能结出粮食，结合辅警工作谈谈理解。' },
+      { c:'sz', q:'领导安排你前往小学开展安全知识讲座，你如何组织本次活动？' },
+      { c:'sz', q:'"警"字由"敬"和"言"组成，结合警务工作谈谈你的理解。' },
+      { c:'sz', q:'追捕嫌疑人至楼顶，嫌疑人扬言再靠近就跳楼，你该如何处置？' },
+      { c:'sz', q:'市民举报有人在路边停车辱骂、骚扰过路行人，领导安排你前去处置，你怎么做？' },
+      { c:'sz', q:'后备箱地摊经济兴起，对此新业态你怎么看？' },
+      { c:'sz', q:'谈谈你对"聚人气、接地气、沉住气"的理解。' },
+      { c:'sz', q:'无论从业多久，都要做到自重、自省、自警、自励，结合辅警工作谈谈看法。' },
+      { c:'sz', q:'"小事不小干，小案不小办"，谈谈你对这句话的理解。' },
+      { c:'sz', q:'群众报警燃气泄漏，领导安排你出警，你如何处理？' },
+      { c:'sz', q:'派出所推行"背包警务"，上门为群众办理证件、递送文书，对此服务模式你怎么看？' },
+      { c:'sz', q:'领导安排你筹办公安与医院的联谊活动，你如何策划组织？' },
+      { c:'sz', q:'前辈辅警提出工作要做到"加、减、乘、除"，谈谈你的理解。' },
+      { c:'sz', q:'"执法要像包公，办案要像愚公"，结合辅警工作谈谈你的理解。' },
+      { c:'sz', q:'"贪近乎贫，婪近乎焚"，结合辅警工作谈谈你的理解。' },
+      { c:'sz', q:'有人说警察不仅是执法者，也是居民的守护者、学生法治的教育者、灾难的逆行者。请结合你的工作打算谈谈看法。' },
+      { c:'sz', q:'你是一名交警在路面执勤，有人骑电动车不戴头盔。你劝阻时一人说"天气热戴了闷热、不戴不违法"，另一人说"骑不快、不戴没关系"。请现场模拟你如何应对。' },
+      { c:'sz', q:'购物后老人要求退款被店主拒绝，双方争执，老人动手殴打店主，群众报警，领导派你前往处理，你怎么做？' },
+      { c:'sz', q:'开展宣传教育活动时，群众反馈"台上讲解热情高涨、台下吸收效果很差"。若由你策划下一场宣讲，需着重做好哪些工作？' },
+      { c:'sz', q:'派出所计划借助 AI 机器人开展校园欺凌主题宣传，所长把任务交给你，本次宣传工作的重点是什么？' },
+      { c:'sz', q:'某地推行"砂锅警务"模式，不追求处置速度，像慢熬砂锅粥一样细致化解基层矛盾。你怎么看？' },
+      { c:'sz', q:'发现路面行驶车辆的驾驶员存在疲劳驾驶行为，你赶赴现场如何处置？' },
+
+      // ===== 消防结构化（政府专职消防员·通用模拟题）=====
+      { c:'fire', q:'你为什么选择报考政府专职消防员？谈谈你对这份职业的理解。' },
+      { c:'fire', q:'有人说消防员是"养兵千日、用兵千日"，你怎么看？' },
+      { c:'fire', q:'一次火灾扑救中，现场火势蔓延极快且有人员被困，作为初战力量你如何处置？' },
+      { c:'fire', q:'出警途中遇到交通严重拥堵、消防车无法通行，作为班长你怎么办？' },
+      { c:'fire', q:'群众家中煤气泄漏引发爆燃，你到达现场后如何开展救援与疏散？' },
+      { c:'fire', q:'开展消防宣传"进社区"活动，由你负责策划，你如何组织？' },
+      { c:'fire', q:'训练时一名新队员因恐高不敢上训练塔、产生畏难情绪，你如何开导他？' },
+      { c:'fire', q:'你与队友在火场内搜救时，对方不顾指令执意深入，你如何处理？' },
+      { c:'fire', q:'有人落水，你不会游泳但身边有救援绳和救生圈，如何施救？' },
+      { c:'fire', q:'高层建筑起火，被困人员情绪激动欲跳楼，你如何处置？' },
+      { c:'fire', q:'夜间接到养老院火警，院内多为行动不便的老人，你的处置重点是什么？' },
+      { c:'fire', q:'部分商户为图方便长期堵塞消防通道，你日常巡查时如何规劝？' },
+      { c:'fire', q:'地震后你被派往灾区救援，现场余震不断，如何保障自身与被救者安全？' },
+      { c:'fire', q:'单位组织体能考核你成绩不达标、被队长批评，你怎么看、怎么办？' },
+      { c:'fire', q:'暴雨内涝导致地下车库进水、车辆被困，你如何开展排险救援？' },
+      { c:'fire', q:'化工企业发生火灾并伴随有毒气体泄漏，你作为现场救援人员应注意什么？' },
+      { c:'fire', q:'森林防火期内你巡查发现有人在野外违规用火，如何处置？' },
+      { c:'fire', q:'谈谈你对"赴汤蹈火、竭诚为民"消防救援精神的理解。' },
+
+      // ===== 通用模拟 =====
+      { c:'gen', q:'请用 30–90 秒即兴介绍你自己，重点讲清楚为什么你适合这个岗位。' },
+      { c:'gen', q:'你认为一名合格的辅警/公职人员应该具备哪些素质？请结合自身谈。' },
+      { c:'gen', q:'单位安排你长期做最基础的窗口登记工作，同事说没前途，你怎么看？' },
+      { c:'gen', q:'领导交给你一项时间紧、任务重的工作，同事却不太配合，你怎么办？' },
+      { c:'gen', q:'有人说"辅警没有执法权，干得再多也白搭"，你怎么看这种说法？' },
+      { c:'gen', q:'请讲一次你在高压下完成任务的真实经历，以及你从中学到了什么。' },
+      { c:'gen', q:'单位要在社区办一次反诈宣传活动，由你牵头，你打算怎么组织？' },
+      { c:'gen', q:'值班时接到群众电话，反映邻居深夜噪音扰民，你如何处理？' },
+      { c:'gen', q:'你和一位资历比你老的同事在工作方法上有分歧，你怎么处理？' },
+      { c:'gen', q:'谈谈你对"枫桥经验"或"矛盾不上交"的理解。' },
+      { c:'gen', q:'执勤时被群众用手机全程拍摄并质疑你的执法，你怎么办？' },
+      { c:'gen', q:'如果这次没有被录用，你接下来会怎么打算？' }
     ];
+    var CAT_LABEL = { all:'今日练习题', sz:'深圳辅警·真题', fire:'消防结构化', gen:'通用模拟' };
     var MIN = 30, MAX = 90;
     var $ = function (id) { return document.getElementById(id); };
 
+    var curCat = 'all';
+    function pool() { return curCat === 'all' ? TOPICS : TOPICS.filter(function (t) { return t.c === curCat; }); }
     function pickTopic() {
-      var t = TOPICS[Math.floor(Math.random() * TOPICS.length)];
-      $('topic').textContent = t;
+      var p = pool();
+      if (!p.length) return;
+      var t = p[Math.floor(Math.random() * p.length)];
+      $('topic').textContent = t.q;
+      $('topic-cat').textContent = CAT_LABEL[t.c];
     }
     pickTopic();
     $('shuffle').addEventListener('click', pickTopic);
+    Array.prototype.forEach.call($('chips').querySelectorAll('.chip'), function (btn) {
+      btn.addEventListener('click', function () {
+        curCat = btn.getAttribute('data-cat');
+        Array.prototype.forEach.call($('chips').querySelectorAll('.chip'), function (b) { b.classList.remove('on'); });
+        btn.classList.add('on');
+        pickTopic();
+      });
+    });
 
-    var recBtn = $('rec'), recTime = $('rec-time'), recHint = $('rec-hint');
+    var recBtn = $('rec'), recTime = $('rec-time'), recHint = $('rec-hint'), recIco = $('rec-ico');
+    var recStage = $('rec-stage'), recCaption = $('rec-caption'), recWave = $('rec-wave');
     var player = $('player'), audio = $('audio'), status = $('status');
     var mediaRec = null, chunks = [], recStart = 0, timer = null, blobUrl = null;
     var recorderReady = false, hasRecorded = false;
@@ -101,6 +174,28 @@
       return (m < 10 ? '0' : '') + m + ':' + (ss < 10 ? '0' : '') + ss;
     }
     function setStatus(m, err) { status.textContent = m || ''; status.style.color = err ? 'var(--danger)' : 'var(--ink-3)'; }
+
+    function enterRecUI() {
+      recBtn.classList.add('rec-on');
+      recIco.textContent = '🔴';
+      recCaption.textContent = '录音中… 再次点击停止';
+      recWave.classList.add('show');
+      recTime.style.color = '#ef4444';
+    }
+    function exitRecUI() {
+      recBtn.classList.remove('rec-on');
+      recIco.textContent = '🎙️';
+      recCaption.textContent = '点击开始录音';
+      recWave.classList.remove('show');
+      recTime.style.color = '';
+    }
+    // 重置为"可重新录制"状态（停止后仍未达时长/重录）
+    function resetRecUI() {
+      exitRecUI();
+      recBtn.classList.remove('rec-on');
+      recIco.textContent = '🎙️';
+      recCaption.textContent = '点击开始录音';
+    }
 
     async function startRec() {
       if (!navigator.mediaDevices || !window.MediaRecorder) { setStatus('当前浏览器不支持录音', true); return; }
@@ -120,12 +215,13 @@
         player.hidden = false;
         hasRecorded = true;
         $('result-card').hidden = true;
+        exitRecUI();
+        recCaption.textContent = '录好了，回放听听或直接点「AI 点评」';
         setStatus('录好了，回放听听或直接点「AI 点评」');
       };
       mediaRec.start();
       recorderReady = true;
-      recBtn.textContent = '■ 停止录音';
-      recBtn.classList.add('rec-on');
+      enterRecUI();
       recStart = Date.now();
       setStatus('录音中…至少 30 秒');
       timer = setInterval(function () {
@@ -140,10 +236,12 @@
       clearInterval(timer);
       var dur = (Date.now() - recStart) / 1000;
       mediaRec.stop();
-      recBtn.textContent = '● 开始录音';
-      recBtn.classList.remove('rec-on');
-      if (dur < MIN) { setStatus('太短了（不足 ' + MIN + ' 秒），再录一次', true); player.hidden = true; hasRecorded = false; return; }
       recTime.textContent = fmt(dur);
+      if (dur < MIN) {
+        resetRecUI();
+        player.hidden = true; hasRecorded = false;
+        setStatus('太短了（不足 ' + MIN + ' 秒），再录一次', true);
+      }
     }
 
     recBtn.addEventListener('click', function () {
@@ -151,7 +249,12 @@
       else startRec();
     });
 
-    $('replay').addEventListener('click', function () { player.hidden = true; hasRecorded = false; setStatus('重新录一段吧'); });
+    $('replay').addEventListener('click', function () {
+      player.hidden = true; hasRecorded = false;
+      resetRecUI();
+      recTime.textContent = '00:00';
+      setStatus('重新录一段吧');
+    });
 
     // —— AI 点评：复用 /api/llm 同域代理（用户自备 Key，仅本机）——
     $('ai').addEventListener('click', async function () {
