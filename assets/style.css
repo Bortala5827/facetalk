@@ -516,6 +516,11 @@ a { color: inherit; text-decoration: none; }
 .v-list-tip { font-size: 13.5px; color: var(--ink-2); margin: 0 0 10px; }
 .v-peer-clip { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 .v-peer-clip .btn-primary { margin: 0; }
+/* 自己的录音：独立浅色卡片，和「对方录音」视觉区分，可随时回听 */
+.v-mine-clips { margin: 0 0 14px; padding: 12px 14px; background: var(--accent-soft); border: 1px solid var(--line); border-radius: 12px; }
+.v-mine-clips .v-list-tip { margin-bottom: 8px; }
+.v-mine-clip { margin-bottom: 8px; }
+.v-mine-clip:last-child { margin-bottom: 0; }
 .v-state.ok { background: #ecfdf5; border-color: #6ee7b7; color: #065f46; font-weight: 600; }
 .v-state.bad { background: #fef2f2; border-color: #fca5a5; color: #991b1b; font-weight: 600; }
 .v-play-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }

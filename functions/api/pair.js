@@ -1,6 +1,14 @@
 import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips } from '../_shared.js';
 
-const SESSION_TTL = 600; // 单次互练软上限 10 分钟（秒）；更长对练请跳转腾讯会议 / 飞书会议
+// 单次互练「建议时长」软上限 20 分钟（秒）：倒计时归零只提示 + 弹评价卡，**不关房间**，
+// 双方在腾讯会议 / 飞书会议里练多久都行，回来照样能提交评价。
+const SESSION_TTL = 1200;
+// 房间行在库里的硬存活上限 1 天：超过即视为废弃，GET 查不到 + 每日 cleanup 回收，不长期占空间。
+const ROOM_TTL = 86400;
+// 房间结算关闭后再留 2 分钟可见，让还开着页面的一方能收到「房间已关闭」提示再跳回首页。
+const CLOSED_LINGER = 120;
+// 一方已交评价、另一方还没交时，给未交的一方 10 分钟宽限；到点自动结算，先交的那位不会被无限挂住。
+const SOLO_GRACE = 600;
 
 // 配对：决定(同意/拒绝) / 状态 / 互评 / 举报
 export async function onRequest(context) {
@@ -25,7 +33,13 @@ export async function onRequest(context) {
       // 退出 60s / 双方互评完 5 分钟两个时机；列存在优先用列，列缺失回退用 ratings.at
       const exitDue = p.status === 'dissolving' && ((p.dissolve_at || 0) > 0 ? now >= p.dissolve_at : leftAt > 0 && now >= leftAt + 60);
       const settleDue = p.status === 'done' && ((p.closed_at || 0) > 0 ? now >= p.closed_at : ratedAt > 0 && now >= ratedAt + 300);
-      if (exitDue || settleDue) {
+      // 只有一方交了评价（且不是"退出"标记）→ 给另一方 SOLO_GRACE 宽限，到点才结算关房。
+      // 倒计时归零不再关房，所以这里是"单方已评"场景唯一的兜底出口。
+      const rateAtOf = (uid) => (ratings[uid] && !ratings[uid].left && ratings[uid].at) ? ratings[uid].at : 0;
+      const rAtA = rateAtOf(p.a), rAtB = rateAtOf(p.b);
+      const soloAt = (rAtA && !rAtB) ? rAtA : ((rAtB && !rAtA) ? rAtB : 0);
+      const soloDue = p.status === 'matched' && soloAt > 0 && now >= soloAt + SOLO_GRACE;
+      if (exitDue || settleDue || soloDue) {
         await closeRoomDB(db, p.id);
         p.status = 'closed';
       }
@@ -34,7 +48,9 @@ export async function onRequest(context) {
       const otherRep = o ? (o.rep | 0) : 50;
       const rated = !!ratings[r.id];
       const left = !!(ratings[r.id] && ratings[r.id].left);
-      const remaining = Math.max(0, p.expires - now);
+      // 倒计时用「建房时间 + 20 分钟」算，与房间硬过期 expires（1 天）解耦：
+      // 归零 = 建议时长到了，前端弹评价卡；房间本身仍在，双方可继续练 / 慢慢评。
+      const remaining = Math.max(0, (p.created || now) + SESSION_TTL - now);
       const isA = r.id === p.a;
       const infoMine = (isA ? p.info_a : p.info_b) || '';
       const infoPeer = (isA ? p.info_b : p.info_a) || '';
@@ -43,13 +59,15 @@ export async function onRequest(context) {
       if (dissolving && dissolveIn === 0 && leftAt > 0) dissolveIn = Math.max(0, leftAt + 60 - now);
       let autoCloseIn = (p.status === 'done') ? Math.max(0, (p.closed_at || 0) - now) : 0;
       if (p.status === 'done' && autoCloseIn === 0 && ratedAt > 0) autoCloseIn = Math.max(0, ratedAt + 300 - now);
+      // 单方已评时剩余的宽限秒数（0 = 不在该场景）。前端据此提示"对方还有 X 分钟提交评价"。
+      const soloGraceIn = (p.status === 'matched' && soloAt > 0) ? Math.max(0, soloAt + SOLO_GRACE - now) : 0;
     return json({
       ok: true,
       pair: {
         pairId: p.id, otherRep, meet: p.meet, mode: p.mode, status: p.status,
         infoMine, infoPeer,
         ratingsCount: Object.keys(ratings || {}).length, remaining, rated, left,
-        dissolving, dissolveIn, autoCloseIn,
+        dissolving, dissolveIn, autoCloseIn, soloGraceIn,
         nextAllowed: p.status === 'done' && bothNext(ratings) && bothPass(ratings),
       },
     });
@@ -120,7 +138,7 @@ export async function onRequest(context) {
       await db.batch([
         db.prepare(`INSERT INTO pairs (id, a, b, intent_id, mode, meet, status, ratings, created, expires)
           VALUES (?, ?, ?, ?, ?, ?, 'matched', '{}', ?, ?)`)
-          .bind(pairId, intent.owner, app.applicant, intent.id, intent.mode, intent.meet || '', now, now + SESSION_TTL),
+          .bind(pairId, intent.owner, app.applicant, intent.id, intent.mode, intent.meet || '', now, now + ROOM_TTL),
         db.prepare("UPDATE applications SET status='both_accepted' WHERE id=?")
           .bind(app.id),
         // 真正配对成功后，才把该意图下其它申请（pending / 之前的 a_accepted）统一置为 rejected
@@ -286,7 +304,11 @@ function bothPass(ratings) { return ratings && ratings.a && ratings.b && ratings
 async function closeRoomDB(db, id) {
   const p = await db.prepare('SELECT intent_id, ratings FROM pairs WHERE id=?').bind(id).first();
   const rt = safeParse(p && p.ratings);
-  rt._closedAt = nowSec();
+  const closedAt = nowSec();
+  rt._closedAt = closedAt;
+  // 关房同时把 expires 压到「2 分钟后」：还开着页面的一方能看到 closed 提示再跳走，
+  // 之后房间就从 GET 查询里消失，双方立刻可以去约下一位搭子，不被 1 天的 ROOM_TTL 挂住。
+  const lingerTo = closedAt + CLOSED_LINGER;
   const intentId = (p && p.intent_id) || '';
   const base = [
     db.prepare('DELETE FROM messages WHERE pair_id=?').bind(id),
@@ -294,12 +316,12 @@ async function closeRoomDB(db, id) {
   ];
   try {
     await db.batch(base.concat([
-      db.prepare("UPDATE pairs SET status='closed', ratings=?, info_a='', info_b='' WHERE id=?").bind(JSON.stringify(rt), id),
+      db.prepare("UPDATE pairs SET status='closed', ratings=?, info_a='', info_b='', expires=? WHERE id=?").bind(JSON.stringify(rt), lingerTo, id),
     ]));
   } catch (e) {
     // info_a/info_b 列未 ALTER 的库：退化为不清联机信息，至少保证房间能正常关闭
     await db.batch(base.concat([
-      db.prepare("UPDATE pairs SET status='closed', ratings=? WHERE id=?").bind(JSON.stringify(rt), id),
+      db.prepare("UPDATE pairs SET status='closed', ratings=?, expires=? WHERE id=?").bind(JSON.stringify(rt), lingerTo, id),
     ]));
   }
   // 2.0：房间关闭 → 连带焚毁双方试音录音，云端不留存

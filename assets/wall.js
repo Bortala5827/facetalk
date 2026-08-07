@@ -127,7 +127,7 @@
       var on = manage.classList.toggle('on');
       if (wallEl) wallEl.classList.toggle('manager', on);
       if (on) {
-        var key = String(window.prompt('输入管理员密码（与管理后台 ADMIN_KEY / 限流解锁 MS_ADMIN_KEY 一致；都没设时默认 rcj9527）：') || '').trim();
+        var key = String(window.prompt('输入管理员密码（与管理后台 ADMIN_KEY / 限流解锁 MS_ADMIN_KEY 一致；都没设时默认 rcj9527）。\n批量管理留言建议用 /admin 后台「留言墙」标签页，更顺手。') || '').trim();
         if (!key) { manage.classList.remove('on'); if (wallEl) wallEl.classList.remove('manager'); return; }
         window.__wallAdminKey = key;
       } else {
@@ -139,7 +139,7 @@
       var del = e.target.closest && e.target.closest('.wall-del');
       if (del && wallEl && wallEl.classList.contains('manager')) {
         var id = del.getAttribute('data-id');
-        if (!window.__wallAdminKey) { window.alert('请先点「🗑 管理」并输入口令'); return; }
+        if (!window.__wallAdminKey) { window.alert('请先点「🗑 管理」并输入口令（或去 /admin 后台「留言墙」标签页批量管理）'); return; }
         if (window.confirm('确定删除这条留言？')) {
           deleteWall(id, window.__wallAdminKey).then(function (ok) {
             if (ok) loadWall(); else window.alert('删除失败，口令可能不对');

@@ -1,13 +1,13 @@
 import { json, err, genId, requireToken, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips } from '../_shared.js';
 
 // ============================================================
-// FaceTalk 2.0 「30 秒试音互评」
-// 流程：匹配成功 → 双方各录 30–60 秒答同一道题 → 互听互评 → 都点「愿意组队」才解锁房间
+// FaceTalk 2.0 「60 秒试音互评」
+// 流程：匹配成功 → 双方各录 60 秒答同一道题 → 互听互评（含回听自己） → 都点「愿意组队」才解锁房间
 //       任一方婉拒 → 房间 60 秒后自动解散，双方回首页各找各的，互不浪费时间。
 //
 // 存储原则（用户要求：云端与本地都不留存）：
 //   * 录音以 base64 分片写 voice_chunks，评价一提交立刻物理 DELETE；
-//   * 兜底 2 小时过期强删（每日 cleanup 扫）；
+//   * 兜底 1 天过期强删（每日 cleanup 扫）；
 //   * 浏览器侧只用内存 Blob + revokeObjectURL，不写 localStorage/IndexedDB。
 //
 // 兼容原则：voice_* 三张表未建时，首次请求自动建表（详见 voiceReady）；
@@ -15,13 +15,13 @@ import { json, err, genId, requireToken, getDB, nowSec, rateLimit, getIp, adminB
 //           老房间与留言板不受任何影响（不会 500）。
 // ============================================================
 
-const MIN_SEC = 30;                 // 最短 30 秒（低于不让提交）
-const MAX_SEC = 65;                 // 最长 60 秒，留 5 秒容错
+const MIN_SEC = 50;                 // 服务端下限 50 秒（前端 55 秒才解锁停止键，这里再放 5 秒容错，避免计时误差误杀）
+const MAX_SEC = 65;                 // 目标 60 秒（前端满 60 秒自动停止），留 5 秒容错
 const MAX_B64 = 900 * 1024;         // 单段录音 base64 上限 ≈ 675KB 原始音频
 const MAX_CHUNK = 64 * 1024;        // 单片 base64 上限，避开 D1 单值限制
 const MAX_PLAYS = 2;                // 每段对方最多回听 2 次
 const MAX_ATTEMPTS = 2;             // 每人最多 2 段试音（首录 + 1 次追加），对方可全听到
-const CLIP_TTL = 2 * 3600;          // 无人评价时 2 小时兜底强删
+const CLIP_TTL = 24 * 3600;         // 无人评价时 1 天兜底强删（与房间 ROOM_TTL 对齐，跨腾讯会议长时对练也不会中途丢录音）
 
 // 试音题库：同一房间双方抽到同一道题（按 pairId 哈希，零存储、确定性）
 const TOPICS = [
@@ -44,7 +44,7 @@ const TOPICS = [
   '你如何理解"人民群众满意"是衡量工作的第一标准？',
   '同事工作中出现失误，领导却误以为是你造成的，你怎么办？',
   '早高峰路口信号灯突然故障，现场严重拥堵，你如何疏导？',
-  '请用 30 秒介绍你自己，重点讲清楚为什么你适合这个岗位。',
+  '请用 60 秒介绍你自己，重点讲清楚为什么你适合这个岗位。',
 ];
 
 function topicFor(pairId) {
@@ -132,20 +132,23 @@ export async function onRequest(context) {
     if (m.error) return err(m.error, m.status);
     if (!await voiceReady(db)) return json({ ok: true, ready: false, gate: 'skip' });
 
-    // 取回对方录音（内存播放，不落盘）；每取一次算一次播放，上限 2 次
+    // 取回录音（内存播放，不落盘）。
+    // 对方的录音：每取一次算一次回听，上限 MAX_PLAYS 次。
+    // 自己的录音：允许回听（用户反馈"只能听对方、听不到自己不合理"），且**不计次、不占对方额度**——
+    //            数据本来就是你自己录的，回放不泄露任何新信息，也不会影响互评公平性。
     if (url.searchParams.get('action') === 'fetch') {
       const clipId = url.searchParams.get('clip') || '';
       const c = await db.prepare('SELECT * FROM voice_clips WHERE id=? AND pair_id=?').bind(clipId, pairId).first();
       if (!c) return err('clip_gone', 404);
-      if (c.owner === m.r.id) return err('own_clip', 403);   // 自己的录音不给回放，避免反复自听占带宽
       if (!c.ready) return err('clip_not_ready', 409);
-      if ((c.plays | 0) >= MAX_PLAYS) return err('no_plays_left', 409);
+      const isOwn = c.owner === m.r.id;
+      if (!isOwn && (c.plays | 0) >= MAX_PLAYS) return err('no_plays_left', 409);
       const { results } = await db.prepare('SELECT seq, data FROM voice_chunks WHERE clip_id=? ORDER BY seq ASC').bind(clipId).all();
       if (!results || !results.length) return err('clip_gone', 404);
-      await db.prepare('UPDATE voice_clips SET plays=plays+1 WHERE id=?').bind(clipId).run();
+      if (!isOwn) await db.prepare('UPDATE voice_clips SET plays=plays+1 WHERE id=?').bind(clipId).run();
       return json({
-        ok: true, mime: c.mime, dur: c.dur, b64: results.map(x => x.data).join(''),
-        playsLeft: Math.max(0, MAX_PLAYS - ((c.plays | 0) + 1)),
+        ok: true, mime: c.mime, dur: c.dur, b64: results.map(x => x.data).join(''), own: isOwn,
+        playsLeft: isOwn ? null : Math.max(0, MAX_PLAYS - ((c.plays | 0) + 1)),
       });
     }
 
@@ -291,9 +294,16 @@ async function metaOf(db, m, pairId) {
   const mineClips = ((mineAll && mineAll.results) || []).map(function (c) {
     return { id: c.id, dur: c.dur | 0, ready: !!c.ready, created: c.created | 0 };
   });
-  const peerAll = await db.prepare('SELECT id, dur, ready, plays FROM voice_clips WHERE pair_id=? AND owner=? ORDER BY created ASC').bind(pairId, other).all();
-  const peerClips = ((peerAll && peerAll.results) || []).map(function (c) {
-    return { id: c.id, dur: c.dur | 0, ready: !!c.ready, playsLeft: Math.max(0, MAX_PLAYS - (c.plays | 0)) };
+  const peerAll = await db.prepare('SELECT id, dur, ready, plays, created FROM voice_clips WHERE pair_id=? AND owner=? ORDER BY created ASC').bind(pairId, other).all();
+  const peerRows = (peerAll && peerAll.results) || [];
+  const peerClips = peerRows.filter(function (c) { return !!c.ready; }).map(function (c) {
+    return { id: c.id, dur: c.dur | 0, ready: true, playsLeft: Math.max(0, MAX_PLAYS - (c.plays | 0)) };
+  });
+  // 对方正在「追加再录一次」：已有至少 1 段录好的，同时还挂着一个未完成的空壳（init 建的 ready=0 行）。
+  // 3 分钟过期判定：对方录到一半关页面时，空壳不会让提示一直挂着。
+  const nowS = nowSec();
+  const peerAppending = peerClips.length > 0 && peerRows.some(function (c) {
+    return !c.ready && (nowS - (c.created | 0)) < 180;
   });
   const myRev = await db.prepare('SELECT * FROM voice_reviews WHERE pair_id=? AND reviewer=?').bind(pairId, me).first();
   const peerRev = await db.prepare('SELECT * FROM voice_reviews WHERE pair_id=? AND reviewer=?').bind(pairId, other).first();
@@ -317,6 +327,7 @@ async function metaOf(db, m, pairId) {
     canAppend: mineClips.length < MAX_ATTEMPTS && !peerReviewed && !ratings._voice,
     peerClips: peerClips,
     peerClipCount: peerClips.length,
+    peerAppending: peerAppending,   // true → 前端提示「对方正在追加再录一次…」
     myReview: myRev ? pickRev(myRev) : null,
     // 对方给我的评价：双方都提交后才揭晓，避免互相看着打分
     peerReview: (myRev && peerRev) ? pickRev(peerRev) : null,

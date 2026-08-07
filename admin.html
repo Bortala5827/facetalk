@@ -132,6 +132,7 @@
   var key = localStorage.getItem('facetalk_admin') || '';
   var users = [];
   var intents = [];
+  var walls = [];
   var currentTab = 'users';
 
   function renderLogin(errMsg) {
@@ -166,12 +167,13 @@
 
   function loadData() {
     el.innerHTML = '<p style="text-align:center;color:var(--ink-3);padding:60px">加载中…</p>';
-    Promise.all([api('list_users'), api('list_intents')])
+    Promise.all([api('list_users'), api('list_intents'), api('list_walls')])
       .then(function(res){
         if (res[0].error) { logout(res[0].error); return; }
         if (res[1].error) { logout(res[1].error); return; }
         users = res[0].list || [];
         intents = res[1].list || [];
+        walls = (res[2] && res[2].list) || [];
         renderDashboard();
       })
       .catch(function(){ el.innerHTML = '<p class="error">网络错误，请刷新重试</p>'; });
@@ -191,15 +193,19 @@
       '<div class="stat danger"><div class="stat-num">' + banned + '</div><div class="stat-label">已封禁</div></div>' +
       '<div class="stat"><div class="stat-num">' + intents.length + '</div><div class="stat-label">总意图</div></div>' +
       '<div class="stat green"><div class="stat-num">' + openIntents + '</div><div class="stat-label">开放中</div></div>' +
+      '<div class="stat"><div class="stat-num">' + walls.length + '</div><div class="stat-label">留言墙</div></div>' +
       '</div>';
 
     html += '<div class="tabs">' +
       '<button class="tab' + (currentTab==='users' ? ' active' : '') + '" onclick="switchTab(\'users\')">用户<span class="tab-count">' + users.length + '</span></button>' +
       '<button class="tab' + (currentTab==='intents' ? ' active' : '') + '" onclick="switchTab(\'intents\')">意图<span class="tab-count">' + intents.length + '</span></button>' +
+      '<button class="tab' + (currentTab==='walls' ? ' active' : '') + '" onclick="switchTab(\'walls\')">留言墙<span class="tab-count">' + walls.length + '</span></button>' +
       '</div>';
 
     if (currentTab === 'users') {
       html += renderUsers();
+    } else if (currentTab === 'walls') {
+      html += renderWalls();
     } else {
       html += renderIntents();
     }
@@ -304,6 +310,38 @@
     btn.disabled = true;
     var id = btn.dataset.id;
     api('delete_intent', { intentId: id })
+      .then(function(d){
+        if (d.ok) loadData();
+        else { alert(d.error || '失败'); btn.disabled = false; }
+      });
+  };
+
+  function renderWalls() {
+    if (!walls.length) return '<div class="empty-state"><p>留言墙暂无留言</p></div>';
+    var html = '<div class="list">';
+    walls.forEach(function(w){
+      html += '<div class="item">' +
+        '<div class="item-body">' +
+          '<div class="item-head">' +
+            '<span class="item-id">' + esc(w.name || '匿名搭子') + '</span>' +
+            '<span class="badge badge-open">' + fmtTime(w.createdAt) + '</span>' +
+          '</div>' +
+          '<div class="item-note">' + esc(w.text) + '</div>' +
+        '</div>' +
+        '<div class="item-actions">' +
+          '<button class="btn btn-delete" data-id="' + esc(w.id) + '" onclick="delWall(this)">删除</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  window.delWall = function(btn) {
+    if (!confirm('确定删除这条留言？')) return;
+    btn.disabled = true;
+    var id = btn.dataset.id;
+    api('delete_wall', { wallId: id })
       .then(function(d){
         if (d.ok) loadData();
         else { alert(d.error || '失败'); btn.disabled = false; }

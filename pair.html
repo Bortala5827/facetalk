@@ -7,18 +7,13 @@
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260806w" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260807a" />
 </head>
 <body>
   <header class="topbar">
     <div class="container bar-inner">
       <a class="brand" href="/"><span class="brand-mark">搭</span><span class="brand-text">FaceTalk</span></a>
       <span class="brand-tag">搭子房间 · 1:1</span>
-      <button class="bar-gear" id="open-settings" title="🎙 语音 & AI 点评设置（自备 Key）" aria-label="设置">
-        <span class="bar-gear-icon">⚙</span>
-        <span class="bar-gear-text">接口</span>
-        <span class="bar-gear-badge" id="bar-gear-badge" hidden></span>
-      </button>
     </div>
   </header>
 
@@ -58,10 +53,10 @@
       </div>
     </section>
 
-    <!-- ===== 2.0 试音互评：匹配后先各录 30–60 秒，互听互评，双方点头才解锁下面的功能 ===== -->
+    <!-- ===== 2.0 试音互评：匹配后先各录 60 秒，互听互评（含回听自己），双方点头才解锁下面的功能 ===== -->
     <section class="card" id="voice-card" hidden>
       <button class="v-collapse" id="v-collapse" aria-expanded="true" type="button">
-        <h2 class="sec-title">🎙 30 秒试音互评 <span class="v-badge">2.0</span></h2>
+        <h2 class="sec-title">🎙 60 秒试音互评 <span class="v-badge">2.0</span></h2>
         <span class="v-collapse-sub" id="v-collapse-sub"></span>
         <span class="v-collapse-hint" id="v-collapse-hint" hidden>点击展开 ▾</span>
         <span class="v-chev">▾</span>
@@ -79,7 +74,7 @@
           <span class="v-time" id="v-time">00:00</span>
         </div>
         <div class="v-bar"><i id="v-fill"></i></div>
-        <p class="field-hint" id="v-hint">⏱ 最短 30 秒、满 60 秒自动停止。录音只在互评期间临时存在，<strong>双方都评完后立即销毁</strong>，手机和电脑本地都不保存。</p>
+        <p class="field-hint" id="v-hint">⏱ 请录满 <strong>60 秒</strong>（约满自动停止）。录音只在互评期间临时存在，<strong>双方都评完后立即销毁</strong>，手机和电脑本地都不保存。</p>
       </div>
 
       <!-- 步骤 2：等对方录 -->
@@ -94,6 +89,8 @@
 
       <!-- 步骤 3：听 + 评 -->
       <div class="v-step" id="v-review" hidden>
+        <p class="v-state" id="v-peer-append" hidden>🎙 对方正在追加再录一次…（先听 TA 刚才那段）</p>
+        <div class="v-mine-clips" id="v-mine-list"></div>
         <div class="v-peer-clips" id="v-peer-list"></div>
         <div id="v-append-review-row" class="v-act-row" hidden style="align-items:flex-start; flex-direction:column; gap:6px; margin-top:10px">
           <button class="btn-mini" id="v-append-review">🎙 追加再录一次</button>
@@ -136,11 +133,6 @@
         <div class="v-cards" id="v-review-cards"></div>
       </div>
 
-      <!-- v2.2 路线图：闻声识搭子 预告（不在门禁逻辑里，纯展示） -->
-      <div class="v-roadmap">
-        <span class="v-roadmap-tag">下一版</span>
-        <b>闻声识搭子</b>：在你录完这段试音后，系统会顺便提取你的<b>声纹节奏特征</b>（语速/共鸣/停顿习惯），再和对面那位的声音做相似度比对，把<b>声音最合拍的搭子</b>优先推给你——不用看脸、不用尬聊开场白，开口就对味。
-      </div>
       </div><!-- /v-body -->
     </section>
 
@@ -162,11 +154,11 @@
         <span class="iv-testing-mark">🚧 功能测试中</span>
         <span>WebRTC 实时语音 + 转写 + AI 评价链路尚未稳定，<b>优先建议先用腾讯会议对练</b>，稳定后这栏会自动恢复。</span>
       </div>
-      <p class="muted">进房即用，<b>跟随搭子房间总时长（单场上限 10 分钟）</b>，时间到自动 AI 评价。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。<b>⚠ 录音 / 实时语音 / AI 评价按钮当前为测试态，可能不稳定，请优先用腾讯会议；网页语音仅作短时试音/破冰，超过 10 分钟请跳转腾讯会议 / 飞书会议继续对练。</b></p>
+      <p class="muted">进房即用，<b>跟随搭子房间总时长（单场上限 20 分钟）</b>，时间到自动 AI 评价。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。<b>⚠ 录音 / 实时语音 / AI 评价按钮当前为测试态，可能不稳定，请优先用腾讯会议；网页语音仅作短时试音/破冰，超过 20 分钟请跳转腾讯会议 / 飞书会议继续对练。</b></p>
 
       <div id="iv-live">
         <div class="iv-top">
-          <span class="iv-timer" id="iv-timer">10:00</span>
+          <span class="iv-timer" id="iv-timer">20:00</span>
           <button class="btn-mini no" id="iv-end">⏹ 结束并 AI 评价</button>
           <button class="btn-mini" id="iv-stt">🎙 录音转文字：关</button>
           <button class="btn-mini" id="iv-call">🔊 实时语音</button>
@@ -322,9 +314,6 @@
       // 房间从 0 重新激活时调（如再次进入房间），让 onZero 能再次触发
       resetRemainZero: function () { remainZeroFired = false; },
     };
-    document.getElementById('open-settings').addEventListener('click', function () {
-      if (window.FTSettings) window.FTSettings.open();
-    });
     // v2.5 面试间内 AI 设置入口（常驻可见，折叠/展开态都在）
     var ivSetBtn = document.getElementById('iv-open-settings');
     if (ivSetBtn) ivSetBtn.addEventListener('click', function (e) {
@@ -640,7 +629,7 @@
     // ===================== 2.0 试音互评 =====================
     // 录音全程只在内存里流转：录 → base64 分片上传 → 对方听完评完，服务端立刻物理删除。
     // 本地不写 localStorage/IndexedDB，播放用 Blob URL，用完即 revoke。
-    var MIN_SEC = 30, MAX_SEC = 60;
+    var MIN_SEC = 55, MAX_SEC = 60;
     var vMeta = null, vGate = 'skip', vRec = null, vStream = null, vParts = [], vT0 = 0, vTimer = null, vBlobUrl = null, vBusy = false, vAppendMode = false;
 
     function vGet(extra) {
@@ -713,7 +702,10 @@
       } else if (vGate === 'review') {
         vShow('v-review');
         document.getElementById('v-append-review-row').hidden = !vMeta.canAppend;
+        renderMineClips();
         renderPeerClips();
+        var pa = document.getElementById('v-peer-append');
+        if (pa) pa.hidden = !(vMeta && vMeta.peerAppending);
       } else if (vGate === 'wait_review') {
         vShow('v-waitrev');
       } else {
@@ -848,10 +840,27 @@
           hint.textContent = '上传中… ' + Math.round((seq + 1) / total * 100) + '%';
         }
         var d = await vPost({ action: 'done', clipId: init.clipId, dur: dur });
-        if (!d.ok) { toast(d.error === 'too_short' ? '不足 30 秒，请重录' : ('提交失败：' + (d.error || '')), true); return; }
+        if (!d.ok) { toast(d.error === 'too_short' ? '不足 60 秒，请重录' : ('提交失败：' + (d.error || '')), true); return; }
         toast('试音已提交 ✅');
         await loadVoice();
       } finally { vBusy = false; hint.innerHTML = old; }
+    }
+    // ── 渲染自己的试音段列表（支持多段：首录 + 追加；自己的可随时回听，不计次）──
+    function renderMineClips() {
+      var box = document.getElementById('v-mine-list');
+      if (!box) return;
+      var clips = (vMeta && vMeta.mineClips) || [];
+      if (!clips.length) { box.innerHTML = ''; return; }
+      var html = '<p class="v-list-tip">你录了 ' + clips.length + ' 段试音（这是你自己的，可随时回听）：</p>';
+      clips.forEach(function (c, idx) {
+        html += '<div class="v-mine-clip">' +
+          '<button class="btn-mini v-play-mine-btn" data-clip="' + c.id + '">▶ 播放我的第 ' + (idx + 1) + ' 段（' + (c.dur || '--') + ' 秒）</button>' +
+          '</div>';
+      });
+      box.innerHTML = html;
+      Array.prototype.forEach.call(box.querySelectorAll('.v-play-mine-btn'), function (b) {
+        b.addEventListener('click', function () { vPlay(b.getAttribute('data-clip'), b); });
+      });
     }
     // ── 渲染对方的试音段列表（支持多段：首录 + 追加）──
     function renderPeerClips(playsLeftFor, forClipId) {
@@ -890,7 +899,8 @@
       var au = document.getElementById('v-audio');
       au.src = vBlobUrl; au.hidden = false; au.controls = true;
       au.play().catch(function () { toast('点一下播放器的 ▶ 即可播放'); });
-      renderPeerClips(d.playsLeft, clipId); // 刷新该段剩余回听次数
+      btn.textContent = d.own ? '▶ 重听我的这段' : '▶ 重听这段';
+      if (!d.own) renderPeerClips(d.playsLeft, clipId); // 刷新该段剩余回听次数（自己的不计次）
     }
     function vKillAudio() {
       var au = document.getElementById('v-audio');
@@ -976,8 +986,8 @@
   })();
   </script>
   <script src="/assets/ft-util.js?v=20260806p"></script>
-  <script src="/assets/settings.js?v=20260806w"></script>
-  <script src="/assets/glare.js?v=20260806w"></script>
-  <script src="/assets/interview.js?v=20260806w"></script>
+  <script src="/assets/settings.js?v=20260807a"></script>
+  <script src="/assets/glare.js?v=20260807a"></script>
+  <script src="/assets/interview.js?v=20260807a"></script>
 </body>
 </html>

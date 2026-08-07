@@ -1,5 +1,5 @@
 'use strict';
-// 面试搭子 2.0 · 30 秒试音互评 端到端逻辑自测
+// 面试搭子 2.0 · 60 秒试音互评 端到端逻辑自测
 // 直接导入生产函数 functions/api/voice.js 的 onRequest，用内存 mock D1 跑通完整链路，
 // 覆盖：init/chunk/done/fetch 回听上限、双方互评即焚、双方婉拒自动解散、时长校验、重录、表缺失降级。
 // 运行：node scripts/selftest-voice.js  （接入 .github/workflows/selftest.yml，push 到 main 自动跑）
@@ -170,9 +170,9 @@ function makeDb(opts) {
     if (sql.startsWith("SELECT id, dur, ready, created FROM voice_clips WHERE pair_id=? AND owner=?")) {
       return store.voice_clips.filter(c => c.pair_id === p[0] && c.owner === p[1]).map(c => ({ id: c.id, dur: c.dur | 0, ready: !!c.ready, created: c.created | 0 }));
     }
-    // metaOf：对方的全部试音段（带每段剩余回听次数）
-    if (sql.startsWith("SELECT id, dur, ready, plays FROM voice_clips WHERE pair_id=? AND owner=?")) {
-      return store.voice_clips.filter(c => c.pair_id === p[0] && c.owner === p[1]).map(c => ({ id: c.id, dur: c.dur | 0, ready: !!c.ready, playsLeft: Math.max(0, 2 - (c.plays | 0)) }));
+    // metaOf：对方的全部试音段（带每段剩余回听次数 + created 用于「正在追加」检测）
+    if (sql.startsWith("SELECT id, dur, ready, plays, created FROM voice_clips WHERE pair_id=? AND owner=?")) {
+      return store.voice_clips.filter(c => c.pair_id === p[0] && c.owner === p[1]).map(c => ({ id: c.id, dur: c.dur | 0, ready: !!c.ready, playsLeft: Math.max(0, 2 - (c.plays | 0)), created: c.created | 0 }));
     }
     return [];
   }
@@ -262,22 +262,22 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
     const ia = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
     check('init 返回 clipId 且带题目', !!ia.clipId && ia.clipId.startsWith('vc_') && !!ia.topic);
-    check('init 返回最短 30 / 最长 60', ia.minSec === 30 && ia.maxSec === 60);
+    check('init 返回最短 50 / 最长 60', ia.minSec === 50 && ia.maxSec === 60);
     const ib = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'init' })))).json();
 
-    // A 上传 2 片 + done(40s)
+    // A 上传 2 片 + done(55s)
     for (let i = 0, seq = 0; i < 2; i++, seq++) {
       const r = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: ia.clipId, seq, data: CHUNK })))).json();
       check('A 分片' + seq + ' 上传成功', r.ok);
     }
-    const doneA = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: ia.clipId, dur: 40 })))).json();
-    check('A done 成功', doneA.ok && doneA.dur === 40);
-    // B 上传 + done(35s)
+    const doneA = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: ia.clipId, dur: 55 })))).json();
+    check('A done 成功', doneA.ok && doneA.dur === 55);
+    // B 上传 + done(55s)
     for (let i = 0, seq = 0; i < 2; i++, seq++) {
       await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'chunk', clipId: ib.clipId, seq, data: CHUNK })));
     }
-    const doneB = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'done', clipId: ib.clipId, dur: 35 })))).json();
-    check('B done 成功', doneB.ok && doneB.dur === 35);
+    const doneB = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'done', clipId: ib.clipId, dur: 55 })))).json();
+    check('B done 成功', doneB.ok && doneB.dur === 55);
 
     const ga = await gate(db, 'uA');
     const gb = await gate(db, 'uB');
@@ -292,9 +292,9 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     check('二次回听 playsLeft=0', f2.ok && f2.playsLeft === 0);
     const f3 = await (await onRequest(ctx(db, GET('uB', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
     check('三次回听被拦 no_plays_left', !f3.ok && f3.error === 'no_plays_left');
-    // 不能回放自己
+    // 可以回放自己的录音（#6 产品变更：用户反馈"只能听对方、听不到自己不合理"）
     const fself = await (await onRequest(ctx(db, GET('uA', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
-    check('不能回放自己的录音', !fself.ok && fself.error === 'own_clip');
+    check('可以回放自己的录音（own:true，不计次、不扣对方额度）', fself.ok && fself.own === true && fself.playsLeft === null);
 
     // A 评价 willing=1 → 等双方都评完才统一焚毁（B 的录音暂留）
     const ra = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'review', clarity: 5, logic: 4, pace: 3, comment: '不错', willing: 1 })))).json();
@@ -319,7 +319,7 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
     const ia = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
     const ib = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'init' })))).json();
-    await record(db, 'uA', 40); await record(db, 'uB', 35);
+    await record(db, 'uA', 55); await record(db, 'uB', 55);
     const ra = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'review', willing: 0 })))).json();
     check('A 婉拒提交成功', ra.ok && ra.settled == null);
     const rb = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'review', willing: 0 })))).json();
@@ -332,9 +332,9 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
   console.log('\n=== 4) 时长校验：<30s 与 >65s 都拒收并删除 ===');
   {
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    await record(db, 'uA', 20); // 触发 done 时 dur<30
+    await record(db, 'uA', 20); // 触发 done 时 dur<50（新 60 秒规则下限）
     const gShort = await gate(db, 'uA');
-    check('不足 30s → 录音被删，gate 回到 record', gShort.gate === 'record' && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);
+    check('不足 50s → 录音被删，gate 回到 record', gShort.gate === 'record' && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);
     // 重新录但 done 传 70s
     const init = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
     for (let i = 0, seq = 0; i < 2; i++, seq++) await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: init.clipId, seq, data: CHUNK })));
@@ -349,12 +349,12 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     const big = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: init.clipId, seq: 0, data: 'X'.repeat(70 * 1024) })))).json();
     check('单片 > 64K → chunk_too_big', !big.ok && big.error === 'chunk_too_big');
     // A 录完，B 未评 → A 可重录
-    await record(db, 'uA', 40);
+    await record(db, 'uA', 55);
     const retake = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
     check('对方未评 → 可重录', retake.ok && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);
     // 重新录 + B 先评价（willing=1）→ A 的录音仍在（延后焚毁），但对方已评不让重录
-    await record(db, 'uA', 40);
-    await record(db, 'uB', 35);
+    await record(db, 'uA', 55);
+    await record(db, 'uB', 55);
     const rb = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'review', willing: 1 })))).json();
     check('B 评价提交成功（cnt.c=1，未结算）', rb.ok && rb.settled == null);
     check('延后焚毁：A 的录音仍在（等 A 评完才焚）', !!db._store.voice_clips.find(c => c.owner === 'uA'));
@@ -366,7 +366,7 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
   console.log('\n=== 6) 追加试音：首录后可再录一次（最多 2 段），对方可听到前后两段 ===');
   {
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    await record(db, 'uA', 40);
+    await record(db, 'uA', 55);
     let ga = await gate(db, 'uA');
     check('首录后 mineClips 长度=1', ga.mineClips.length === 1);
     check('首录后 canAppend=true（可追加）', ga.canAppend === true);
@@ -374,7 +374,7 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     const initA2 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init', append: true, mime: 'audio/webm' })))).json();
     check('追加 init 返回 clipId', !!initA2.clipId);
     for (let i = 0, seq = 0; i < 2; i++, seq++) await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: initA2.clipId, seq, data: CHUNK })));
-    const doneA2 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: initA2.clipId, dur: 38 })))).json();
+    const doneA2 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: initA2.clipId, dur: 55 })))).json();
     check('追加 done 成功', doneA2.ok);
     ga = await gate(db, 'uA');
     check('追加后 mineClips 长度=2', ga.mineClips.length === 2);
@@ -383,7 +383,7 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     const initA3 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init', append: true })))).json();
     check('第 3 段追加被拒 max_attempts', !initA3.ok && initA3.error === 'max_attempts');
     // B 录一段后，B 能看到 A 的前后两段
-    await record(db, 'uB', 35);
+    await record(db, 'uB', 55);
     const gb = await gate(db, 'uB');
     check('B 看到对方(=A)试音段数=2', gb.peerClips.length === 2);
     check('B 可分段拉取 A 的两段（均 ready）', gb.peerClips.every(c => !!c.id && c.ready));
@@ -392,10 +392,10 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
   console.log('\n=== 6B) 重录（retake）删除自己的全部试音段（含追加段）===');
   {
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    await record(db, 'uA', 40);
+    await record(db, 'uA', 55);
     const initA2 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init', append: true })))).json();
     for (let i = 0, seq = 0; i < 2; i++, seq++) await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: initA2.clipId, seq, data: CHUNK })));
-    await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: initA2.clipId, dur: 38 })))).json();
+    await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: initA2.clipId, dur: 55 })))).json();
     check('重录前置：A 已有 2 段试音', db._store.voice_clips.filter(c => c.owner === 'uA').length === 2);
     const rt = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
     check('retake 成功且删光 A 全部 2 段', rt.ok && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);

@@ -45,19 +45,15 @@ ok('localStorage 记忆 key rcj_ft_iv_collapsed_v1',
 ok('点击 toggle 反转 body.hidden',
   /set\(body\.hidden\)/.test(pairHtml));
 
-// 5. 顶栏「接口」按钮文字 + badge
-ok('顶栏按钮含「⚠」符号',
-  /<button[^>]*id=["']open-settings["'][\s\S]{0,200}⚙/.test(pairHtml));
-ok('顶栏按钮含「bar-gear-text」+「接口」',
-  /class=["']bar-gear-text["'][^>]*>接口</.test(pairHtml) ||
-  /<span class=["']bar-gear-text["']>接口</.test(pairHtml));
-ok('顶栏含 #bar-gear-badge',
-  /id=["']bar-gear-badge["']/.test(pairHtml));
-ok('badge 角标默认 hidden，由 JS 切换',
-  /<span class=["']bar-gear-badge["'][^>]*\bhidden\b/.test(pairHtml) ||
-  /id=["']bar-gear-badge["'][\s\S]{0,40}\bhidden\b/.test(pairHtml) ||
-  /bar-gear-badge[^>]*hidden/.test(pairHtml) ||
-  /id=["']bar-gear-badge["'][^>]*hidden=["']true["']/.test(pairHtml));
+// 5. 顶栏「接口设置」齿轮已按需求移除（避免与面试间内 AI 设置入口重复，#8）
+ok('顶栏 #open-settings 齿轮已移除',
+  !/id=["']open-settings["']/.test(pairHtml));
+ok('顶栏 bar-gear-text「接口」已移除',
+  !/class=["']bar-gear-text["']/.test(pairHtml));
+ok('顶栏 #bar-gear-badge 角标已移除',
+  !/id=["']bar-gear-badge["']/.test(pairHtml));
+ok('顶栏保留 面试间内 AI 设置入口（iv-open-settings）',
+  /id=["']iv-open-settings["']/.test(pairHtml));
 
 // 6. FTSettings.unconfigured() 暴露
 ok('settings.js 暴露 FTSettings.unconfigured',

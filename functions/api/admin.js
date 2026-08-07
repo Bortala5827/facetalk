@@ -44,6 +44,31 @@ export async function onRequest(context) {
     return json({ ok: true, list: results });
   }
 
+  // 列出留言墙全部留言（整合进 /admin 后台管理）
+  if (action === 'list_walls') {
+    try {
+      const { results } = await db.prepare(
+        'SELECT id, name, text, created_at FROM wall ORDER BY created_at DESC LIMIT 200'
+      ).all();
+      const items = (results || []).map(function (r) {
+        return { id: r.id, name: r.name, text: r.text, createdAt: r.created_at };
+      });
+      return json({ ok: true, list: items });
+    } catch (e) {
+      return json({ ok: false, error: 'DB_ERR', list: [] }, 500);
+    }
+  }
+
+  // 删除单条留言墙留言（管理员）
+  if (action === 'delete_wall') {
+    const wallId = String(body.wallId || '');
+    if (!wallId) return err('no_wall_id');
+    const chk = await db.prepare('SELECT id FROM wall WHERE id=?').bind(wallId).first();
+    if (!chk) return err('wall_not_found', 404);
+    await db.prepare('DELETE FROM wall WHERE id=?').bind(wallId).run();
+    return json({ ok: true, removed: wallId });
+  }
+
   // 删除任意意图（管理员）
   if (action === 'delete_intent') {
     const intentId = String(body.intentId || '');
