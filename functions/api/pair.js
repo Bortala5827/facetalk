@@ -9,6 +9,9 @@ const ROOM_TTL = 86400;
 const CLOSED_LINGER = 120;
 // 一方已交评价、另一方还没交时，给未交的一方 10 分钟宽限；到点自动结算，先交的那位不会被无限挂住。
 const SOLO_GRACE = 600;
+// 在线心跳阈值（秒）：前端每 5s 轮询一次 /api/pair 即刷新 last_seen；
+// 对方 last_seen 距现在超过该值即视为离线（覆盖后台标签页节流到 ~1 次/分的情况，避免误判离线）。
+const ONLINE_TTL = 90;
 
 // 配对：决定(同意/拒绝) / 状态 / 互评 / 举报
 export async function onRequest(context) {
@@ -23,6 +26,8 @@ export async function onRequest(context) {
     if (r.error) return err(r.error, r.status);
     await refreshGeo(db, request, r.id); // 顺手抓自己 IP 地理（匹配后返给对方）
     const now = nowSec();
+    // 心跳：每次轮询都刷新自己的 last_seen，供对方判断「是否在线」
+    try { await db.prepare('UPDATE users SET last_seen=? WHERE id=?').bind(now, r.id).run(); } catch (e) {}
     const p = await db.prepare('SELECT * FROM pairs WHERE (a=? OR b=?) AND expires > ? ORDER BY created DESC LIMIT 1')
       .bind(r.id, r.id, now).first();
       if (!p) return json({ ok: true, pair: null });
@@ -54,6 +59,12 @@ export async function onRequest(context) {
         if (pg) peerGeo = { city: pg.geo_city || '', region: pg.geo_region || '', lat: pg.geo_lat, lng: pg.geo_lng };
       } catch (e) { /* users 表无 geo 列：降级为不显示 */ }
       const gi = peerGeoInfo(getGeo(request), peerGeo);
+      // 对方在线状态：读对方 last_seen（列未 ALTER 时静默降级为 false）
+      let peerOnline = false;
+      try {
+        const pl = await db.prepare('SELECT last_seen FROM users WHERE id=?').bind(other).first();
+        peerOnline = !!(pl && pl.last_seen && (now - pl.last_seen) < ONLINE_TTL);
+      } catch (e) { /* users 表无 last_seen 列：降级为不显示在线状态 */ }
       const rated = !!ratings[r.id];
       const left = !!(ratings[r.id] && ratings[r.id].left);
       // 倒计时用「建房时间 + 20 分钟」算，与房间硬过期 expires（1 天）解耦：
@@ -74,7 +85,7 @@ export async function onRequest(context) {
       pair: {
         pairId: p.id, otherRep, meet: p.meet, mode: p.mode, status: p.status,
         infoMine, infoPeer,
-        peerCity: gi.city, peerDistanceKm: gi.distanceKm, peerGeoTag: gi.tag,
+        peerCity: gi.city, peerDistanceKm: gi.distanceKm, peerGeoTag: gi.tag, peerOnline,
         ratingsCount: Object.keys(ratings || {}).length, remaining, rated, left,
         dissolving, dissolveIn, autoCloseIn, soloGraceIn,
         nextAllowed: p.status === 'done' && bothNext(ratings) && bothPass(ratings),

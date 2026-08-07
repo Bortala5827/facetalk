@@ -371,15 +371,23 @@
       document.getElementById('other-rep').textContent = p.otherRep != null ? p.otherRep : '--';
       document.getElementById('room-mode').textContent = p.mode === 'video' ? '📹 视频' : '🎙 语音优先';
 
-      // 匹配成功彩蛋：展示对方 IP 城市 + 同城/跨省 + 相距距离
+      // 匹配成功彩蛋：展示对方 IP 城市 + 同城/跨省 + 相距距离 + 在线状态
       var pgEl = document.getElementById('peer-geo');
-      if (p.peerCity && p.status !== 'closed') {
-        var pgeo = '📍 你的搭子在【' + esc(p.peerCity) + '】';
-        if (p.peerGeoTag) pgeo += ' · ' + p.peerGeoTag;
-        if (p.peerDistanceKm != null) pgeo += ' · 相距约 ' + p.peerDistanceKm + ' km';
-        pgEl.textContent = pgeo;
-        pgEl.hidden = false;
-        if (!peerToastShown) { peerToastShown = true; toast('🎉 匹配成功！你的搭子在【' + esc(p.peerCity) + '】'); }
+      if (p.status !== 'closed') {
+        var onlineTxt = (p.peerOnline ? '🟢 对方在线' : '⚪ 对方离线');
+        if (p.peerCity) {
+          var pgeo = '📍 你的搭子在【' + esc(p.peerCity) + '】';
+          if (p.peerGeoTag) pgeo += ' · ' + p.peerGeoTag;
+          if (p.peerDistanceKm != null) pgeo += ' · 相距约 ' + p.peerDistanceKm + ' km';
+          pgeo += ' · ' + onlineTxt;
+          pgEl.textContent = pgeo;
+          pgEl.hidden = false;
+          if (!peerToastShown) { peerToastShown = true; toast('🎉 匹配成功！你的搭子在【' + esc(p.peerCity) + '】'); }
+        } else {
+          // 还没拿到对方城市（对方尚未触发 geo 抓取）时，至少展示在线状态
+          pgEl.textContent = onlineTxt;
+          pgEl.hidden = false;
+        }
       } else {
         pgEl.hidden = true;
       }

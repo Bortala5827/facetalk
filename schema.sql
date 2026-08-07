@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
   geo_region TEXT DEFAULT '',        -- IP 地理：省/州（cf.region，英文名）
   geo_lat    REAL DEFAULT NULL,      -- IP 地理：纬度（cf.latitude）
   geo_lng    REAL DEFAULT NULL,      -- IP 地理：经度（cf.longitude）
-  geo_at     INTEGER DEFAULT 0       -- 上次抓地理的时间（秒），节流 15 分钟
+  geo_at     INTEGER DEFAULT 0,      -- 上次抓地理的时间（秒），节流 15 分钟
+  last_seen  INTEGER DEFAULT 0       -- 最近一次心跳（/api/pair GET）时间（秒），用于「对方是否在线」
 );
 CREATE INDEX IF NOT EXISTS idx_users_banned ON users(banned);
 
