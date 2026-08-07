@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass } from '../_shared.js';
+import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass, refreshGeo } from '../_shared.js';
 
 const MODES = ['voice', 'video'];
 
@@ -14,6 +14,7 @@ export async function onRequest(context) {
     try { body = await request.json(); } catch (e) { return err('bad_json'); }
     const r = await requireToken(env, body.me);
     if (r.error) return err(r.error, r.status);
+    await refreshGeo(db, request, r.id); // 抓发布者(A) IP 地理，匹配前就存好
 
     if (!await rateLimit(db, 'rl:intent:' + ip, 30, 3600) && !adminBypass(env, request, body)) return err('rate_limited', 429);
     if (!await rateLimit(db, 'rl:intent:u:' + r.id, 10, 3600) && !adminBypass(env, request, body)) return err('too_many_intents', 429);

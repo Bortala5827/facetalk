@@ -7,7 +7,12 @@ CREATE TABLE IF NOT EXISTS users (
   id      TEXT PRIMARY KEY,
   rep     INTEGER NOT NULL DEFAULT 50,
   banned  INTEGER NOT NULL DEFAULT 0,
-  created INTEGER NOT NULL
+  created INTEGER NOT NULL,
+  geo_city   TEXT DEFAULT '',        -- IP 地理：城市（Cloudflare cf.city，常为中文/拼音）
+  geo_region TEXT DEFAULT '',        -- IP 地理：省/州（cf.region，英文名）
+  geo_lat    REAL DEFAULT NULL,      -- IP 地理：纬度（cf.latitude）
+  geo_lng    REAL DEFAULT NULL,      -- IP 地理：经度（cf.longitude）
+  geo_at     INTEGER DEFAULT 0       -- 上次抓地理的时间（秒），节流 15 分钟
 );
 CREATE INDEX IF NOT EXISTS idx_users_banned ON users(banned);
 

@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips } from '../_shared.js';
+import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips, getGeo, refreshGeo, peerGeoInfo } from '../_shared.js';
 
 // 单次互练「建议时长」软上限 20 分钟（秒）：倒计时归零只提示 + 弹评价卡，**不关房间**，
 // 双方在腾讯会议 / 飞书会议里练多久都行，回来照样能提交评价。
@@ -21,6 +21,7 @@ export async function onRequest(context) {
     const me = url.searchParams.get('me');
     const r = await requireToken(env, me);
     if (r.error) return err(r.error, r.status);
+    await refreshGeo(db, request, r.id); // 顺手抓自己 IP 地理（匹配后返给对方）
     const now = nowSec();
     const p = await db.prepare('SELECT * FROM pairs WHERE (a=? OR b=?) AND expires > ? ORDER BY created DESC LIMIT 1')
       .bind(r.id, r.id, now).first();
@@ -46,6 +47,13 @@ export async function onRequest(context) {
       const other = r.id === p.a ? p.b : p.a;
       const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
       const otherRep = o ? (o.rep | 0) : 50;
+      // 对方 IP 地理（用于「你的搭子在【城市】· 相距 XXX km」彩蛋）；列未 ALTER 时静默降级
+      let peerGeo = null;
+      try {
+        const pg = await db.prepare('SELECT geo_city, geo_region, geo_lat, geo_lng FROM users WHERE id=?').bind(other).first();
+        if (pg) peerGeo = { city: pg.geo_city || '', region: pg.geo_region || '', lat: pg.geo_lat, lng: pg.geo_lng };
+      } catch (e) { /* users 表无 geo 列：降级为不显示 */ }
+      const gi = peerGeoInfo(getGeo(request), peerGeo);
       const rated = !!ratings[r.id];
       const left = !!(ratings[r.id] && ratings[r.id].left);
       // 倒计时用「建房时间 + 20 分钟」算，与房间硬过期 expires（1 天）解耦：
@@ -66,6 +74,7 @@ export async function onRequest(context) {
       pair: {
         pairId: p.id, otherRep, meet: p.meet, mode: p.mode, status: p.status,
         infoMine, infoPeer,
+        peerCity: gi.city, peerDistanceKm: gi.distanceKm, peerGeoTag: gi.tag,
         ratingsCount: Object.keys(ratings || {}).length, remaining, rated, left,
         dissolving, dissolveIn, autoCloseIn, soloGraceIn,
         nextAllowed: p.status === 'done' && bothNext(ratings) && bothPass(ratings),
@@ -78,6 +87,7 @@ export async function onRequest(context) {
     try { body = await request.json(); } catch (e) { return err('bad_json'); }
     const r = await requireToken(env, body.me);
     if (r.error) return err(r.error, r.status);
+    await refreshGeo(db, request, r.id); // 抓申请方(B) IP 地理，匹配成功即生效
     const action = body.action;
 
     if (action === 'decide') {

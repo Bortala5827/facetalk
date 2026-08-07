@@ -24,6 +24,8 @@
       <h2 class="sec-title">🤝 搭子房间</h2>
       <p class="muted">双方已互选成功。语音优先、限时互练，结束互评。</p>
 
+      <p id="peer-geo" class="peer-geo" hidden></p>
+
       <div class="room-meta">
         <div><span class="muted">对方信誉</span> <strong id="other-rep">--</strong></div>
         <div><span class="muted">模式</span> <strong id="room-mode">--</strong></div>
@@ -282,6 +284,7 @@
     }
 
     var remain = 0, timer = null, infoMineInit = false, dissolveTimer = null, dissolveToasted = false;
+    var peerToastShown = false; // 匹配成功地理 toast 仅弹一次
     var remainListeners = [];   // 订阅 remain 变化（如 interview.js 用）—— 每秒 tick 时 fire 一次
     var remainZeroFired = false; // 同一轮房间 0 触发一次 onTimeUp，避免重复弹评价
     function fireRemain(n) {
@@ -367,6 +370,19 @@
       if(p.status === 'closed'){ toast('房间已关闭'); setTimeout(function(){ location.href = '/'; }, 500); return; }
       document.getElementById('other-rep').textContent = p.otherRep != null ? p.otherRep : '--';
       document.getElementById('room-mode').textContent = p.mode === 'video' ? '📹 视频' : '🎙 语音优先';
+
+      // 匹配成功彩蛋：展示对方 IP 城市 + 同城/跨省 + 相距距离
+      var pgEl = document.getElementById('peer-geo');
+      if (p.peerCity && p.status !== 'closed') {
+        var pgeo = '📍 你的搭子在【' + esc(p.peerCity) + '】';
+        if (p.peerGeoTag) pgeo += ' · ' + p.peerGeoTag;
+        if (p.peerDistanceKm != null) pgeo += ' · 相距约 ' + p.peerDistanceKm + ' km';
+        pgEl.textContent = pgeo;
+        pgEl.hidden = false;
+        if (!peerToastShown) { peerToastShown = true; toast('🎉 匹配成功！你的搭子在【' + esc(p.peerCity) + '】'); }
+      } else {
+        pgEl.hidden = true;
+      }
       // 会话倒计时：只在本轮数据显式携带 remaining 时更新。
       // SSE 的 pair 事件可能缺该字段，缺了就保持原值，避免 remain 被清零 → tick 误弹「时间到请打分」造成闪退。
       if (p.remaining != null) {
