@@ -787,7 +787,7 @@ a { color: inherit; text-decoration: none; }
 }
 .msg-tip-meeting b { color: #b45309; }
 
-/* ===== 自言自语练习间（solo.html） ===== */
+/* ===== 自我练习（solo.html） ===== */
 .btn-set { background: var(--bg-soft); color: var(--ink-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .btn-set:hover { border-color: var(--accent); color: var(--accent-d); }
 .topic-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -807,7 +807,7 @@ a { color: inherit; text-decoration: none; }
 .hero-cta .btn-primary { align-self: flex-start; text-decoration: none; }
 .hero-cta-sub { font-size: 12.5px; color: var(--ink-3); }
 
-/* ===== 自言自语练习间 · 录音区（微信语音式） ===== */
+/* ===== 自我练习 · 录音区（微信语音式） ===== */
 .rec-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 0 8px; }
 .rec-mic { width: 96px; height: 96px; border-radius: 50%; border: none; cursor: pointer; background: var(--accent-grad); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(79, 70, 229, .28); transition: transform .12s ease, box-shadow .2s ease; position: relative; }
 .rec-mic-ico { font-size: 40px; line-height: 1; pointer-events: none; }
