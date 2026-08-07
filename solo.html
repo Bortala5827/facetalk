@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>自言自语练习间 · FaceTalk 面试搭子</title>
+  <meta name="description" content="FaceTalk 面试搭子 — 一个人也能练：录 30–90 秒即兴作答，AI 帮你点评。" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260807b" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><a href="/">搭</a> FaceTalk 面试搭子</div>
+    <nav class="nav">
+      <a href="/">首页</a>
+      <button class="btn-set" id="open-set">⚙ 接口</button>
+    </nav>
+  </header>
+
+  <main class="wrap" style="max-width:680px;margin:0 auto;padding:28px 16px 80px">
+    <h1 style="font-size:22px;margin:8px 0 4px">🎤 自言自语练习间</h1>
+    <p class="muted" style="margin:0 0 18px">冷启动兜底 · 一个人也能练。录 30–90 秒即兴作答，AI 帮你点评（需自备 Key，仅存你本机）。</p>
+
+    <section class="card" id="topic-card">
+      <div class="topic-head">
+        <span class="topic-tag">今日练习题</span>
+        <button class="btn-mini" id="shuffle">换一题</button>
+      </div>
+      <p id="topic" class="topic-text">加载中…</p>
+    </section>
+
+    <section class="card" id="rec-card">
+      <div class="rec-row">
+        <button class="rec-btn" id="rec">● 开始录音</button>
+        <span id="rec-time" class="rec-time">00:00</span>
+      </div>
+      <p class="field-hint" id="rec-hint">⏱ 至少录 <strong>30 秒</strong>（最多 90 秒，约满自动停止）。全程本地录音，不上传服务器。</p>
+
+      <div id="player" class="player" hidden>
+        <audio id="audio" controls></audio>
+        <div class="player-actions">
+          <button class="btn-mini" id="replay">↺ 重录</button>
+          <button class="btn-mini ok" id="ai">✨ AI 点评</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="result-card" hidden>
+      <h2 class="sec-title">📝 点评结果</h2>
+      <div id="transcript" class="transcript"></div>
+      <div id="comment" class="comment"></div>
+    </section>
+
+    <p id="status" class="muted" style="min-height:20px;margin-top:14px"></p>
+  </main>
+
+  <script src="/assets/ft-util.js?v=20260806p"></script>
+  <script src="/assets/settings.js?v=20260807a"></script>
+  <script>
+  (function () {
+    var TOPICS = [
+      '请用 30–90 秒即兴介绍你自己，重点讲清楚为什么你适合这个岗位。',
+      '你认为一名合格的辅警/公职人员应该具备哪些素质？请结合自身谈。',
+      '单位安排你长期做最基础的窗口登记工作，同事说没前途，你怎么看？',
+      '巡逻时发现两人在路边争吵，围观群众越来越多，你如何处置？',
+      '群众来办事情绪激动，当众指责你们办事拖沓，你如何应对？',
+      '领导交给你一项时间紧、任务重的工作，同事却不太配合，你怎么办？',
+      '有人说"辅警没有执法权，干得再多也白搭"，你怎么看这种说法？',
+      '请讲一次你在高压下完成任务的真实经历，以及你从中学到了什么。',
+      '单位要在社区办一次反诈宣传活动，由你牵头，你打算怎么组织？',
+      '值班时接到群众电话，反映邻居深夜噪音扰民，你如何处理？',
+      '你和一位资历比你老的同事在工作方法上有分歧，你怎么处理？',
+      '谈谈你对"枫桥经验"或"矛盾不上交"的理解。',
+      '执勤时被群众用手机全程拍摄并质疑你的执法，你怎么办？',
+      '你最大的缺点是什么？会不会影响这份工作？',
+      '如果这次没有被录用，你接下来会怎么打算？',
+      '一位老人走失，家属非常着急但能提供的信息很少，你如何开展工作？',
+      '你如何理解"人民群众满意"是衡量工作的第一标准？',
+      '同事工作中出现失误，领导却误以为是你造成的，你怎么办？',
+      '早高峰路口信号灯突然故障，现场严重拥堵，你如何疏导？',
+      '请用 30–90 秒即兴回答：你为什么报考辅警？'
+    ];
+    var MIN = 30, MAX = 90;
+    var $ = function (id) { return document.getElementById(id); };
+
+    function pickTopic() {
+      var t = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+      $('topic').textContent = t;
+    }
+    pickTopic();
+    $('shuffle').addEventListener('click', pickTopic);
+
+    var recBtn = $('rec'), recTime = $('rec-time'), recHint = $('rec-hint');
+    var player = $('player'), audio = $('audio'), status = $('status');
+    var mediaRec = null, chunks = [], recStart = 0, timer = null, blobUrl = null;
+    var recorderReady = false, hasRecorded = false;
+
+    function fmt(s) {
+      s = Math.max(0, Math.floor(s));
+      var m = Math.floor(s / 60), ss = s % 60;
+      return (m < 10 ? '0' : '') + m + ':' + (ss < 10 ? '0' : '') + ss;
+    }
+    function setStatus(m, err) { status.textContent = m || ''; status.style.color = err ? 'var(--danger)' : 'var(--ink-3)'; }
+
+    async function startRec() {
+      if (!navigator.mediaDevices || !window.MediaRecorder) { setStatus('当前浏览器不支持录音', true); return; }
+      try {
+        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e) { setStatus('无法访问麦克风，请允许麦克风权限', true); return; }
+      chunks = [];
+      try { mediaRec = new MediaRecorder(stream); }
+      catch (e) { setStatus('录音初始化失败', true); stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+      mediaRec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+      mediaRec.onstop = function () {
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+        var blob = new Blob(chunks, { type: mediaRec.mimeType || 'audio/webm' });
+        blobUrl = URL.createObjectURL(blob);
+        audio.src = blobUrl;
+        player.hidden = false;
+        hasRecorded = true;
+        $('result-card').hidden = true;
+        setStatus('录好了，回放听听或直接点「AI 点评」');
+      };
+      mediaRec.start();
+      recorderReady = true;
+      recBtn.textContent = '■ 停止录音';
+      recBtn.classList.add('rec-on');
+      recStart = Date.now();
+      setStatus('录音中…至少 30 秒');
+      timer = setInterval(function () {
+        var dur = (Date.now() - recStart) / 1000;
+        recTime.textContent = fmt(dur);
+        if (dur >= MAX) stopRec();
+      }, 250);
+    }
+
+    function stopRec() {
+      if (!mediaRec || mediaRec.state === 'inactive') return;
+      clearInterval(timer);
+      var dur = (Date.now() - recStart) / 1000;
+      mediaRec.stop();
+      recBtn.textContent = '● 开始录音';
+      recBtn.classList.remove('rec-on');
+      if (dur < MIN) { setStatus('太短了（不足 ' + MIN + ' 秒），再录一次', true); player.hidden = true; hasRecorded = false; return; }
+      recTime.textContent = fmt(dur);
+    }
+
+    recBtn.addEventListener('click', function () {
+      if (recorderReady && mediaRec && mediaRec.state === 'recording') stopRec();
+      else startRec();
+    });
+
+    $('replay').addEventListener('click', function () { player.hidden = true; hasRecorded = false; setStatus('重新录一段吧'); });
+
+    // —— AI 点评：复用 /api/llm 同域代理（用户自备 Key，仅本机）——
+    $('ai').addEventListener('click', async function () {
+      if (!hasRecorded) { setStatus('先录一段再点评', true); return; }
+      var cfg = (window.FTSettings && window.FTSettings.get) ? window.FTSettings.get() : {};
+      var stt = (cfg.asrEngine === 'cloud') ? { base: cfg.sttBase, key: cfg.sttKey, model: cfg.sttModel } : null;
+      var llm = (cfg.llmEnabled) ? { base: cfg.llmBase, key: cfg.llmKey, model: cfg.llmModel } : null;
+      if (!stt || !stt.base || !stt.key || !stt.model) { setStatus('未配置语音转写（云端 STT）：点右上「⚙ 接口」填 Whisper 兼容 Key', true); return; }
+      if (!llm || !llm.base || !llm.key || !llm.model) { setStatus('未配置大模型：点右上「⚙ 接口」填 LLM Base/Key/Model', true); return; }
+
+      setStatus('转写中…');
+      $('result-card').hidden = false;
+      $('transcript').textContent = '⏳ 转写中…';
+      $('comment').textContent = '';
+
+      var blob = await (await fetch(blobUrl)).blob();
+      var fd = new FormData();
+      fd.append('base', stt.base); fd.append('key', stt.key); fd.append('model', stt.model); fd.append('file', blob, 'seg.webm');
+      var tr;
+      try {
+        var r = await fetch('/api/llm?type=transcribe', { method: 'POST', body: fd });
+        tr = await r.json();
+      } catch (e) { setStatus('转写请求失败（网络/CORS）', true); return; }
+      if (!tr || !tr.ok) { $('transcript').textContent = '❌ 转写失败：' + ((tr && tr.error) || '未知错误'); setStatus(''); return; }
+      $('transcript').textContent = '🗣 你的作答：\n' + tr.text;
+
+      setStatus('AI 点评中…');
+      var prompt = '你是一名严格的面试考官，正在点评一位报考辅警/公职人员的考生。' +
+        '下面是他对本面试题的口头作答转写稿。请按以下结构点评（用中文、分点、具体、可操作）：\n' +
+        '1. 整体印象（逻辑性、条理性、语气）；\n' +
+        '2. 内容亮点（说得好的地方）；\n' +
+        '3. 可改进点（内容空洞/跑题/口头禅/结构问题等）；\n' +
+        '4. 一句一句话术优化建议（给一个更好的开头或结尾示例）。\n' +
+        '面试题：' + $('topic').textContent + '\n\n考生作答：\n' + tr.text;
+      try {
+        var cr = await fetch('/api/llm?type=chat', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ base: llm.base, key: llm.key, model: llm.model, messages: [{ role: 'user', content: prompt }] })
+        });
+        var cd = await cr.json();
+        if (!cd || !cd.ok) { $('comment').textContent = '❌ 点评失败：' + ((cd && cd.error) || '未知错误'); }
+        else { $('comment').textContent = cd.content || '(空)'; }
+      } catch (e) { $('comment').textContent = '❌ 点评请求失败'; }
+      setStatus('点评完成 ✅');
+    });
+
+    // 打开设置（复用 FTSettings 弹窗）
+    $('open-set').addEventListener('click', function () { if (window.FTSettings && window.FTSettings.open) window.FTSettings.open(); });
+  })();
+  </script>
+</body>
+</html>

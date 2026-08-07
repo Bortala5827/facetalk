@@ -786,3 +786,23 @@ a { color: inherit; text-decoration: none; }
   }
 }
 .msg-tip-meeting b { color: #b45309; }
+
+/* ===== 自言自语练习间（solo.html） ===== */
+.btn-set { background: var(--bg-soft); color: var(--ink-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-set:hover { border-color: var(--accent); color: var(--accent-d); }
+.topic-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.topic-tag { font-size: 12px; font-weight: 700; color: var(--accent-d); background: var(--accent-soft); padding: 3px 10px; border-radius: 999px; }
+.topic-text { font-size: 15.5px; line-height: 1.7; color: var(--ink); margin: 0; font-weight: 500; }
+.rec-row { display: flex; align-items: center; gap: 14px; }
+.rec-btn { background: var(--accent-grad); color: #fff; border: none; border-radius: var(--r-sm); padding: 13px 22px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform .08s; }
+.rec-btn:active { transform: scale(.97); }
+.rec-btn.rec-on { background: var(--energy); }
+.rec-time { font-variant-numeric: tabular-nums; font-size: 18px; font-weight: 700; color: var(--ink-2); }
+.player { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); }
+.player audio { width: 100%; }
+.player-actions { display: flex; gap: 10px; margin-top: 10px; }
+.transcript { white-space: pre-wrap; line-height: 1.7; color: var(--ink-2); font-size: 14.5px; background: var(--bg-soft); border-radius: var(--r-sm); padding: 14px 16px; margin: 12px 0; }
+.comment { white-space: pre-wrap; line-height: 1.75; color: var(--ink); font-size: 15px; }
+.hero-cta { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.hero-cta .btn-primary { align-self: flex-start; text-decoration: none; }
+.hero-cta-sub { font-size: 12.5px; color: var(--ink-3); }
