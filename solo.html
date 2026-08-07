@@ -6,7 +6,7 @@
   <title>自我练习 · FaceTalk 面试搭子</title>
   <meta name="description" content="FaceTalk 面试搭子 — 录 30–90 秒即兴作答，AI 帮你点评。" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260807c" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260807d" />
 </head>
 <body>
   <header class="topbar">
@@ -41,12 +41,13 @@
     <section class="card" id="rec-card">
       <div class="rec-stage" id="rec-stage">
         <button class="rec-mic" id="rec" aria-label="开始录音">
-          <span class="rec-mic-ico" id="rec-ico">🎙️</span>
+          <svg class="rec-mic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="1" width="6" height="12" rx="3"/>
+            <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+            <line x1="12" y1="17" x2="12" y2="22"/>
+          </svg>
         </button>
         <div class="rec-caption" id="rec-caption">点击开始录音</div>
-        <div class="rec-wave" id="rec-wave">
-          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-        </div>
         <div class="rec-timer" id="rec-time">00:00</div>
       </div>
       <p class="field-hint" id="rec-hint">⏱ 至少录 <strong>30 秒</strong>（最多 90 秒，约满自动停止）。全程本地录音，不上传服务器。</p>
@@ -231,8 +232,8 @@
       });
     });
 
-    var recBtn = $('rec'), recTime = $('rec-time'), recHint = $('rec-hint'), recIco = $('rec-ico');
-    var recStage = $('rec-stage'), recCaption = $('rec-caption'), recWave = $('rec-wave');
+    var recBtn = $('rec'), recTime = $('rec-time'), recHint = $('rec-hint');
+    var recStage = $('rec-stage'), recCaption = $('rec-caption');
     var player = $('player'), audio = $('audio'), status = $('status');
     var mediaRec = null, chunks = [], recStart = 0, timer = null, blobUrl = null;
     var recorderReady = false, hasRecorded = false;
@@ -246,23 +247,18 @@
 
     function enterRecUI() {
       recBtn.classList.add('rec-on');
-      recIco.textContent = '🔴';
       recCaption.textContent = '录音中… 再次点击停止';
-      recWave.classList.add('show');
       recTime.style.color = '#ef4444';
     }
     function exitRecUI() {
       recBtn.classList.remove('rec-on');
-      recIco.textContent = '🎙️';
       recCaption.textContent = '点击开始录音';
-      recWave.classList.remove('show');
       recTime.style.color = '';
     }
     // 重置为"可重新录制"状态（停止后仍未达时长/重录）
     function resetRecUI() {
       exitRecUI();
       recBtn.classList.remove('rec-on');
-      recIco.textContent = '🎙️';
       recCaption.textContent = '点击开始录音';
     }
 
