@@ -142,9 +142,10 @@
       (errMsg ? '<div class="error">' + esc(errMsg) + '</div>' : '') +
       '<label>ADMIN_KEY</label>' +
       '<input type="password" id="key-input" placeholder="输入管理员密钥…" autofocus />' +
-      '<button onclick="doLogin()">登录</button>' +
+      '<button id="btn-login">登录</button>' +
       '</div>';
     document.getElementById('key-input').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+    document.getElementById('btn-login').addEventListener('click', doLogin);
   }
 
   function doLogin() {
