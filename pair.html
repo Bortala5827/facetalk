@@ -58,7 +58,7 @@
     <!-- ===== 2.0 试音互评：匹配后先各录 60 秒，互听互评（含回听自己），双方点头才解锁下面的功能 ===== -->
     <section class="card" id="voice-card" hidden>
       <button class="v-collapse" id="v-collapse" aria-expanded="true" type="button">
-        <h2 class="sec-title">🎙 60 秒试音互评 <span class="v-badge">2.0</span></h2>
+        <h2 class="sec-title">🎙 试音互评（30–90 秒） <span class="v-badge">2.0</span></h2>
         <span class="v-collapse-sub" id="v-collapse-sub"></span>
         <span class="v-collapse-hint" id="v-collapse-hint" hidden>点击展开 ▾</span>
         <span class="v-chev">▾</span>
@@ -76,7 +76,7 @@
           <span class="v-time" id="v-time">00:00</span>
         </div>
         <div class="v-bar"><i id="v-fill"></i></div>
-        <p class="field-hint" id="v-hint">⏱ 请录满 <strong>60 秒</strong>（约满自动停止）。录音只在互评期间临时存在，<strong>双方都评完后立即销毁</strong>，手机和电脑本地都不保存。</p>
+        <p class="field-hint" id="v-hint">⏱ 至少录 <strong>30 秒</strong>（最多 90 秒，约满自动停止）。录音只在互评期间临时存在，<strong>双方都评完后立即销毁</strong>，手机和电脑本地都不保存。</p>
       </div>
 
       <!-- 步骤 2：等对方录 -->
@@ -645,7 +645,7 @@
     // ===================== 2.0 试音互评 =====================
     // 录音全程只在内存里流转：录 → base64 分片上传 → 对方听完评完，服务端立刻物理删除。
     // 本地不写 localStorage/IndexedDB，播放用 Blob URL，用完即 revoke。
-    var MIN_SEC = 55, MAX_SEC = 60;
+    var MIN_SEC = 30, MAX_SEC = 90;
     var vMeta = null, vGate = 'skip', vRec = null, vStream = null, vParts = [], vT0 = 0, vTimer = null, vBlobUrl = null, vBusy = false, vAppendMode = false;
 
     function vGet(extra) {
@@ -856,7 +856,7 @@
           hint.textContent = '上传中… ' + Math.round((seq + 1) / total * 100) + '%';
         }
         var d = await vPost({ action: 'done', clipId: init.clipId, dur: dur });
-        if (!d.ok) { toast(d.error === 'too_short' ? '不足 60 秒，请重录' : ('提交失败：' + (d.error || '')), true); return; }
+        if (!d.ok) { toast(d.error === 'too_short' ? '不足 30 秒，请重录' : ('提交失败：' + (d.error || '')), true); return; }
         toast('试音已提交 ✅');
         await loadVoice();
       } finally { vBusy = false; hint.innerHTML = old; }

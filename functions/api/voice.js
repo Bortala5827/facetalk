@@ -1,8 +1,8 @@
 import { json, err, genId, requireToken, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips } from '../_shared.js';
 
 // ============================================================
-// FaceTalk 2.0 「60 秒试音互评」
-// 流程：匹配成功 → 双方各录 60 秒答同一道题 → 互听互评（含回听自己） → 都点「愿意组队」才解锁房间
+// FaceTalk 2.0 「试音互评」
+// 流程：匹配成功 → 双方各录 30–90 秒答同一道题 → 互听互评（含回听自己） → 都点「愿意组队」才解锁房间
 //       任一方婉拒 → 房间 60 秒后自动解散，双方回首页各找各的，互不浪费时间。
 //
 // 存储原则（用户要求：云端与本地都不留存）：
@@ -15,8 +15,8 @@ import { json, err, genId, requireToken, getDB, nowSec, rateLimit, getIp, adminB
 //           老房间与留言板不受任何影响（不会 500）。
 // ============================================================
 
-const MIN_SEC = 50;                 // 服务端下限 50 秒（前端 55 秒才解锁停止键，这里再放 5 秒容错，避免计时误差误杀）
-const MAX_SEC = 65;                 // 目标 60 秒（前端满 60 秒自动停止），留 5 秒容错
+const MIN_SEC = 30;                 // 服务端下限 30 秒（前端 30 秒解锁停止键；留 2 秒容错在 done 校验里由 dur 真实值兜底）
+const MAX_SEC = 90;                 // 上限 90 秒（前端满 90 秒自动停止），留容错
 const MAX_B64 = 900 * 1024;         // 单段录音 base64 上限 ≈ 675KB 原始音频
 const MAX_CHUNK = 64 * 1024;        // 单片 base64 上限，避开 D1 单值限制
 const MAX_PLAYS = 2;                // 每段对方最多回听 2 次
@@ -44,7 +44,7 @@ const TOPICS = [
   '你如何理解"人民群众满意"是衡量工作的第一标准？',
   '同事工作中出现失误，领导却误以为是你造成的，你怎么办？',
   '早高峰路口信号灯突然故障，现场严重拥堵，你如何疏导？',
-  '请用 60 秒介绍你自己，重点讲清楚为什么你适合这个岗位。',
+  '请用 30–90 秒即兴介绍你自己，重点讲清楚为什么你适合这个岗位。',
 ];
 
 function topicFor(pairId) {
@@ -192,7 +192,7 @@ export async function onRequest(context) {
       await db.prepare(`INSERT INTO voice_clips (id, pair_id, owner, mime, dur, bytes, chunks, plays, ready, created, expires)
         VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0, ?, ?)`)
         .bind(id, pairId, m.r.id, String(body.mime || 'audio/webm').slice(0, 40), now, now + CLIP_TTL).run();
-      return json({ ok: true, clipId: id, topic: topicFor(pairId), minSec: MIN_SEC, maxSec: 60, attempt: mineRows.length + 1 });
+      return json({ ok: true, clipId: id, topic: topicFor(pairId), minSec: MIN_SEC, maxSec: MAX_SEC, attempt: mineRows.length + 1 });
     }
 
     // 2) 传片：单片 base64 ≤ 64KB
