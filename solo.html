@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>自我练习 · FaceTalk 面试搭子</title>
-  <meta name="description" content="FaceTalk 面试搭子 — 录 30–90 秒即兴作答，AI 帮你点评。" />
+  <meta name="description" content="FaceTalk 面试搭子 — 录 1–3 分钟完整作答，AI 帮你点评。" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="/assets/style.css?v=20260807f" />
 </head>
@@ -19,7 +19,7 @@
 
   <main class="wrap" style="max-width:680px;margin:0 auto;padding:28px 16px 80px">
     <h1 style="font-size:22px;margin:8px 0 4px">🎤 面试自我练习</h1>
-    <p class="muted" style="margin:0 0 18px">一个人也能练。录 30–90 秒即兴作答，AI 帮你点评（需自备 Key，仅存本机）。</p>
+    <p class="muted" style="margin:0 0 18px">一个人也能练。录 1–3 分钟完整作答，AI 帮你点评（需自备 Key，仅存本机）。</p>
 
     <section class="card" id="topic-card">
       <div class="topic-head">
@@ -52,7 +52,7 @@
         <p class="mic-caption" id="rec-caption">点击开始录音</p>
         <div class="mic-timer" id="rec-time">00:00</div>
       </div>
-      <p class="field-hint" id="rec-hint">⏱ 至少录 <strong>30 秒</strong>（最多 90 秒，约满自动停止）。全程本地录音，不上传服务器。</p>
+      <p class="field-hint" id="rec-hint">⏱ 建议答 <strong>1–3 分钟</strong>（最长 3 分钟，约满自动停止）。全程本地录音，不上传服务器。</p>
 
       <div id="player" class="player" hidden>
         <audio id="audio" controls></audio>
@@ -131,7 +131,7 @@
       { c:'fire', q:'谈谈你对"赴汤蹈火、竭诚为民"消防救援精神的理解。' },
 
       // ===== 通用模拟 =====
-      { c:'gen', q:'请用 30–90 秒即兴介绍你自己，重点讲清楚为什么你适合这个岗位。' },
+      { c:'gen', q:'请用 1–3 分钟即兴介绍你自己，重点讲清楚为什么你适合这个岗位。' },
       { c:'gen', q:'你认为一名合格的辅警/公职人员应该具备哪些素质？请结合自身谈。' },
       { c:'gen', q:'单位安排你长期做最基础的窗口登记工作，同事说没前途，你怎么看？' },
       { c:'gen', q:'领导交给你一项时间紧、任务重的工作，同事却不太配合，你怎么办？' },
@@ -211,7 +211,7 @@
       { c:'gk', q:'为什么报考公务员或事业单位？你的优势和不足是什么？' },
     ];
     var CAT_LABEL = { all:'今日练习题', fj:'辅警·真题', fire:'消防结构化', comm:'社区工作者', teacher:'教师招聘', gk:'公考/事业', gen:'通用模拟' };
-    var MIN = 30, MAX = 90;
+    var MIN = 60, MAX = 180;
     var $ = function (id) { return document.getElementById(id); };
 
     var curCat = 'all';
@@ -290,7 +290,7 @@
       recorderReady = true;
       enterRecUI();
       recStart = Date.now();
-      setStatus('录音中…至少 30 秒');
+      setStatus('录音中…建议答 1–3 分钟');
       timer = setInterval(function () {
         var dur = (Date.now() - recStart) / 1000;
         recTime.textContent = fmt(dur);
@@ -307,7 +307,7 @@
       if (dur < MIN) {
         resetRecUI();
         player.hidden = true; hasRecorded = false;
-        setStatus('太短了（不足 ' + MIN + ' 秒），再录一次', true);
+        setStatus('有点短（不足 ' + MIN + ' 秒，建议答满 1 分钟以上），再录一次', true);
       }
     }
 
