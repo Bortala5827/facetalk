@@ -807,33 +807,61 @@ a { color: inherit; text-decoration: none; }
 .hero-cta .btn-primary { align-self: flex-start; text-decoration: none; }
 .hero-cta-sub { font-size: 12.5px; color: var(--ink-3); }
 
-/* ===== 自我练习 · 录音区（Google 语音风格） ===== */
-#rec-card { background: #1e1e2e; border-radius: 20px; padding: 36px 24px 40px; }
-.rec-stage { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 10px 0 4px; }
-.rec-mic { width: 136px; height: 136px; border-radius: 50%; border: none; cursor: pointer; background: #3a3a4a; color: #9ca3af; display: flex; align-items: center; justify-content: center; transition: background .25s ease, box-shadow .35s ease, color .25s ease; position: relative; -webkit-tap-highlight-color: transparent; }
-.rec-mic-svg { width: 52px; height: 52px; transition: transform .2s ease; }
-.rec-mic:hover { background: #4a4a5a; }
-.rec-mic:active { transform: scale(.96); }
-.rec-mic:active .rec-mic-svg { transform: scale(.92); }
+/* ===== 自我练习 · Google Mic 三态录音按钮（skill: google-mic-recorder） ===== */
+.mic-card {
+  --mic-size: 128px;
+  --mic-idle: #7a7a8a;
+  --mic-hover-bg: #ffffff;
+  --mic-rec: #ea4335;
+  --mic-ring: #9ca3af;
+  --card-bg: #1e1e2e;
 
-/* 录音中：红底白图标 + 柔和外圈光晕（非脉冲） */
-.rec-mic.rec-on {
-  background: #ea4335;
-  color: #fff;
-  box-shadow:
-    0 0 0 12px rgba(234, 67, 53, .12),
-    0 0 0 28px rgba(234, 67, 53, .06),
-    0 8px 32px rgba(234, 67, 53, .30);
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 40px 24px 32px;
 }
-@keyframes breathe-glow {
-  0%, 100% { box-shadow: 0 0 0 12px rgba(234, 67, 53, .12), 0 0 0 28px rgba(234, 67, 53, .06), 0 8px 32px rgba(234, 67, 53, .30); }
-  50%      { box-shadow: 0 0 0 18px rgba(234, 67, 53, .18), 0 0 0 38px rgba(234, 67, 53, .08), 0 8px 40px rgba(234, 67, 53, .38); }
-}
-.rec-mic.rec-on { animation: breathe-glow 2.2s ease-in-out infinite; }
+.mic-stage { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 
-.rec-caption { font-size: 14px; font-weight: 500; color: #9ca3af; min-height: 20px; letter-spacing: .3px; }
-.rec-mic.rec-on ~ .rec-caption { color: #fca5a5; }
-.rec-timer { font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 700; color: #9ca3af; letter-spacing: 1px; }
+/* 按钮基础：状态① 空闲 = 灰底 + 白图标 */
+.mic-btn {
+  width: var(--mic-size); height: var(--mic-size);
+  border-radius: 50%; border: none; cursor: pointer;
+  background: var(--mic-idle); color: #ffffff;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  transition: background .25s ease, color .25s ease, transform .12s ease;
+  -webkit-tap-highlight-color: transparent; outline: none;
+}
+/* 状态② 悬停 = 白底 + 红图标 */
+.mic-btn:hover {
+  background: var(--mic-hover-bg); color: var(--mic-rec);
+  transform: scale(1.03);
+}
+.mic-btn:active { transform: scale(.97); }
+
+/* 状态③ 录音中 = 红底 + 白图标 + 浅灰外环 */
+.mic-btn.recording {
+  background: var(--mic-rec); color: #ffffff; transform: scale(1);
+}
+.mic-btn.recording::before {
+  content: ''; position: absolute; inset: -7px;
+  border-radius: 50%; border: 3px solid var(--mic-ring);
+  animation: mic-ring-breathe 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes mic-ring-breathe {
+  0%, 100% { opacity: .55; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.03); }
+}
+
+/* SVG 图标 */
+.mic-icon { width: 52px; height: 52px; pointer-events: none; transition: transform .2s ease; }
+.mic-btn:hover .mic-icon { transform: scale(1.06); }
+
+/* 文案 & 计时器 */
+.mic-caption { font-size: 14.5px; font-weight: 600; color: #9ca3af; margin: 0; min-height: 22px; transition: color .25s ease; }
+.mic-timer { font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 800; color: #9ca3af; transition: color .25s ease; }
+
 #rec-hint { color: #6b7280 !important; }
 
 /* ===== 练习题库分类筛选 ===== */

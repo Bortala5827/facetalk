@@ -6,7 +6,7 @@
   <title>自我练习 · FaceTalk 面试搭子</title>
   <meta name="description" content="FaceTalk 面试搭子 — 录 30–90 秒即兴作答，AI 帮你点评。" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260807d" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260807e" />
 </head>
 <body>
   <header class="topbar">
@@ -38,17 +38,19 @@
       <p id="topic" class="topic-text">加载中…</p>
     </section>
 
-    <section class="card" id="rec-card">
-      <div class="rec-stage" id="rec-stage">
-        <button class="rec-mic" id="rec" aria-label="开始录音">
-          <svg class="rec-mic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <section class="mic-card" id="rec-card">
+      <div class="mic-stage">
+        <button class="mic-btn" id="rec" aria-label="开始录音" type="button">
+          <svg class="mic-icon" id="mic-icon" width="52" height="52" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="1" width="6" height="12" rx="3"/>
             <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
-            <line x1="12" y1="17" x2="12" y2="22"/>
+            <line x1="12" y1="17" x2="12" y2="1"/>
           </svg>
         </button>
-        <div class="rec-caption" id="rec-caption">点击开始录音</div>
-        <div class="rec-timer" id="rec-time">00:00</div>
+        <p class="mic-caption" id="rec-caption">点击开始录音</p>
+        <div class="mic-timer" id="rec-time">00:00</div>
       </div>
       <p class="field-hint" id="rec-hint">⏱ 至少录 <strong>30 秒</strong>（最多 90 秒，约满自动停止）。全程本地录音，不上传服务器。</p>
 
@@ -246,19 +248,19 @@
     function setStatus(m, err) { status.textContent = m || ''; status.style.color = err ? 'var(--danger)' : 'var(--ink-3)'; }
 
     function enterRecUI() {
-      recBtn.classList.add('rec-on');
+      recBtn.classList.add('recording');
       recCaption.textContent = '录音中… 再次点击停止';
-      recTime.style.color = '#ef4444';
+      recTime.style.color = '#fca5a5';
     }
     function exitRecUI() {
-      recBtn.classList.remove('rec-on');
+      recBtn.classList.remove('recording');
       recCaption.textContent = '点击开始录音';
       recTime.style.color = '';
     }
     // 重置为"可重新录制"状态（停止后仍未达时长/重录）
     function resetRecUI() {
       exitRecUI();
-      recBtn.classList.remove('rec-on');
+      recBtn.classList.remove('recording');
       recCaption.textContent = '点击开始录音';
     }
 
