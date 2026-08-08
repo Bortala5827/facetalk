@@ -90,6 +90,36 @@ a { color: inherit; text-decoration: none; }
   background: var(--accent-glow); pointer-events: none; z-index: 0;
 }
 .hero > * { position: relative; z-index: 1; }
+.hero-sub { font-size: 15px; color: var(--ink-2); margin: 12px 0 4px; line-height: 1.65; }
+
+/* 首页双入口卡片（亲和化命名：单人模拟 / 真人对练 / AI 面试官占位） */
+.entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 22px 0 6px; }
+@media (max-width: 560px) { .entry-grid { grid-template-columns: 1fr; } }
+.entry-card {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 20px 20px 18px; text-decoration: none; color: inherit;
+  box-shadow: var(--shadow); transition: transform .12s, box-shadow .18s, border-color .18s;
+}
+.entry-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: #dbe4ef; }
+.ec-emoji { font-size: 32px; line-height: 1; }
+.ec-title { font-size: 18px; font-weight: 800; color: var(--ink); letter-spacing: -.2px; }
+.ec-desc { font-size: 13.5px; color: var(--ink-2); line-height: 1.7; flex: 1; }
+.ec-desc b { color: var(--ink); font-weight: 700; }
+.ec-go { font-size: 13.5px; font-weight: 700; color: var(--accent); margin-top: 4px; }
+.entry-card.solo { border-top: 3px solid var(--accent); }
+.entry-card.pair { border-top: 3px solid #16a34a; }
+.entry-card.pair .ec-go { color: #15803d; }
+/* AI 面试官占位（为将来入口预留位置，自然扩展不突兀） */
+.entry-card.ai-soon {
+  border: 1px dashed #c4b5fd; background: linear-gradient(135deg, #f5f3ff 0%, #faf5ff 100%);
+  cursor: default;
+}
+.entry-card.ai-soon:hover { transform: none; box-shadow: var(--shadow); border-color: #c4b5fd; }
+.entry-card.ai-soon .ec-title { color: #6d28d9; }
+.entry-card.ai-soon .ec-desc { color: #5b21b6; }
+.entry-card.ai-soon .ec-go { color: #8b5cf6; }
+.ec-badge-soon { align-self: flex-start; font-size: 11px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 2px 9px; border-radius: 999px; }
 .eyebrow { font-size: 13px; font-weight: 700; color: var(--accent-d); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
 .hero h1 {
   font-size: 32px; line-height: 1.18; font-weight: 800; letter-spacing: -.6px;
@@ -878,3 +908,27 @@ a { color: inherit; text-decoration: none; }
 .chip { font-size: 12.5px; font-weight: 600; color: var(--ink-2); background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px; cursor: pointer; transition: all .12s; }
 .chip:hover { border-color: var(--accent); color: var(--accent-d); }
 .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ===== 自我练习 · 隐私说明 + 完成页 ===== */
+.privacy-banner {
+  font-size: 13px; line-height: 1.65; color: #1e4dba;
+  background: #eef4ff; border: 1px solid #d4e2ff; border-left: 4px solid var(--accent);
+  border-radius: 10px; padding: 10px 14px; margin: 0 0 18px;
+}
+.privacy-banner b { color: var(--accent-d); }
+
+/* 完成页 */
+.done-card { text-align: center; padding: 34px 24px 30px; border: 1px solid var(--accent-soft); }
+.done-emoji { font-size: 44px; line-height: 1; margin-bottom: 10px; }
+.done-title { justify-content: center; border-left: none; padding-left: 0; margin-bottom: 18px; }
+.done-summary {
+  text-align: left; background: var(--bg-soft); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: 14px 16px; margin: 0 auto 18px; max-width: 480px;
+}
+.done-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 14.5px; }
+.done-row:last-of-type { border-bottom: none; }
+.done-k { color: var(--ink-3); font-size: 13px; flex: 0 0 auto; }
+.done-v { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.done-q { margin: 10px 0 0; font-size: 14.5px; line-height: 1.7; color: var(--ink); }
+.done-tip { font-size: 12.5px; color: var(--ink-3); margin: 14px 0 0; line-height: 1.6; }
+.done-card .btn-primary { max-width: 360px; margin: 0 auto; }

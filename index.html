@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FaceTalk · 面试搭子</title>
-  <meta name="description" content="FaceTalk 面试搭子 — 双向互选，各录 30–90 秒试音，语音对练 + AI 点评。匿名、免费、即开即用。" />
+  <meta name="description" content="FaceTalk 面试搭子 — 单人模拟（80 道真题随机抽、本地录音不上传）与真人对练（随机匹配考友、互相录音互评）两种模式，随时开口练面试。" />
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260807b" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260807c" />
 </head>
 <body>
   <header class="topbar">
@@ -31,17 +31,29 @@
 
   <main class="container">
     <section class="hero">
-      <p class="eyebrow">双向互选 · 听声识搭子 · 试音互评</p>
+      <p class="eyebrow">面试练习 · 一个人练，两个人更真实</p>
       <h1>FaceTalk 面试搭子</h1>
-      <ol class="hero-steps">
-        <li><b>发个意图</b>，等人来申请</li>
-        <li><b>双方都同意</b> → 进房间，各录 30–90 秒试音</li>
-        <li><b>听声识搭子</b>，互相评价合不合拍</li>
-        <li><b>都通过</b> → 正式组队，深度对练</li>
-      </ol>
-      <div class="hero-cta">
-        <a class="btn-primary" href="/solo.html">🎤 想自己先练练？进自我练习</a>
-        <span class="hero-cta-sub">无人匹配也能开口 · 80 道真题随机抽 · AI 帮你点评</span>
+      <p class="hero-sub">无论有没有搭子，先把面试开口练起来。两种模式随你选，将来还有 AI 面试官随时陪练。</p>
+      <div class="entry-grid">
+        <a class="entry-card solo" href="/solo.html">
+          <span class="ec-emoji">🎤</span>
+          <span class="ec-title">单人模拟</span>
+          <span class="ec-desc">无需匹配，立即开练。<b>80 道真题随机抽取</b>，录 1–3 分钟作答，AI 帮你点评。<br><b>全程本地录音，不上传服务器。</b></span>
+          <span class="ec-go">立即开练 →</span>
+        </a>
+        <a class="entry-card pair" href="#pair">
+          <span class="ec-emoji">🤝</span>
+          <span class="ec-title">真人对练</span>
+          <span class="ec-desc">随机匹配考友，互相录音、互评，<b>体验真实面试场景</b>。<br><b>录音仅用于本次互评，结束后自动删除。</b></span>
+          <span class="ec-go">去匹配搭子 →</span>
+        </a>
+        <div class="entry-card ai-soon">
+          <span class="ec-badge-soon">即将上线</span>
+          <span class="ec-emoji">🤖</span>
+          <span class="ec-title">AI 面试官</span>
+          <span class="ec-desc">24 小时随时陪练，智能追问 + 实时点评，一个人也能有真人般的模拟面试。</span>
+          <span class="ec-go">敬请期待</span>
+        </div>
       </div>
     </section>
 
@@ -53,8 +65,9 @@
     </p>
 
     <!-- 发布意图 -->
-    <section class="card form-card">
-      <h2 class="sec-title">📋 发布找搭子意图</h2>
+    <section class="card form-card" id="pair">
+      <h2 class="sec-title">🤝 真人对练 · 发布找搭子意图</h2>
+      <p class="muted">随机匹配考友，互相录音、互评，体验真实面试场景。发布你的意图，等待考友申请；双方都点头才进房间，不合适早散伙不耽误。</p>
       <form id="intent-form" autocomplete="off">
         <div class="field-row">
           <label class="field">
