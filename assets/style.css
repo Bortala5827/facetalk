@@ -91,6 +91,9 @@ a { color: inherit; text-decoration: none; }
 }
 .hero > * { position: relative; z-index: 1; }
 .hero-sub { font-size: 15px; color: var(--ink-2); margin: 12px 0 4px; line-height: 1.65; }
+/* 首页英文 slogan（Hear Before You Pair）—— 弱化处理，做品牌副标，不抢中文主文案 */
+.hero-en { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; letter-spacing: .2px; }
+.hero-en .en { font-weight: 700; color: var(--accent-d); }
 
 /* 首页入口：真人对练主卡 + 单人模拟小入口 */
 .entry-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 22px 0 0; }
