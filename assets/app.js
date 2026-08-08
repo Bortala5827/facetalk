@@ -328,6 +328,14 @@
     } else {
       empty.hidden = false; empty.textContent = '加载失败，点刷新重试';
     }
+    // 待你同意的收到申请：点亮「我的搭子状态」折叠标题红点，防止漏同意（双向匹配关键）
+    var pendingIn = (typeof list !== 'undefined' && list) ? list.filter(function (a) { return a.status === 'pending'; }).length : 0;
+    var dot = $('statusDot'); var det = $('my-status');
+    if (dot) {
+      dot.hidden = pendingIn === 0;
+      dot.setAttribute('title', pendingIn > 0 ? ('有 ' + pendingIn + ' 个申请等你同意') : '');
+      det.classList.toggle('has-pending', pendingIn > 0);
+    }
   }
 
   async function decide(appId, decision) {

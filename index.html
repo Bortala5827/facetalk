@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260808b" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260808c" />
 </head>
 <body>
   <header class="topbar">
@@ -108,10 +108,11 @@
       <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px">你已发布意图，这里展示的是别人的意图。等搭子来申请，或等别人发布后刷新。</p>
     </section>
 
-    <!-- 我的搭子状态：个人 board 默认折叠，减少手机端首屏干扰 -->
-    <details class="b-collapse" id="my-status">
+    <!-- 我的搭子状态：默认展开（双向匹配需看到「收到的申请」并同意，不能藏起来）；可手动收起，有未处理申请时折叠标题显示红点提醒 -->
+    <details class="b-collapse" id="my-status" open>
       <summary class="b-sum">
         <span class="b-ttl">📊 我的搭子状态</span>
+        <span class="b-dot" id="statusDot" hidden></span>
         <span class="b-caret" aria-hidden="true">▾</span>
       </summary>
       <div class="b-inner">
@@ -233,7 +234,7 @@
 
   <script src="/assets/ft-util.js?v=20260806p"></script>
   <script src="/assets/wall.js?v=20260808a"></script>
-  <script src="/assets/app.js?v=20260806p"></script>
+  <script src="/assets/app.js?v=20260808c"></script>
   <script>
     // 从 RCJ 任一站点（955827.xyz 任意子域）进来时，显示「← 返回」并跳回来源页，形成产品矩阵闭环
     (function () {
