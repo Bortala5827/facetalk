@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260808d" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260808e" />
 </head>
 <body>
   <header class="topbar">
@@ -33,7 +33,10 @@
         🔒 <b>隐私说明：</b>真人对练的录音<b>仅用于本次互评</b>，双方都评价完成后会<b>立即从服务器删除</b>，本地与服务器都不留存；互评结束、房间解散后，所有对话也随之清除。
       </p>
 
-      <p id="peer-geo" class="peer-geo" hidden></p>
+      <details id="peer-geo" class="peer-geo" hidden>
+        <summary class="peer-geo-sum">📍 查看对方大致位置（可能不准）</summary>
+        <div class="peer-geo-inner"></div>
+      </details>
 
       <div class="room-meta">
         <div><span class="muted">对方信誉</span> <strong id="other-rep">--</strong></div>
@@ -382,24 +385,23 @@
       document.getElementById('other-rep').textContent = p.otherRep != null ? p.otherRep : '--';
       document.getElementById('room-mode').textContent = p.mode === 'video' ? '📹 视频' : '🎙 语音优先';
 
-      // 匹配成功彩蛋：展示对方 IP 城市 + 同城/跨省 + 相距距离 + 在线状态
+      // 对方大致位置：改为点击展开（IP 定位不准，不自动展示避免误导）
       var pgEl = document.getElementById('peer-geo');
-      if (p.status !== 'closed') {
+      var pgInner = pgEl ? pgEl.querySelector('.peer-geo-inner') : null;
+      if (p.status !== 'closed' && pgInner) {
         var onlineTxt = (p.peerOnline ? '🟢 对方在线' : '⚪ 对方离线');
         if (p.peerCity) {
-          var pgeo = '📍 你的搭子在【' + esc(p.peerCity) + '】';
+          var pgeo = '你的搭子在【' + esc(p.peerCity) + '】';
           if (p.peerGeoTag) pgeo += ' · ' + p.peerGeoTag;
           if (p.peerDistanceKm != null) pgeo += ' · 相距约 ' + p.peerDistanceKm + ' km';
           pgeo += ' · ' + onlineTxt;
-          pgEl.textContent = pgeo;
-          pgEl.hidden = false;
-          if (!peerToastShown) { peerToastShown = true; toast('🎉 匹配成功！你的搭子在【' + esc(p.peerCity) + '】'); }
+          pgInner.innerHTML = '<p class="muted" style="margin:0;font-size:13px">' + esc(pgeo) + '</p><p class="muted" style="margin:6px 0 0;font-size:12px;color:var(--ink-3)">⚠ 基于 IP 估算，VPN/代理可能导致偏差</p>';
         } else {
-          // 还没拿到对方城市（对方尚未触发 geo 抓取）时，至少展示在线状态
-          pgEl.textContent = onlineTxt;
-          pgEl.hidden = false;
+          pgInner.innerHTML = '<p class="muted" style="margin:0;font-size:13px">' + onlineTxt + '</p><p class="muted" style="margin:6px 0 0;font-size:12px;color:var(--ink-3)">对方尚未触发定位</p>';
         }
-      } else {
+        pgEl.hidden = false;
+        if (!peerToastShown) { peerToastShown = true; toast('🎉 匹配成功！'); }
+      } else if (pgEl) {
         pgEl.hidden = true;
       }
       // 会话倒计时：只在本轮数据显式携带 remaining 时更新。
