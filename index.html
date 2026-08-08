@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FaceTalk · 面试搭子</title>
-  <meta name="description" content="FaceTalk 面试搭子 — 找同岗考友语音对练，像真面试一样开口。录音互评，互相打气。" />
+  <meta name="description" content="FaceTalk 面试搭子 — 随机匹配同岗考友，语音对练、录音互评，像真面试一样开口练。" />
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
@@ -55,7 +55,7 @@
     <!-- 发布意图 -->
     <section class="card form-card" id="pair">
       <h2 class="sec-title">📋 发布你的意图</h2>
-      <p class="muted">发布你的意图，等考友来申请；双方都点头才进房间。录音仅用于本次互评，结束后自动删除。</p>
+      <p class="muted">考友来申请你，双方同意后进房间；录音仅用于本次互评，结束后自动删除。</p>
       <form id="intent-form" autocomplete="off">
         <div class="field-row">
           <label class="field">
@@ -105,7 +105,7 @@
       </div>
       <div id="browse-list" class="list"></div>
       <p class="list-empty" id="browse-empty">加载中…</p>
-      <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px">你已发布意图，这里展示的是别人的意图。等搭子来申请，或等别人发布后刷新。</p>
+      <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px">你已发布意图，这里只看别人的。刷新可见新上线的搭子。</p>
     </section>
 
     <!-- 我的搭子状态：默认展开（双向匹配需看到「收到的申请」并同意，不能藏起来）；可手动收起，有未处理申请时折叠标题显示红点提醒 -->
@@ -124,7 +124,7 @@
           <span class="muted" id="mine-hint"></span>
         </div>
         <div id="mine-list" class="list"></div>
-        <p class="list-empty" id="mine-empty" hidden>你还没发布意图。发布后会出现在这里，方便随时看搭子申请情况，避免重复发布。</p>
+        <p class="list-empty" id="mine-empty" hidden>还没有。发布意图后，你的申请情况会出现在这里。</p>
       </section>
 
       <!-- 我的邀约：收到 -->
@@ -151,14 +151,14 @@
     <!-- 搭子房间 -->
     <section class="card" id="room-card" hidden>
       <h2 class="sec-title">🤝 搭子已匹配！</h2>
-      <p class="muted">双方已互选成功，进入 1:1 房间开始互练。</p>
+      <p class="muted">匹配成功，进入 1:1 房间开始互练。</p>
       <a class="btn-primary" id="room-enter" href="#">进入搭子房间 →</a>
     </section>
 
     <!-- 互评 -->
     <section class="card form-card" id="rate-card" hidden>
       <h2 class="sec-title">⭐ 本次互练评价</h2>
-      <p class="muted">互评完成、且双方都愿意，才能解锁「再约一次」。</p>
+      <p class="muted">互评完成、双方都愿意，才能再约一次。</p>
       <form id="rate-form" autocomplete="off">
         <label class="field">
           <span class="field-label">给搭子打分 <em>*</em></span>
@@ -182,7 +182,7 @@
       </form>
     </section>
 
-    <p class="foot-note">请注意隐私，勿留身份证、住址等敏感信息。本工具仅做匹配，实际连麦走腾讯会议。</p>
+    <p class="foot-note">隐私提醒：勿留身份证、住址等敏感信息；连麦走腾讯会议。</p>
 
   <!-- 全站公开留言墙（2026-08-08 改默认折叠，移动端友好）：首页可见，7 天自动清理 -->
   <details class="wall" id="wall">
@@ -204,11 +204,9 @@
         <ul>
           <li>🎧 <b>听声识搭子 · 升级</b>：录完试音留声，后面上线的搭子也能听你、组队——错峰也能匹配，不再卡"同时在线人少"。</li>
         </ul>
-        <p class="wn-foot">想优先做哪个？来留言墙说说你的想法 👇</p>
       </div>
 
-      <p class="wall-sub">把备考心得、考场经验、组队需求留在这里，互相打气 🤝 文明留言，禁止广告与不良信息。</p>
-      <div class="wall-safety">🚨 <b>温馨提示</b>：为了彼此安全，<b>不建议</b>在留言里留手机号、微信、QQ 等联系方式，避免被骗。本站仅做陌生人面试搭子练习，私下加好友请谨慎。</div>
+      <p class="wall-sub">文明留言，禁止广告与不良信息。为彼此安全，<b>勿留手机号、微信等联系方式</b>，防骗；本站仅做陌生人面试搭子练习。</p>
       <div class="wall-form">
         <div class="wall-form-row">
           <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名搭子」）" maxlength="20">
