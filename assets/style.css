@@ -287,6 +287,18 @@ a { color: inherit; text-decoration: none; }
 .wall-caret{font-size:15px;color:var(--ink-3);transition:transform .2s ease;line-height:1;}
 .wall[open]>summary .wall-caret{transform:rotate(180deg);}
 .wall-inner{margin-top:6px;}
+
+/* 首页个人状态折叠（极简模式：避免手机端 4 个 board 占满首屏） */
+.b-collapse{margin:28px 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);overflow:hidden;}
+.b-collapse>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:15px 18px;}
+.b-collapse>summary::-webkit-details-marker{display:none;}
+.b-collapse>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+.b-ttl{font-size:16px;font-weight:800;color:var(--ink);}
+.b-caret{font-size:15px;color:var(--ink-3);transition:transform .2s ease;}
+.b-collapse[open]>summary .b-caret{transform:rotate(180deg);}
+.b-inner{padding:0 18px 10px;}
+.b-inner .board{margin:14px 0;}
+.b-inner .board:first-child{margin-top:2px;}
 .wall-ttl{display:flex;align-items:center;gap:9px;}
 .wall-emoji{font-size:22px;line-height:1;}
 .wall h2{margin:0;font-size:20px;color:var(--ink);font-weight:800;letter-spacing:-.3px;}
@@ -329,7 +341,11 @@ a { color: inherit; text-decoration: none; }
 .wall.manager .wall-del{opacity:1;pointer-events:auto;}
 .wall-del:hover{background:#dc2626;color:#fff;}
 .wall-tip-msg{font-size:12.5px;color:#dc2626;margin-top:10px;padding-left:2px;}
-@media (max-width:560px){ .wall{margin-top:28px;padding:16px 16px 18px;} .wall-form-row{flex-direction:column;} .wall-post{width:100%;} .wall-head{flex-wrap:wrap;gap:6px;} .wall-head-right{gap:6px;} .wall-caret{font-size:14px;} }
+@media (max-width:560px){
+  .wall{margin-top:28px;padding:16px 16px 18px;} .wall-form-row{flex-direction:column;} .wall-post{width:100%;} .wall-head{flex-wrap:wrap;gap:6px;} .wall-head-right{gap:6px;} .wall-caret{font-size:14px;}
+  .board{margin:20px 0;} .b-collapse{margin:20px 0;} .b-collapse>summary{padding:14px 16px;} .b-ttl{font-size:15px;} .b-inner{padding:0 16px 8px;}
+  .entry-card{padding:18px 16px;} .form-card{padding:18px 16px;}
+}
 /* 管理入口：显眼红色按钮，避免找不到 */
 .admin-link { display:inline-block; margin-left:4px; padding:4px 12px; background:#E24B4A; color:#fff !important; border-radius:8px; font-weight:600; font-size:12.5px; }
 .admin-link:hover { text-decoration:none; opacity:.9; }

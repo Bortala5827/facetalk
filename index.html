@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260808a" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260808b" />
 </head>
 <body>
   <header class="topbar">
@@ -31,14 +31,14 @@
 
   <main class="container">
     <section class="hero">
-      <p class="eyebrow">面试练习 · 一个人练，两个人更真实</p>
+      <p class="eyebrow">面试练习 · 随机匹配考友，互相录音互评</p>
       <h1>FaceTalk 面试搭子</h1>
-      <p class="hero-sub">无论有没有搭子，先把面试开口练起来。两种模式随你选。</p>
+      <p class="hero-sub">随机匹配考友，互相录音、互评，练出真实面试感。</p>
       <div class="entry-grid">
         <a class="entry-card pair" href="#pair">
           <span class="ec-emoji">🤝</span>
           <span class="ec-title">真人对练</span>
-          <span class="ec-desc">随机匹配考友，互相录音、互评，<b>体验真实面试场景</b>。<br><b>录音仅用于本次互评，结束后自动删除。</b></span>
+          <span class="ec-desc">随机匹配考友，互相录音、互评，<b>体验真实面试场景</b>。</span>
           <span class="ec-go">去匹配搭子 →</span>
         </a>
       </div>
@@ -55,7 +55,7 @@
     <!-- 发布意图 -->
     <section class="card form-card" id="pair">
       <h2 class="sec-title">🤝 真人对练 · 发布找搭子意图</h2>
-      <p class="muted">随机匹配考友，互相录音、互评，体验真实面试场景。发布你的意图，等待考友申请；双方都点头才进房间，不合适早散伙不耽误。</p>
+      <p class="muted">发布你的意图，等考友来申请；双方都点头才进房间。录音仅用于本次互评，结束后自动删除。</p>
       <form id="intent-form" autocomplete="off">
         <div class="field-row">
           <label class="field">
@@ -97,17 +97,7 @@
       </form>
     </section>
 
-    <!-- 我发布的需求 -->
-    <section class="board" id="mine-board">
-      <div class="board-head">
-        <h2 class="sec-title">📋 我发布的需求</h2>
-        <span class="muted" id="mine-hint"></span>
-      </div>
-      <div id="mine-list" class="list"></div>
-      <p class="list-empty" id="mine-empty" hidden>你还没发布意图。发布后会出现在这里，方便随时看搭子申请情况，避免重复发布。</p>
-    </section>
-
-    <!-- 浏览搭子 -->
+    <!-- 浏览搭子（核心发现面，常驻可见） -->
     <section class="board">
       <div class="board-head">
         <h2 class="sec-title">🔍 找搭子（他人开放意图）</h2>
@@ -118,23 +108,44 @@
       <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px">你已发布意图，这里展示的是别人的意图。等搭子来申请，或等别人发布后刷新。</p>
     </section>
 
-    <!-- 我的邀约：收到 -->
-    <section class="board">
-      <div class="board-head">
-        <h2 class="sec-title">📨 收到的申请</h2>
-      </div>
-      <div id="inbox-list" class="list"></div>
-      <p class="list-empty" id="inbox-empty">加载中…</p>
-    </section>
+    <!-- 我的搭子状态：个人 board 默认折叠，减少手机端首屏干扰 -->
+    <details class="b-collapse" id="my-status">
+      <summary class="b-sum">
+        <span class="b-ttl">📊 我的搭子状态</span>
+        <span class="b-caret" aria-hidden="true">▾</span>
+      </summary>
+      <div class="b-inner">
 
-    <!-- 我的邀约：发出 -->
-    <section class="board">
-      <div class="board-head">
-        <h2 class="sec-title">📤 我发出的申请</h2>
+      <!-- 我发布的需求 -->
+      <section class="board" id="mine-board">
+        <div class="board-head">
+          <h2 class="sec-title">📋 我发布的需求</h2>
+          <span class="muted" id="mine-hint"></span>
+        </div>
+        <div id="mine-list" class="list"></div>
+        <p class="list-empty" id="mine-empty" hidden>你还没发布意图。发布后会出现在这里，方便随时看搭子申请情况，避免重复发布。</p>
+      </section>
+
+      <!-- 我的邀约：收到 -->
+      <section class="board">
+        <div class="board-head">
+          <h2 class="sec-title">📨 收到的申请</h2>
+        </div>
+        <div id="inbox-list" class="list"></div>
+        <p class="list-empty" id="inbox-empty">加载中…</p>
+      </section>
+
+      <!-- 我的邀约：发出 -->
+      <section class="board">
+        <div class="board-head">
+          <h2 class="sec-title">📤 我发出的申请</h2>
+        </div>
+        <div id="out-list" class="list"></div>
+        <p class="list-empty" id="out-empty">加载中…</p>
+      </section>
+
       </div>
-      <div id="out-list" class="list"></div>
-      <p class="list-empty" id="out-empty">加载中…</p>
-    </section>
+    </details>
 
     <!-- 搭子房间 -->
     <section class="card" id="room-card" hidden>
