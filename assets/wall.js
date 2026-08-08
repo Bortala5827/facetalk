@@ -123,7 +123,9 @@
 
     var manage = $('#wallManage');
     var wallEl = $('#wall');
-    if (manage) manage.addEventListener('click', function () {
+    if (manage) manage.addEventListener('click', function (e) {
+      e.preventDefault();       // 阻止 <summary> 内的点击触发展开/收起
+      e.stopPropagation();
       var on = manage.classList.toggle('on');
       if (wallEl) wallEl.classList.toggle('manager', on);
       if (on) {

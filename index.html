@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260807c" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260808a" />
 </head>
 <body>
   <header class="topbar">
@@ -41,13 +41,8 @@
           <span class="ec-desc">随机匹配考友，互相录音、互评，<b>体验真实面试场景</b>。<br><b>录音仅用于本次互评，结束后自动删除。</b></span>
           <span class="ec-go">去匹配搭子 →</span>
         </a>
-        <a class="entry-card solo" href="/solo.html">
-          <span class="ec-emoji">🎤</span>
-          <span class="ec-title">单人模拟</span>
-          <span class="ec-desc">无需匹配，立即开练。<b>80 道真题随机抽取</b>，录 1–3 分钟作答，AI 帮你点评。<br><b>全程本地录音，不上传服务器。</b></span>
-          <span class="ec-go">立即开练 →</span>
-        </a>
       </div>
+      <p class="solo-mini">🎤 想一个人先练练？<a href="/solo.html">单人模拟（本地录音，不上传）→</a></p>
     </section>
 
     <!-- 我的信誉（桌面端按「信誉/匿名/在线」三栏横铺，避免左对齐单行空洞） -->
@@ -177,37 +172,41 @@
 
     <p class="foot-note">请注意隐私，勿留身份证、住址等敏感信息。本工具仅做匹配，实际连麦走腾讯会议。</p>
 
-  <!-- 全站公开留言墙（2026-08-04 升级 UI）：首页可见，7 天自动清理 -->
-  <section class="wall" id="wall">
-    <header class="wall-head">
+  <!-- 全站公开留言墙（2026-08-08 改默认折叠，移动端友好）：首页可见，7 天自动清理 -->
+  <details class="wall" id="wall">
+    <summary class="wall-head">
       <div class="wall-ttl">
         <span class="wall-emoji">💬</span>
         <h2>搭子留言墙</h2>
         <span class="wall-badge">7 天自动清理</span>
       </div>
-      <button class="wall-manage" id="wallManage">🗑 管理</button>
-    </header>
-
-    <!-- 下一版本预告（静态板块，不碰后端；异步池 / 双会议 / 自练回归均在此预告，避免现在硬搭） -->
-    <div class="wall-next" aria-label="下一版本预告">
-      <span class="wn-ttl">🔜 下一版本预告</span>
-      <ul>
-        <li>🎧 <b>听声识搭子 · 升级</b>：录完试音留声，后面上线的搭子也能听你、组队——错峰也能匹配，不再卡"同时在线人少"。</li>
-      </ul>
-      <p class="wn-foot">想优先做哪个？来留言墙说说你的想法 👇</p>
-    </div>
-
-    <p class="wall-sub">把备考心得、考场经验、组队需求留在这里，互相打气 🤝 文明留言，禁止广告与不良信息。</p>
-    <div class="wall-safety">🚨 <b>温馨提示</b>：为了彼此安全，<b>不建议</b>在留言里留手机号、微信、QQ 等联系方式，避免被骗。本站仅做陌生人面试搭子练习，私下加好友请谨慎。</div>
-    <div class="wall-form">
-      <div class="wall-form-row">
-        <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名搭子」）" maxlength="20">
-        <button class="wall-post" id="wallPost">✨ 发布留言</button>
+      <div class="wall-head-right">
+        <button class="wall-manage" id="wallManage" type="button">🗑 管理</button>
+        <span class="wall-caret" aria-hidden="true">▾</span>
       </div>
-      <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300"></textarea>
+    </summary>
+    <div class="wall-inner">
+      <!-- 下一版本预告（静态板块，不碰后端） -->
+      <div class="wall-next" aria-label="下一版本预告">
+        <span class="wn-ttl">🔜 下一版本预告</span>
+        <ul>
+          <li>🎧 <b>听声识搭子 · 升级</b>：录完试音留声，后面上线的搭子也能听你、组队——错峰也能匹配，不再卡"同时在线人少"。</li>
+        </ul>
+        <p class="wn-foot">想优先做哪个？来留言墙说说你的想法 👇</p>
+      </div>
+
+      <p class="wall-sub">把备考心得、考场经验、组队需求留在这里，互相打气 🤝 文明留言，禁止广告与不良信息。</p>
+      <div class="wall-safety">🚨 <b>温馨提示</b>：为了彼此安全，<b>不建议</b>在留言里留手机号、微信、QQ 等联系方式，避免被骗。本站仅做陌生人面试搭子练习，私下加好友请谨慎。</div>
+      <div class="wall-form">
+        <div class="wall-form-row">
+          <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名搭子」）" maxlength="20">
+          <button class="wall-post" id="wallPost">✨ 发布留言</button>
+        </div>
+        <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300"></textarea>
+      </div>
+      <div class="wall-list" id="wallList"><div class="wall-empty"><span class="we-emoji">📝</span>正在加载留言…</div></div>
     </div>
-    <div class="wall-list" id="wallList"><div class="wall-empty"><span class="we-emoji">📝</span>正在加载留言…</div></div>
-  </section>
+  </details>
 
   </main>
 
@@ -222,7 +221,7 @@
   </footer>
 
   <script src="/assets/ft-util.js?v=20260806p"></script>
-  <script src="/assets/wall.js?v=20260807a"></script>
+  <script src="/assets/wall.js?v=20260808a"></script>
   <script src="/assets/app.js?v=20260806p"></script>
   <script>
     // 从 RCJ 任一站点（955827.xyz 任意子域）进来时，显示「← 返回」并跳回来源页，形成产品矩阵闭环
