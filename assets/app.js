@@ -455,14 +455,16 @@
     box.appendChild(div);
   }
 
+  // v2.4：进入房间前实时校验状态，防止进入已解散/关闭/已退出的死房间
   async function enterRoom() {
     var r = await api('GET', '/api/pair');
-    if (r.status === 200 && r.data.pair && r.data.pair.pairId) {
-      // v2.3 把 me 编码进 URL，无痕模式刷新房间页时从 URL 拿身份，不依赖 localStorage
-      location.href = '/pair.html?pair=' + encodeURIComponent(r.data.pair.pairId) + '&me=' + encodeURIComponent(me);
-    } else {
-      toast('当前房间不可用，请到主页底部查看', true);
+    var p = r.status === 200 ? r.data.pair : null;
+    if (!p || p.status === 'closed' || p.dissolving || p.left) {
+      toast(p ? '房间已解散，无法进入' : '当前没有可用房间', true);
+      checkPair(); // 刷新卡片状态
+      return;
     }
+    location.href = '/pair.html?pair=' + encodeURIComponent(p.pairId) + '&me=' + encodeURIComponent(me);
   }
 
   async function cancelApply(appId) {
@@ -630,6 +632,12 @@
     loadBrowse(); loadInbox(); loadOut(); loadMine(); checkPair();
     setInterval(function () { loadBrowse(); loadInbox(); loadOut(); loadMine(); renderRep(); }, 15000);
     setInterval(checkPair, 5000);
+    // v2.4：拦截「进入搭子房间」按钮，点击时实时校验而非依赖轮询刷新的 href
+    var re = $('room-enter');
+    if (re) re.addEventListener('click', function (e) {
+      e.preventDefault();
+      enterRoom();
+    });
   }
   boot();
 })();

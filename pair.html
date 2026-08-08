@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260808e" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260808h" />
 </head>
 <body>
   <header class="topbar">
@@ -1023,7 +1023,19 @@
     // 轮询兜底（SSE 不可用时）：5s 一次，保证对方退出时及时刷新（配合 SSE 实时推近乎即时）
     // 录音 / 上传过程中跳过试音状态刷新，避免把用户正在操作的界面切走
     setInterval(function(){
-      api('GET').then(function(r){ if(r.data.pair) render(r.data.pair); });
+      api('GET').then(function(r){
+        // v2.4：过期/无权限时提示并跳回首页，不再卡死在旧界面
+        if(!r.data.pair){
+          var room = document.getElementById('room');
+          if(room && !room.dataset.expired){
+            room.dataset.expired = '1';
+            room.innerHTML = '<p class="muted" style="text-align:center;padding:60px 20px;">⏰ 房间已过期或已关闭。<br><a href="/">← 返回首页</a></p>';
+            setTimeout(function(){ location.href = '/'; }, 4000);
+          }
+          return;
+        }
+        render(r.data.pair);
+      });
       if (!vBusy && !vRec) loadVoice();
     }, 5000);
   })();

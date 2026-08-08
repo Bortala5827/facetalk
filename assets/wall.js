@@ -59,7 +59,11 @@
       var sig = items.map(function (it) { return it.id; }).join('|');
       if (sig === prevSig) return; // 列表无变化，跳过重绘（轮询去抖）
       prevSig = sig;
-      list.innerHTML = items.map(function (it) {
+      // v2.4：最新 2 条常驻可见，旧留言收进 <details> 折叠
+      var SHOW_RECENT = 2;
+      var recent = items.slice(0, SHOW_RECENT);
+      var older = items.slice(SHOW_RECENT);
+      function renderItem(it) {
         var av = avatarFor(it.name || '匿名搭子');
         return '<div class="wall-item" data-id="' + esc(it.id) + '">' +
           '<div class="wi-avatar" style="background:' + av.bg + '">' + esc(av.ch) + '</div>' +
@@ -70,7 +74,13 @@
           '</div>' +
           '<button class="wall-del" data-id="' + esc(it.id) + '" title="删除">✕</button>' +
           '</div>';
-      }).join('');
+      }
+      var html = recent.map(renderItem).join('');
+      if (older.length > 0) {
+        html += '<details class="wall-older"><summary class="wall-older-sum">查看更早的 ' + older.length + ' 条留言 ▾</summary>' +
+          older.map(renderItem).join('') + '</details>';
+      }
+      list.innerHTML = html;
     } catch (e) {
       list.innerHTML = '<div class="wall-empty">网络异常，稍后重试</div>';
     }

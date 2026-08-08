@@ -376,6 +376,13 @@ a { color: inherit; text-decoration: none; }
 .wall.manager .wall-del{opacity:1;pointer-events:auto;}
 .wall-del:hover{background:#dc2626;color:#fff;}
 .wall-tip-msg{font-size:12.5px;color:#dc2626;margin-top:10px;padding-left:2px;}
+/* v2.4：留言墙「更早留言」折叠区 */
+.wall-older{margin-top:4px;border:1px dashed var(--line);border-radius:12px;overflow:hidden;}
+.wall-older>summary{list-style:none;cursor:pointer;padding:10px 14px;font-size:13px;color:var(--ink-2);background:#fafbfc;display:flex;align-items:center;gap:6px;}
+.wall-older>summary::-webkit-details-marker{display:none;}
+.wall-older>summary:hover{color:var(--ink);background:#f0f3f7;}
+.wall-older[open]>summary{border-bottom:1px solid var(--line);color:var(--ink);}
+.wall-older-sum{font-weight:600;}
 @media (max-width:560px){
   .wall{margin-top:28px;padding:16px 16px 18px;} .wall-form-row{flex-direction:column;} .wall-post{width:100%;} .wall-head{flex-wrap:wrap;gap:6px;} .wall-head-right{gap:6px;} .wall-caret{font-size:14px;}
   .board{margin:20px 0;} .b-collapse{margin:20px 0;} .b-collapse>summary{padding:14px 16px;} .b-ttl{font-size:15px;} .b-inner{padding:0 16px 8px;}
