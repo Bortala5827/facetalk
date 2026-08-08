@@ -152,6 +152,9 @@
       $('i-city').value = ''; $('i-meet').value = ''; $('i-note').value = '';
       renderMineOptimistic({ id: r.data.id, role: body.role, city: body.city, mode: body.mode, note: body.note });
       loadBrowse(); loadInbox(); loadMine();
+      // 发布成功后自动折叠表单区，让首屏聚焦「找搭子」
+      var pd = document.getElementById('pair-details');
+      if (pd) pd.removeAttribute('open');
     } else {
       toast('发布失败：' + (r.data.error || r.status), true);
     }

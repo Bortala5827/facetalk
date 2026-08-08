@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260807c" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260808d" />
 </head>
 <body>
   <header class="topbar">
@@ -21,7 +21,12 @@
 
   <main class="container">
     <section class="card" id="room">
-      <h2 class="sec-title">🤝 搭子房间</h2>
+      <details class="room-info-collapse">
+        <summary class="room-info-sum">
+          <span class="ris-ttl">🤝 搭子房间</span>
+          <span class="ris-caret" aria-hidden="true">▾</span>
+        </summary>
+        <div class="ris-inner">
       <p class="muted">双方已互选成功。语音优先、限时互练，结束互评。</p>
 
       <p class="privacy-banner">
@@ -39,6 +44,8 @@
       <p id="dissolve-tip" class="dissolve-tip" hidden></p>
 
       <div id="meet-box" class="meet-box"></div>
+        </div>
+      </details>
 
       <section class="card" id="info-card" style="margin-top:14px">
         <h2 class="sec-title">🔗 联机信息 / 📡 备选会议号</h2>
@@ -658,7 +665,7 @@
     // 录音全程只在内存里流转：录 → base64 分片上传 → 对方听完评完，服务端立刻物理删除。
     // 本地不写 localStorage/IndexedDB，播放用 Blob URL，用完即 revoke。
     var MIN_SEC = 30, MAX_SEC = 90;
-    var vMeta = null, vGate = 'skip', vRec = null, vStream = null, vParts = [], vT0 = 0, vTimer = null, vBlobUrl = null, vBusy = false, vAppendMode = false;
+    var vMeta = null, vGate = 'skip', vRec = null, vStream = null, vParts = [], vT0 = 0, vTimer = null, vBlobUrl = null, vBusy = false, vAppendMode = false, vPassedScrolled = false;
 
     function vGet(extra) {
       var u = new URL('/api/voice', location.origin);
@@ -691,6 +698,12 @@
       var unlocked = (vGate === 'skip' || vGate === 'passed');
       document.getElementById('msg-card').hidden = !unlocked;
       document.getElementById('info-card').hidden = !unlocked;
+      // 双方试音互评结束、都愿意继续组队 → 自动跳到「联机信息 / 备选会议号」，优先引导互留会议号（只滚一次，避免轮询反复跳）
+      if (vGate === 'passed' && !vPassedScrolled) {
+        vPassedScrolled = true;
+        var ic = document.getElementById('info-card');
+        if (ic) ic.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       // 2.1 面试间同样受试音门禁保护：没互评通过不给开面试
       var ivc = document.getElementById('iv-card');
       if (ivc) {

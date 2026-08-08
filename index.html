@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260808c" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260808d" />
 </head>
 <body>
   <header class="topbar">
@@ -35,7 +35,7 @@
       <h1>FaceTalk 面试搭子</h1>
       <p class="hero-sub">一个人练没感觉？找个同岗考友，像真面试一样开口。</p>
       <div class="entry-grid">
-        <a class="entry-card pair" href="#pair">
+        <a class="entry-card pair" href="#pair-details">
           <span class="ec-emoji">🤝</span>
           <span class="ec-title">真人对练</span>
           <span class="ec-desc">发布意图 → 等搭子申请 → 双方点头进房间 → <b>60 秒试音互评</b> → 决定是否继续组队</span>
@@ -52,9 +52,13 @@
       <span class="me-cell online-pill" id="online-count" hidden></span>
     </p>
 
-    <!-- 发布意图 -->
-    <section class="card form-card" id="pair">
-      <h2 class="sec-title">📋 发布你的意图</h2>
+    <!-- 发布意图（发布成功后自动折叠） -->
+    <details class="form-collapse" id="pair-details" open>
+      <summary class="form-sum">
+        <span class="fs-ttl">📋 发布你的意图</span>
+        <span class="fs-caret" aria-hidden="true">▾</span>
+      </summary>
+      <div class="fs-inner">
       <p class="muted">考友来申请你，双方同意后进房间；录音仅用于本次互评，结束后自动删除。</p>
       <form id="intent-form" autocomplete="off">
         <div class="field-row">
@@ -95,7 +99,8 @@
         <button type="submit" class="btn-primary">发布意图 →</button>
         <p class="form-msg" id="i-msg" hidden></p>
       </form>
-    </section>
+      </div>
+    </details>
 
     <!-- 浏览搭子（核心发现面，常驻可见） -->
     <section class="board">
