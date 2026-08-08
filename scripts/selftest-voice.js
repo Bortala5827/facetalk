@@ -1,5 +1,5 @@
 'use strict';
-// 面试搭子 2.0 · 60 秒试音互评 端到端逻辑自测
+// 面试搭子 2.0 · 试音互评 端到端逻辑自测（录音时长 30~90 秒）
 // 直接导入生产函数 functions/api/voice.js 的 onRequest，用内存 mock D1 跑通完整链路，
 // 覆盖：init/chunk/done/fetch 回听上限、双方互评即焚、双方婉拒自动解散、时长校验、重录、表缺失降级。
 // 运行：node scripts/selftest-voice.js  （接入 .github/workflows/selftest.yml，push 到 main 自动跑）
@@ -262,7 +262,7 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
     const ia = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
     check('init 返回 clipId 且带题目', !!ia.clipId && ia.clipId.startsWith('vc_') && !!ia.topic);
-    check('init 返回最短 50 / 最长 60', ia.minSec === 50 && ia.maxSec === 60);
+    check('init 返回最短 30 / 最长 90', ia.minSec === 30 && ia.maxSec === 90);
     const ib = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'init' })))).json();
 
     // A 上传 2 片 + done(55s)
@@ -329,17 +329,17 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
     check('婉拒后录音焚毁', db._store.voice_clips.length === 0);
   }
 
-  console.log('\n=== 4) 时长校验：<30s 与 >65s 都拒收并删除 ===');
+  console.log('\n=== 4) 时长校验：<30s 与 >90s 都拒收并删除 ===');
   {
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    await record(db, 'uA', 20); // 触发 done 时 dur<50（新 60 秒规则下限）
+    await record(db, 'uA', 20); // dur<30（当前下限 30s）→ too_short 删除
     const gShort = await gate(db, 'uA');
-    check('不足 50s → 录音被删，gate 回到 record', gShort.gate === 'record' && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);
-    // 重新录但 done 传 70s
+    check('不足 30s → 录音被删，gate 回到 record', gShort.gate === 'record' && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);
+    // 重新录但 done 传 100s（>90 上限）→ too_long 拒收
     const init = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
     for (let i = 0, seq = 0; i < 2; i++, seq++) await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: init.clipId, seq, data: CHUNK })));
-    const longRes = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: init.clipId, dur: 70 })))).json();
-    check('超过 65s → 拒收 too_long', !longRes.ok && longRes.error === 'too_long');
+    const longRes = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: init.clipId, dur: 100 })))).json();
+    check('超过 90s → 拒收 too_long', !longRes.ok && longRes.error === 'too_long');
   }
 
   console.log('\n=== 5) 单片过大被拦 + 重录规则 ===');

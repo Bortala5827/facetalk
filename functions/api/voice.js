@@ -321,7 +321,7 @@ async function metaOf(db, m, pairId) {
   return {
     ok: true, ready: true, gate,
     topic: topicFor(pairId),
-    minSec: MIN_SEC, maxSec: 60, maxPlays: MAX_PLAYS, maxAttempts: MAX_ATTEMPTS,
+    minSec: MIN_SEC, maxSec: MAX_SEC, maxPlays: MAX_PLAYS, maxAttempts: MAX_ATTEMPTS,
     mineClips: mineClips,
     myClipCount: mineClips.length,
     canAppend: mineClips.length < MAX_ATTEMPTS && !peerReviewed && !ratings._voice,
