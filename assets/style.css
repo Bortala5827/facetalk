@@ -1007,6 +1007,30 @@ a { color: inherit; text-decoration: none; }
 .done-tip { font-size: 12.5px; color: var(--ink-3); margin: 14px 0 0; line-height: 1.6; }
 .done-card .btn-primary { max-width: 360px; margin: 0 auto; }
 
+/* 独练双模式：练题 / 自由说（SoloSpeak 模式） */
+.smode-switch {
+  display: inline-flex; gap: 4px; padding: 4px;
+  background: var(--bg-soft); border: 1px solid var(--line);
+  border-radius: 999px; margin: 4px 0 14px;
+}
+.smode {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 13.5px; color: var(--ink-2); padding: 7px 16px;
+  border-radius: 999px; transition: .15s;
+}
+.smode:hover { color: var(--ink); }
+.smode.on {
+  background: var(--card); color: var(--accent);
+  font-weight: 700; box-shadow: var(--shadow-sm);
+}
+
+.free-card { border-left: 3px solid var(--energy); }
+.free-lead { margin: 0 0 8px; font-size: 15.5px; line-height: 1.7; color: var(--ink); font-weight: 600; }
+.free-tip { margin: 0 0 10px; font-size: 13px; line-height: 1.75; color: var(--ink-2); }
+.free-cross { margin: 0; font-size: 13px; color: var(--ink-3); }
+.free-cross a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.free-cross a:hover { text-decoration: underline; }
+
 /* 柔蓝实时波形（面试练习时给自己 / 对方看） */
 .ft-wave {
   display: block;
