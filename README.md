@@ -1,5 +1,7 @@
 # FaceTalk · 双向互选面试搭子
 
+> 项目地址：https://github.com/Bortala5827/facetalk
+
 双向互选的面试搭子匹配系统：**只有双方都同意，才成为搭子**。发布意图 → 别人申请 → 你同意 → 语音优先限时互练 → 结束互评。信誉风控防机构割韭菜，举报自动封禁防瞎搞。免费、匿名、免登录，数据存于 Cloudflare D1（SQLite，免费额度内）。
 
 ## 交互闭环（核心）
@@ -93,3 +95,13 @@ android/              WebView APK 工程
 ```
 
 > 早期 `meetings`/`messages` 接口已不再被前端使用，保留为可复用的自由发布能力，新版以 `intents`/`apply`/`pair` 互选闭环为主。
+
+## Speak Series · 系列
+
+RCJ Speak Series ——「一个人，好好说话」：
+
+| 产品 | 一句话 | 仓库 |
+| --- | --- | --- |
+| **SoloSpeak 独声** | 跟自己说说话的轻量语音工具（本地优先） | https://github.com/Bortala5827/solospeak |
+| **LetOut 大声说** | 低连接时代的情绪出口（说出来/喊出来/唱出来/哭出来/安静一下） | https://github.com/Bortala5827/letout |
+| **FaceTalk 面试搭子** | 双向互选的面试搭子匹配（Cloudflare Pages + D1） | https://github.com/Bortala5827/facetalk |
