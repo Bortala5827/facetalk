@@ -1006,3 +1006,14 @@ a { color: inherit; text-decoration: none; }
 .done-q { margin: 10px 0 0; font-size: 14.5px; line-height: 1.7; color: var(--ink); }
 .done-tip { font-size: 12.5px; color: var(--ink-3); margin: 14px 0 0; line-height: 1.6; }
 .done-card .btn-primary { max-width: 360px; margin: 0 auto; }
+
+/* 柔蓝实时波形（面试练习时给自己 / 对方看） */
+.ft-wave {
+  display: block;
+  width: 100%;
+  height: 60px;
+  margin: 14px auto 4px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f3f6fd 0%, #eef2fb 100%);
+  border: 1px solid var(--line);
+}

@@ -60,6 +60,7 @@
         </button>
         <p class="mic-caption" id="rec-caption">点击开始录音</p>
         <div class="mic-timer" id="rec-time">00:00</div>
+        <canvas id="ftWave" class="ft-wave"></canvas>
       </div>
       <p class="field-hint" id="rec-hint">⏱ 建议答 <strong>1–3 分钟</strong>（最长 3 分钟，约满自动停止）。全程本地录音，不上传服务器。</p>
 
@@ -94,10 +95,12 @@
     <p id="status" class="muted" style="min-height:20px;margin-top:14px"></p>
   </main>
 
-  <script src="/assets/ft-util.js?v=20260806p"></script>
-  <script src="/assets/settings.js?v=20260807a"></script>
-  <script>
+    <script src="/assets/ft-util.js?v=20260806p"></script>
+    <script src="/assets/settings.js?v=20260807a"></script>
+    <script src="/assets/ftwave.js"></script>
+    <script>
   (function () {
+    var ftAudioCtx = null, ftAnalyser = null, ftWaveStop = null;
     // c: 'fj'=辅警真题, 'fire'=消防, 'comm'=社区, 'teacher'=教师, 'gk'=公考/事业, 'gen'=通用
     var TOPICS = [
       // ===== 辅警·真题（2018–2025 考生回忆版）=====
@@ -337,6 +340,20 @@
         var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (e) { setStatus('无法访问麦克风，请允许麦克风权限', true); return; }
       chunks = [];
+      // 柔蓝实时波形（面试练习时给自己看）
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        ftAudioCtx = new AC();
+        var ftSrc = ftAudioCtx.createMediaStreamSource(stream);
+        ftAnalyser = ftAudioCtx.createAnalyser();
+        ftAnalyser.fftSize = 1024;
+        ftSrc.connect(ftAnalyser);
+        var ftWaveEl = document.getElementById('ftWave');
+        if (ftWaveEl && window.RCJWave) {
+          RCJWave.fitCanvas(ftWaveEl, 60);
+          ftWaveStop = RCJWave.mountLiveBars(ftWaveEl, ftAnalyser, { color: '#7b8fc4' });
+        }
+      } catch (e) { ftWaveStop = null; }
       try { mediaRec = new MediaRecorder(stream); }
       catch (e) { setStatus('录音初始化失败', true); stream.getTracks().forEach(function (t) { t.stop(); }); return; }
       mediaRec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
@@ -371,6 +388,10 @@
     }
 
     function stopRec() {
+      if (ftWaveStop) { try { ftWaveStop(); } catch (e) {} ftWaveStop = null; }
+      if (ftAudioCtx) { try { ftAudioCtx.close(); } catch (e) {} ftAudioCtx = null; }
+      var ftWaveEl = document.getElementById('ftWave');
+      if (ftWaveEl) { try { ftWaveEl.getContext('2d').clearRect(0, 0, ftWaveEl.width, ftWaveEl.height); } catch (e) {} }
       if (!mediaRec || mediaRec.state === 'inactive') return;
       clearInterval(timer);
       var dur = (Date.now() - recStart) / 1000;
