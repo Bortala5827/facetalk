@@ -290,7 +290,8 @@
       if (!p.length) return;
       var t = p[Math.floor(Math.random() * p.length)];
       $('topic').textContent = t.q;
-      $('topic-cat').textContent = CAT_LABEL[t.c];
+      // 「全部」时标签统一为「今日练习题」,与选中的分类按钮保持一致;具体分类时如实标注题源
+      $('topic-cat').textContent = (curCat === 'all') ? CAT_LABEL.all : CAT_LABEL[t.c];
     }
     pickTopic();
     $('shuffle').addEventListener('click', pickTopic);
