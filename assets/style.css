@@ -100,6 +100,24 @@ a { color: inherit; text-decoration: none; }
 .solo-mini { font-size: 13.5px; color: var(--ink-3); margin: 12px 2px 0; text-align: center; }
 .solo-mini a { color: var(--accent); font-weight: 600; text-decoration: none; }
 .solo-mini a:hover { text-decoration: underline; }
+.train-cta {
+  display: flex; align-items: center; gap: 12px;
+  margin: 16px 0 0; padding: 14px 16px;
+  background: var(--bg-soft); border: 1px solid var(--line);
+  border-left: 3px solid var(--accent); border-radius: 12px;
+}
+.tc-emoji { font-size: 22px; flex-shrink: 0; }
+.tc-body { flex: 1; min-width: 0; font-size: 13px; color: var(--ink-2); line-height: 1.6; }
+.tc-body b { color: var(--ink); }
+.tc-link {
+  flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--accent);
+  text-decoration: none; white-space: nowrap;
+}
+.tc-link:hover { text-decoration: underline; }
+@media (max-width: 480px) {
+  .train-cta { flex-wrap: wrap; }
+  .tc-link { margin-left: auto; }
+}
 .entry-card {
   display: flex; flex-direction: column; gap: 8px;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
