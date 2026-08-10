@@ -865,14 +865,8 @@ a { color: inherit; text-decoration: none; }
   .bar-gear-badge { display: none; } /* 移动端只保留图标 */
 }
 
-/* v2.4 联机信息 / 留言板：实时语音暂不通，强引导双方留会议号 */
+/* v2.4 联机信息：实时语音暂不通，强引导双方留会议号 */
 .iv-callout { color: #b91c1c; font-weight: 700; }
-.msg-tip-meeting {
-  font-size: 13px; line-height: 1.55;
-  background: linear-gradient(180deg, #fff7ed, #fffbeb);
-  border: 1px solid #fed7aa; border-radius: 10px;
-  padding: 9px 12px; margin: 8px 0 12px; color: #7c2d12;
-}
 
 /* ===== 桌面端适配（2026-08-06）===== */
 /* 平板/小屏先平滑拓宽容器，避免 680px 窄条居中留大片空白 */
@@ -911,7 +905,6 @@ a { color: inherit; text-decoration: none; }
     filter: grayscale(.4);
   }
 }
-.msg-tip-meeting b { color: #b45309; }
 
 /* ===== 自我练习（solo.html） ===== */
 .btn-set { background: var(--bg-soft); color: var(--ink-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }

@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260809a" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260810a" />
 </head>
 <body>
   <header class="topbar">
@@ -52,7 +52,7 @@
 
       <section class="card" id="info-card" style="margin-top:14px">
         <h2 class="sec-title">🔗 联机信息 / 📡 备选会议号</h2>
-        <p class="muted">实时语音暂时不稳定？<b class="iv-callout">强烈建议把你的腾讯会议号 / 飞书会议号 / 微信贴在下方</b>，双方互留后直接入会继续练，对练不中断。</p>
+        <p class="muted">实时语音暂时不稳定？<b class="iv-callout">强烈建议把你的腾讯会议号 / 飞书会议号贴在下方</b>，双方互留后直接入会继续练，对练不中断。</p>
         <label class="field">
           <span class="field-label">我的联机信息（选填）</span>
           <input id="info-mine" type="text" maxlength="500" placeholder="💡 推荐：腾讯会议 123-456-789 或飞书会议链接 — 互留后直接入会对练" autocomplete="off" />
@@ -226,7 +226,6 @@
     <section class="card" id="msg-card">
       <h2 class="sec-title">💬 留言板</h2>
       <p class="muted">互留文字：约时间、留备用联系方式。每人只能删自己发的留言。</p>
-      <div class="msg-tip-meeting">⚠ 实时语音暂时走不通？<b>在这里直接贴上你的腾讯会议号 / 飞书会议号</b>，对方点一下就能入会继续练。</div>
       <div id="msg-list" class="msg-list"><p class="muted">加载中…</p></div>
       <label class="msg-burn"><input id="msg-burn" type="checkbox" /> 🔥 阅后即焚</label>
       <div class="msg-input">
@@ -390,15 +389,15 @@
       var pgEl = document.getElementById('peer-geo');
       var pgInner = pgEl ? pgEl.querySelector('.peer-geo-inner') : null;
       if (p.status !== 'closed' && pgInner) {
-        var onlineTxt = (p.peerOnline ? '🟢 对方在线' : '⚪ 对方离线');
+        var onlineTxt = (p.peerOnline ? '🟢 对方在线' : '');
         if (p.peerCity) {
           var pgeo = '你的搭子在【' + esc(p.peerCity) + '】';
           if (p.peerGeoTag) pgeo += ' · ' + p.peerGeoTag;
           if (p.peerDistanceKm != null) pgeo += ' · 相距约 ' + p.peerDistanceKm + ' km';
-          pgeo += ' · ' + onlineTxt;
+          if (onlineTxt) pgeo += ' · ' + onlineTxt;
           pgInner.innerHTML = '<p class="muted" style="margin:0;font-size:13px">' + esc(pgeo) + '</p><p class="muted" style="margin:6px 0 0;font-size:12px;color:var(--ink-3)">⚠ 基于 IP 估算，VPN/代理可能导致偏差</p>';
         } else {
-          pgInner.innerHTML = '<p class="muted" style="margin:0;font-size:13px">' + onlineTxt + '</p><p class="muted" style="margin:6px 0 0;font-size:12px;color:var(--ink-3)">对方尚未触发定位</p>';
+          pgInner.innerHTML = (onlineTxt ? '<p class="muted" style="margin:0;font-size:13px">' + onlineTxt + '</p>' : '') + '<p class="muted" style="margin:6px 0 0;font-size:12px;color:var(--ink-3)">对方尚未触发定位</p>';
         }
         pgEl.hidden = false;
         if (!peerToastShown) { peerToastShown = true; toast('🎉 匹配成功！'); }
@@ -1061,9 +1060,9 @@
   })();
   </script>
     <script src="/assets/ft-util.js?v=20260806p"></script>
-    <script src="/assets/settings.js?v=20260807a"></script>
+    <script src="/assets/settings.js?v=20260810a"></script>
     <script src="/assets/ftwave.js"></script>
     <script src="/assets/glare.js?v=20260807a"></script>
-  <script src="/assets/interview.js?v=20260807a"></script>
+  <script src="/assets/interview.js?v=20260810a"></script>
 </body>
 </html>

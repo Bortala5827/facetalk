@@ -69,10 +69,10 @@ ok('联机信息描述含「实时语音暂时不稳定」',
 ok('联机信息 placeholder 强化「腾讯会议 123-456-789 或飞书会议链接」',
   /id=["']info-mine["'][^>]*placeholder=["'][^"']*腾讯会议\s*123-456-789/.test(pairHtml));
 
-// 8. 留言板引导条 + placeholder
-ok('留言板 .msg-tip-meeting 引导条存在',
-  /class=["']msg-tip-meeting["']/.test(pairHtml) &&
-  /在这里直接贴上你的腾讯会议号/.test(pairHtml));
+// 8. 留言板引导条（2026-08-10 已下线：引导条整体移除，避免联机信息入口混乱）
+ok('留言板 .msg-tip-meeting 引导条已移除',
+  !/class=["']msg-tip-meeting["']/.test(pairHtml) &&
+  !/在这里直接贴上你的腾讯会议号/.test(pairHtml));
 ok('留言板 input placeholder 提到会议号',
   /id=["']msg-text["'][^>]*placeholder=["'][^"']*腾讯会议号直接约时间/.test(pairHtml));
 
@@ -87,9 +87,8 @@ ok('CSS .bar-gear-badge 红点 pulse',
   /\.bar-gear-badge\s*\{[^}]*animation\s*:\s*pulseBadge/.test(styleCss));
 ok('CSS 移动端 ≤520px 隐藏 bar-gear-text',
   /@media\s*\(max-width\s*:\s*520px\)[\s\S]*?\.bar-gear-text\s*\{\s*display\s*:\s*none/.test(styleCss));
-ok('CSS .msg-tip-meeting 引导条样式',
-  /\.msg-tip-meeting\s*\{/.test(styleCss) &&
-  /background\s*:\s*linear-gradient/.test(styleCss.match(/\.msg-tip-meeting\s*\{[^}]*\}/)?.[0] || ''));
+ok('CSS .msg-tip-meeting 引导条样式已移除',
+  !/\.msg-tip-meeting\s*\{/.test(styleCss));
 
 // 10. 版本号统一：ft-util.js 固定保持 v=20260806p；其余资源同源统一（随部署一起 bump）
 const vAssets = {
