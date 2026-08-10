@@ -301,6 +301,9 @@
     var peerToastShown = false; // 匹配成功地理 toast 仅弹一次
     var remainListeners = [];   // 订阅 remain 变化（如 interview.js 用）—— 每秒 tick 时 fire 一次
     var remainZeroFired = false; // 同一轮房间 0 触发一次 onTimeUp，避免重复弹评价
+    // 互评提交态：本地记住「我已提交」，防止 tick/render 反复开合评价卡造成"来回闪退"
+    var myRated = false;        // 我已成功提交评价
+    var rateWaitShown = false;  // 提交后等待界面已接管 rate-card（render 不再碰它）
     function fireRemain(n) {
       remainListeners.forEach(function (cb) {
         try { cb(n); } catch (_) {}
@@ -472,12 +475,15 @@
           ac--; dtip.textContent = '✅ 互评完成，房间将在 ' + Math.max(0, ac) + 's 后自动解散并清除对话。';
           if (ac <= 0) { clearInterval(dissolveTimer); dissolveTimer = null; closeRoom(p.pairId); }
         }, 1000);
-      } else if (p.status === 'done' && !p.rated) {
+      } else if (p.status === 'done' && !p.rated && !myRated) {
+        // 房间 done、我还没评、也没提交过 → 展示评价卡（myRated 防已提交后轮询又把它弹回来）
         document.getElementById('rate-card').hidden = false;
         if (rb2) rb2.style.display = '';
         dtip.hidden = true;
       } else {
-        document.getElementById('rate-card').hidden = true;
+        // 我已提交/等待对方/普通状态 → 隐藏评价卡；但若等待界面已接管则不动它，避免来回闪退
+        var rc3 = document.getElementById('rate-card');
+        if (!rateWaitShown) rc3.hidden = true;
         if (rb2) rb2.style.display = '';
         dtip.hidden = true;
         dissolveToasted = false; // 房间恢复正常，下次再进入 dissolving 可重新弹 toast
@@ -503,9 +509,9 @@
         document.getElementById('timer').textContent='00:00';
         document.getElementById('expired').hidden=false;
         if(timer){ clearInterval(timer); timer=null; }
-        // 时间到 → 自动弹出评价卡（如果还没评过）
+        // 时间到 → 自动弹出评价卡（如果还没评过、且还没提交过——避免已提交后每轮 tick 反复顶出）
         var rc = document.getElementById('rate-card');
-        if (rc.hidden){
+        if (!myRated && rc.hidden){
           rc.hidden = false;
           rc.scrollIntoView({behavior:'smooth', block:'center'});
           toast('⏰ 时间到，请给搭子打个分吧');
@@ -1018,8 +1024,10 @@
         next:document.getElementById('r-next').checked,
         blockNext:document.getElementById('r-block').checked});
       if(r.status===200&&r.data.ok){
+        myRated = true;   // 本地记住已提交：tick/render 不再反复开合评价卡（防"来回闪退"）
         if (r.data.waiting) {
           // 2.1：等待对方评价
+          rateWaitShown = true;
           var rc = document.getElementById('rate-card');
           rc.innerHTML = '<h2 class="sec-title">⏳ 等待对方评价</h2>' +
             '<p class="v-state" style="text-align:center">✅ 你的评价已提交，正在等待对方完成评价...</p>' +
@@ -1033,7 +1041,14 @@
           document.getElementById('rate-card').hidden=true;
         }
       }
-      else toast('评价失败：'+(r.data.error||r.status), true);
+      else {
+        // already_rated：我其实已经评过了（可能并发/重试）→ 按已提交处理，别让用户反复提交
+        if (r.data && r.data.error === 'already_rated') {
+          myRated = true;
+          document.getElementById('rate-card').hidden = true;
+          toast('你已提交过评价 ⭐');
+        } else toast('评价失败：' + (r.data.error || r.status), true);
+      }
     });
 
     api('GET').then(function(r){ render(r.data.pair); });

@@ -88,7 +88,7 @@ export async function onRequest(context) {
         peerCity: gi.city, peerDistanceKm: gi.distanceKm, peerGeoTag: gi.tag, peerOnline,
         ratingsCount: Object.keys(ratings || {}).length, remaining, rated, left,
         dissolving, dissolveIn, autoCloseIn, soloGraceIn,
-        nextAllowed: p.status === 'done' && bothNext(ratings) && bothPass(ratings),
+        nextAllowed: p.status === 'done' && bothNext(ratings, p.a, p.b) && bothPass(ratings, p.a, p.b),
       },
     });
   }
@@ -175,40 +175,55 @@ export async function onRequest(context) {
       const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
       if (!p) return err('pair_gone', 404);
       if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
-      const ratings = safeParse(p.ratings);
-      if (ratings[r.id]) return err('already_rated', 409);
       const score = Math.max(1, Math.min(5, parseInt(body.score, 10) || 3));
       const tags = Array.isArray(body.tags) ? body.tags.slice(0, 5).map(String) : [];
       const next = !!body.next;
       const blockNext = !!body.blockNext;
       const other = r.id === p.a ? p.b : p.a;
-      ratings[r.id] = { score, tags, next, blockNext, at: nowSec() };
-
-      const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
-      const newRep = clampRep((o ? (o.rep | 0) : 50) + (score - 3));
       const now = nowSec();
-
-      // === 2.1：双状态位追踪，防止一方提交就关闭房间 ===
+      // 位置 key（用于 _evaluated 状态位）与用户 id（用于 ratings 顶层 key）是两套，别混用
       const myKey = (r.id === p.a) ? 'a' : 'b';
       const otherKey = (r.id === p.a) ? 'b' : 'a';
-      if (!ratings._evaluated) ratings._evaluated = {};
-      ratings._evaluated[myKey] = true;
+      const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
+      const newRep = clampRep((o ? (o.rep | 0) : 50) + (score - 3));
 
-      // 检查 3 分钟超时兜底
-      let timedOut = false;
-      const otherRatedTime = ratings[otherKey] ? (ratings[otherKey].at || 0) : 0;
-      // 本轮我已评、对方没评但超过 3 分钟 → 强制结算，向已评方补偿
-      if (ratings._evaluated[myKey] && !ratings._evaluated[otherKey] && otherRatedTime && (now - otherRatedTime) > 180) {
-        timedOut = true;
+      // === 2.1 修复：读-改-写并发竞态 → CAS 乐观锁重试（最多 3 次） ===
+      // 原实现双方同时提交时后写者会用旧 ratings 覆盖先写者 → _evaluated 丢失 → 房间永远 matched，
+      // 前端 render/tick 反复开合评价卡造成"来回闪退"。CAS 以「旧 ratings 原文」作为 UPDATE 条件，
+      // changes=0 说明本轮被并发修改，重读重试，保证双方评分与状态位都不丢。
+      let bothEvaluated = false, timedOut = false, committed = false;
+      for (let attempt = 0; attempt < 3 && !committed; attempt++) {
+        const cur = await db.prepare('SELECT ratings FROM pairs WHERE id=?').bind(body.pairId).first();
+        if (!cur) return err('pair_gone', 404);
+        const ratings = safeParse(cur.ratings);
+        if (ratings[r.id]) return err('already_rated', 409);
+        if (!ratings._evaluated) ratings._evaluated = {};
+        ratings._evaluated[myKey] = true;
+        ratings[r.id] = { score, tags, next, blockNext, at: now };
+
+        // 3 分钟超时兜底：对方已评（ratings 顶层 key = 用户 id，不是 'a'/'b'）且超过 180s 我还没评 → 强制结算
+        const otherRatedTime = (ratings[other] && !ratings[other].left) ? (ratings[other].at || 0) : 0;
+        if (ratings._evaluated[myKey] && !ratings._evaluated[otherKey] && otherRatedTime && (now - otherRatedTime) > 180) {
+          timedOut = true;
+        }
+
+        bothEvaluated = ratings._evaluated.a && ratings._evaluated.b;
+        const readyToClose = bothEvaluated || timedOut;
+        const res = await db.prepare('UPDATE pairs SET ratings=?, status=? WHERE id=? AND ratings=?')
+          .bind(JSON.stringify(ratings), readyToClose ? 'done' : 'matched', p.id, cur.ratings).run();
+        if (res && res.meta && res.meta.changes === 1) {
+          committed = true;
+          // 双方都评完或超时 → 设 5 分钟后自动解散房间（清除对话）；closed_at 列未 ALTER 时静默跳过
+          if (readyToClose) {
+            try { await db.prepare("UPDATE pairs SET closed_at=? WHERE id=?").bind(now + 300, p.id).run(); } catch (e) {}
+          }
+        }
       }
+      if (!committed) return err('rate_conflict', 409);
 
-      const bothEvaluated = ratings._evaluated.a && ratings._evaluated.b;
-      const readyToClose = bothEvaluated || timedOut;
-
-      // 「不想再匹配此搭子」勾选 → 写 blocks 表（幂等 INSERT OR IGNORE），后续 browse/inbox 自动过滤
+      // 评分落库 + 声誉值 + 屏蔽（这些不依赖 ratings 竞态，统一执行）
       const writes = [
         db.prepare('UPDATE users SET rep=? WHERE id=?').bind(newRep, other),
-        db.prepare("UPDATE pairs SET ratings=?, status=? WHERE id=?").bind(JSON.stringify(ratings), readyToClose ? 'done' : 'matched', p.id),
         db.prepare(`INSERT INTO ratings (id, pair_id, from_user, to_user, score, tags, next, created)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
           .bind('r_' + genId(12), p.id, r.id, other, score, JSON.stringify(tags), next ? 1 : 0, now),
@@ -218,10 +233,6 @@ export async function onRequest(context) {
           .bind(r.id, other, now));
       }
       await db.batch(writes);
-      // 双方都评完或超时 → 设 5 分钟后自动解散房间（清除对话）；closed_at 列未 ALTER 时静默跳过
-      if (readyToClose) {
-        try { await db.prepare("UPDATE pairs SET closed_at=? WHERE id=?").bind(now + 300, p.id).run(); } catch (e) {}
-      }
       return json({ ok: true, done: bothEvaluated, blocked: blockNext, waiting: !bothEvaluated, timedOut: timedOut });
     }
 
@@ -316,8 +327,10 @@ export async function onRequest(context) {
 function safeParse(s) {
   try { return JSON.parse(s || '{}') || {}; } catch (e) { return {}; }
 }
-function bothNext(ratings) { return ratings && ratings.a && ratings.b && ratings.a.next && ratings.b.next; }
-function bothPass(ratings) { return ratings && ratings.a && ratings.b && ratings.a.score >= 3 && ratings.b.score >= 3; }
+// ratings 顶层 key = 用户 id（p.a / p.b），不是位置 'a'/'b'。
+// 修复前用 ratings.a / ratings.b 取值恒为 undefined → 「双方都愿意再约」永远不会亮。
+function bothNext(ratings, idA, idB) { return !!(ratings && ratings[idA] && ratings[idB] && ratings[idA].next && ratings[idB].next); }
+function bothPass(ratings, idA, idB) { return !!(ratings && ratings[idA] && ratings[idB] && ratings[idA].score >= 3 && ratings[idB].score >= 3); }
 
 // 销毁房间：清对话 + 置 closed。GET 服务端兜底与前端 close 动作共用。
 // 把 closedAt 写进 ratings JSON（该 TEXT 列已存在，无需 ALTER），供每日清理按「关闭满 3 天」硬删。
