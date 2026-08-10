@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260810a" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260810b" />
 </head>
 <body>
   <header class="topbar">
@@ -33,10 +33,6 @@
         🔒 <b>隐私说明：</b>真人对练的录音<b>仅用于本次互评</b>，双方都评价完成后会<b>立即从服务器删除</b>，本地与服务器都不留存；互评结束、房间解散后，所有对话也随之清除。
       </p>
 
-      <details id="peer-geo" class="peer-geo" hidden>
-        <summary class="peer-geo-sum">📍 查看对方大致位置（可能不准）</summary>
-        <div class="peer-geo-inner"></div>
-      </details>
 
       <div class="room-meta">
         <div><span class="muted">对方信誉</span> <strong id="other-rep">--</strong></div>
@@ -298,7 +294,6 @@
     }
 
     var remain = 0, timer = null, infoMineInit = false, dissolveTimer = null, dissolveToasted = false;
-    var peerToastShown = false; // 匹配成功地理 toast 仅弹一次
     var remainListeners = [];   // 订阅 remain 变化（如 interview.js 用）—— 每秒 tick 时 fire 一次
     var remainZeroFired = false; // 同一轮房间 0 触发一次 onTimeUp，避免重复弹评价
     // 互评提交态：本地记住「我已提交」，防止 tick/render 反复开合评价卡造成"来回闪退"
@@ -388,25 +383,6 @@
       document.getElementById('other-rep').textContent = p.otherRep != null ? p.otherRep : '--';
       document.getElementById('room-mode').textContent = p.mode === 'video' ? '📹 视频' : '🎙 语音优先';
 
-      // 对方大致位置：改为点击展开（IP 定位不准，不自动展示避免误导）
-      var pgEl = document.getElementById('peer-geo');
-      var pgInner = pgEl ? pgEl.querySelector('.peer-geo-inner') : null;
-      if (p.status !== 'closed' && pgInner) {
-        var onlineTxt = (p.peerOnline ? '🟢 对方在线' : '');
-        if (p.peerCity) {
-          var pgeo = '你的搭子在【' + esc(p.peerCity) + '】';
-          if (p.peerGeoTag) pgeo += ' · ' + p.peerGeoTag;
-          if (p.peerDistanceKm != null) pgeo += ' · 相距约 ' + p.peerDistanceKm + ' km';
-          if (onlineTxt) pgeo += ' · ' + onlineTxt;
-          pgInner.innerHTML = '<p class="muted" style="margin:0;font-size:13px">' + esc(pgeo) + '</p><p class="muted" style="margin:6px 0 0;font-size:12px;color:var(--ink-3)">⚠ 基于 IP 估算，VPN/代理可能导致偏差</p>';
-        } else {
-          pgInner.innerHTML = (onlineTxt ? '<p class="muted" style="margin:0;font-size:13px">' + onlineTxt + '</p>' : '') + '<p class="muted" style="margin:6px 0 0;font-size:12px;color:var(--ink-3)">对方尚未触发定位</p>';
-        }
-        pgEl.hidden = false;
-        if (!peerToastShown) { peerToastShown = true; toast('🎉 匹配成功！'); }
-      } else if (pgEl) {
-        pgEl.hidden = true;
-      }
       // 会话倒计时：只在本轮数据显式携带 remaining 时更新。
       // SSE 的 pair 事件可能缺该字段，缺了就保持原值，避免 remain 被清零 → tick 误弹「时间到请打分」造成闪退。
       if (p.remaining != null) {
@@ -1075,9 +1051,9 @@
   })();
   </script>
     <script src="/assets/ft-util.js?v=20260806p"></script>
-    <script src="/assets/settings.js?v=20260810a"></script>
+    <script src="/assets/settings.js?v=20260810b"></script>
     <script src="/assets/ftwave.js"></script>
     <script src="/assets/glare.js?v=20260807a"></script>
-  <script src="/assets/interview.js?v=20260810a"></script>
+  <script src="/assets/interview.js?v=20260810b"></script>
 </body>
 </html>

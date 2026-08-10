@@ -133,6 +133,7 @@
   var users = [];
   var intents = [];
   var walls = [];
+  var reports = [];
   var currentTab = 'users';
 
   function renderLogin(errMsg) {
@@ -168,13 +169,14 @@
 
   function loadData() {
     el.innerHTML = '<p style="text-align:center;color:var(--ink-3);padding:60px">加载中…</p>';
-    Promise.all([api('list_users'), api('list_intents'), api('list_walls')])
+    Promise.all([api('list_users'), api('list_intents'), api('list_walls'), api('list_reports')])
       .then(function(res){
         if (res[0].error) { logout(res[0].error); return; }
         if (res[1].error) { logout(res[1].error); return; }
         users = res[0].list || [];
         intents = res[1].list || [];
         walls = (res[2] && res[2].list) || [];
+        reports = (res[3] && res[3].list) || [];
         renderDashboard();
       })
       .catch(function(){ el.innerHTML = '<p class="error">网络错误，请刷新重试</p>'; });
@@ -195,18 +197,22 @@
       '<div class="stat"><div class="stat-num">' + intents.length + '</div><div class="stat-label">总意图</div></div>' +
       '<div class="stat green"><div class="stat-num">' + openIntents + '</div><div class="stat-label">开放中</div></div>' +
       '<div class="stat"><div class="stat-num">' + walls.length + '</div><div class="stat-label">留言墙</div></div>' +
+      '<div class="stat danger"><div class="stat-num">' + reports.length + '</div><div class="stat-label">被举报</div></div>' +
       '</div>';
 
     html += '<div class="tabs">' +
       '<button class="tab' + (currentTab==='users' ? ' active' : '') + '" onclick="switchTab(\'users\')">用户<span class="tab-count">' + users.length + '</span></button>' +
       '<button class="tab' + (currentTab==='intents' ? ' active' : '') + '" onclick="switchTab(\'intents\')">意图<span class="tab-count">' + intents.length + '</span></button>' +
       '<button class="tab' + (currentTab==='walls' ? ' active' : '') + '" onclick="switchTab(\'walls\')">留言墙<span class="tab-count">' + walls.length + '</span></button>' +
+      '<button class="tab' + (currentTab==='reports' ? ' active' : '') + '" onclick="switchTab(\'reports\')">举报<span class="tab-count">' + reports.length + '</span></button>' +
       '</div>';
 
     if (currentTab === 'users') {
       html += renderUsers();
     } else if (currentTab === 'walls') {
       html += renderWalls();
+    } else if (currentTab === 'reports') {
+      html += renderReports();
     } else {
       html += renderIntents();
     }
@@ -331,6 +337,36 @@
         '</div>' +
         '<div class="item-actions">' +
           '<button class="btn btn-delete" data-id="' + esc(w.id) + '" onclick="delWall(this)">删除</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function renderReports() {
+    if (!reports.length) return '<div class="empty-state"><p>暂无举报记录</p></div>';
+    var html = '<div class="list">';
+    reports.forEach(function(rp){
+      var isBanned = !!rp.banned;
+      var badgeCls = isBanned ? 'badge-banned' : (rp.count >= 3 ? 'badge-matched' : 'badge-open');
+      var badgeTxt = isBanned ? '已封禁' : (rp.count >= 3 ? '达封禁线' : ('被举报 ' + rp.count + ' 次'));
+      var items = (rp.items || []).map(function(it){
+        return '<li style="margin:3px 0">' + esc(shortId(it.by)) + '：' + esc(it.reason || '(无原因)') + ' · ' + fmtTime(it.created) + '</li>';
+      }).join('');
+      html += '<div class="item' + (isBanned ? ' banned' : '') + '">' +
+        '<div class="item-body">' +
+          '<div class="item-head">' +
+            '<span class="item-id">' + esc(shortId(rp.target)) + '</span>' +
+            '<span class="badge ' + badgeCls + '">' + badgeTxt + '</span>' +
+          '</div>' +
+          '<div class="item-meta"><span>被 ' + rp.count + ' 个不同人举报</span></div>' +
+          '<ul class="item-note" style="padding-left:18px;margin-top:6px">' + items + '</ul>' +
+        '</div>' +
+        '<div class="item-actions">' +
+          (isBanned
+            ? '<button class="btn btn-unban" data-id="' + esc(rp.target) + '" onclick="toggleBan(this,\'unban\')">解封</button>'
+            : '<button class="btn btn-ban" data-id="' + esc(rp.target) + '" onclick="toggleBan(this,\'ban\')">封禁</button>') +
         '</div>' +
       '</div>';
     });

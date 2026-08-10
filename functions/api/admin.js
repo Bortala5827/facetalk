@@ -59,6 +59,36 @@ export async function onRequest(context) {
     }
   }
 
+  // 列出所有举报（按被举报人聚合：举报次数、举报人、原因、是否已达封禁线）
+  if (action === 'list_reports') {
+    try {
+      const { results } = await db.prepare(
+        'SELECT target, by, reason, created FROM reports ORDER BY created DESC LIMIT 500'
+      ).all();
+      const map = {};
+      let total = 0;
+      for (const r of (results || [])) {
+        total++;
+        if (!map[r.target]) map[r.target] = { target: r.target, count: 0, banned: false, items: [] };
+        map[r.target].count++;
+        map[r.target].items.push({ by: r.by, reason: r.reason, created: r.created });
+      }
+      // 取各被举报人的 banned 状态
+      const targets = Object.keys(map);
+      for (const t of targets) {
+        try {
+          const u = await db.prepare('SELECT banned FROM users WHERE id=?').bind(t).first();
+          if (u) map[t].banned = !!u.banned;
+        } catch (e) { /* users 表无 banned 列：降级为 false */ }
+      }
+      const list = targets.map(function (t) { return map[t]; })
+        .sort(function (a, b) { return b.count - a.count; });
+      return json({ ok: true, list: list, total: total });
+    } catch (e) {
+      return json({ ok: false, error: 'DB_ERR', list: [] }, 500);
+    }
+  }
+
   // 删除单条留言墙留言（管理员）
   if (action === 'delete_wall') {
     const wallId = String(body.wallId || '');
