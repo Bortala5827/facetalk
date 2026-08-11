@@ -156,7 +156,7 @@
           '<button class="btn-mini grey" id="set-close" type="button">关闭</button>' +
           '<button class="btn-primary" id="set-save" type="button">保存</button>' +
         '</div>' +
-        '<p class="set-hint">📘 <a href="https://exam.rcj9527.dpdns.org/tutorials/api-key.html" target="_blank" rel="noopener">国内大模型免费 API 获取教程</a></p>' +
+        '<p class="set-hint">📘 <a href="https://exam.955827.xyz/tutorials/api-key.html" target="_blank" rel="noopener">国内大模型免费 API 获取教程</a></p>' +
       '</div>';
     document.body.appendChild(wrap);
 
