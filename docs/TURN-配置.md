@@ -71,7 +71,7 @@
 浏览器打开：
 
 ```
-https://ms.955827.xyz/api/turn
+https://facetalk.955827.xyz/api/turn
 ```
 
 - 配好了 → `{"configured":true,"ttl":7200,"iceServers":[...]}`，里面有一串 `turn:turn.cloudflare.com:...` 和随机的 username/credential

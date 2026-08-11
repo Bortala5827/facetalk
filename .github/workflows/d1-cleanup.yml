@@ -15,7 +15,7 @@ jobs:
       - name: 调用清理接口（带重试）
         run: |
           KEY="MAABa_kecoPJAKmqIKDwhUSC"
-          URL="https://ms.955827.xyz/api/cleanup"
+          URL="https://facetalk.955827.xyz/api/cleanup"
           for i in 1 2 3 4 5; do
             echo "尝试 $i ..."
             code=$(curl -sS -o /tmp/cleanup.json -w "%{http_code}" -X POST "$URL" -H "x-cleanup-key: $KEY" --max-time 30)

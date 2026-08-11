@@ -2,7 +2,7 @@
 
 双向互选的面试搭子匹配：只有双方都同意，才成为搭子。免费、匿名、免登录，数据存 Cloudflare D1。
 
-- **演示**：https://ms.955827.xyz
+- **演示**：https://facetalk.955827.xyz
 - **仓库**：`github.com/Bortala5827/facetalk`
 
 ## 交互闭环
