@@ -1,5 +1,7 @@
 // ftwave.js — FaceTalk 复用 rcj-audio-core 的实时频谱柱状图（非模块全局版）
 // 暴露 window.RCJWave = { mountLiveBars, fitCanvas }
+// v2：在 v1 单色基础上，新增 colorFn / gradient / wobble / pulse 情绪化着色与动效
+//     （与 Speak Series 共享波形模块同代，API 完全向后兼容，旧调用不破）
 (function (global) {
   function fitCanvas(canvas, cssHeight) {
     var dpr = window.devicePixelRatio || 1;
@@ -26,9 +28,28 @@
     ctx.closePath();
   }
 
+  // 两个 #rrggbb 按比例 t(0..1) 插值，用于 gradient / colorFn 音量着色
+  function lerpHex(a, b, t) {
+    t = Math.max(0, Math.min(1, t));
+    var pa = hexToRgb(a), pb = hexToRgb(b);
+    if (!pa || !pb) return a;
+    var r = Math.round(pa[0] + (pb[0] - pa[0]) * t);
+    var g = Math.round(pa[1] + (pb[1] - pa[1]) * t);
+    var bl = Math.round(pa[2] + (pb[2] - pa[2]) * t);
+    return 'rgb(' + r + ',' + g + ',' + bl + ')';
+  }
+  function hexToRgb(h) {
+    h = String(h).replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    if (h.length !== 6) return null;
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+
   function mountLiveBars(canvas, analyser, opts) {
     opts = opts || {};
     var color = opts.color || '#7b8fc4';
+    var colorFn = opts.colorFn || null;        // (v, i, n) => cssColor，优先于 color / gradient
+    var gradient = opts.gradient || null;       // [c1, c2] 跨整片场由 c1→c2 渐变
     var barGap = opts.barGap != null ? opts.barGap : 1.5;
     var smoothing = opts.smoothing != null ? opts.smoothing : 0.7;
     var minBarHeight = opts.minBarHeight != null ? opts.minBarHeight : 2;
@@ -36,6 +57,8 @@
     var capAlpha = opts.capAlpha != null ? opts.capAlpha : 0.4;
     var capDecay = opts.capDecay != null ? opts.capDecay : 0.96;
     var borderRadius = opts.borderRadius != null ? opts.borderRadius : 2;
+    var wobble = opts.wobble != null ? opts.wobble : 0;   // 0..1 随机高度抖动（急躁/颤抖）
+    var pulse = opts.pulse != null ? opts.pulse : 0;       // 0..1 整体呼吸律动（能量/情绪感）
     var ctx = canvas.getContext('2d');
     var freqCount = analyser.frequencyBinCount;
     var data = new Uint8Array(freqCount);
@@ -48,16 +71,28 @@
       var visibleBins = Math.floor(freqCount * 0.45);
       var step = Math.max(1, Math.floor(visibleBins / 64));
       var barW = Math.max(2, (w / (visibleBins / step)) - barGap);
+      var beat = pulse ? (1 + pulse * 0.35 * Math.sin(Date.now() / 170)) : 1;
       for (var i = 0; i < visibleBins; i += step) {
         var v = data[i] / 255;
+        if (pulse) v = v * beat;
+        if (wobble) v = v * (1 + wobble * (Math.random() - 0.5));
+        v = Math.max(0, Math.min(1, v));
         var barH = Math.max(minBarHeight, v * h * 0.9);
         var x = (i / visibleBins) * w + barGap / 2;
         if (v * h > caps[i]) caps[i] = v * h; else caps[i] *= capDecay;
+        // 取色：colorFn > gradient > color
+        var col = color;
+        if (colorFn) col = colorFn(v, i, visibleBins);
+        else if (gradient) col = lerpHex(gradient[0], gradient[1], i / visibleBins);
         ctx.globalAlpha = alpha;
-        ctx.fillStyle = color;
+        ctx.fillStyle = col;
         roundRect(ctx, x, h - barH, barW, barH, { tl: borderRadius, tr: borderRadius, br: 0, bl: 0 });
         ctx.fill();
-        if (caps[i] > minBarHeight + 1) { ctx.globalAlpha = capAlpha; ctx.fillRect(x, h - caps[i], barW, 1.5); }
+        if (caps[i] > minBarHeight + 1) {
+          ctx.globalAlpha = capAlpha;
+          ctx.fillStyle = col;
+          ctx.fillRect(x, h - caps[i], barW, 1.5);
+        }
       }
       ctx.globalAlpha = 1;
       raf = requestAnimationFrame(draw);
@@ -66,5 +101,5 @@
     return function () { cancelAnimationFrame(raf); };
   }
 
-  global.RCJWave = { mountLiveBars: mountLiveBars, fitCanvas: fitCanvas };
+  global.RCJWave = { mountLiveBars: mountLiveBars, fitCanvas: fitCanvas, lerpHex: lerpHex };
 })(window);

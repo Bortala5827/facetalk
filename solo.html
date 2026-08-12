@@ -396,7 +396,10 @@
         var ftWaveEl = document.getElementById('ftWave');
         if (ftWaveEl && window.RCJWave) {
           RCJWave.fitCanvas(ftWaveEl, 60);
-          ftWaveStop = RCJWave.mountLiveBars(ftWaveEl, ftAnalyser, { color: '#6f9b8a' });
+          ftWaveStop = RCJWave.mountLiveBars(ftWaveEl, ftAnalyser, {
+            colorFn: function (v) { return RCJWave.lerpHex('#6f9b8a', '#e3a857', Math.min(1, v * 1.5)); },
+            pulse: 0.22
+          });
         }
       } catch (e) { ftWaveStop = null; }
       try { mediaRec = new MediaRecorder(stream); }
