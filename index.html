@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FaceTalk · 面试搭子</title>
-  <meta name="description" content="FaceTalk 面试搭子 — 随机匹配同岗考友，语音对练、录音互评，像真面试一样开口练。" />
+  <title>FaceTalk · 面试群里的智能连接工具</title>
+  <meta name="description" content="FaceTalk 不是找人聊天的平台，而是面试群里的智能连接工具：用 60 秒试音，在面试圈找到真正适合一起练的人。" />
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260811a" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260812f" />
 </head>
 <body>
   <div class="series-bar">
@@ -22,10 +22,10 @@
       <a class="brand" href="/">
         <span class="brand-mark">搭</span>
         <span class="brand-text">FaceTalk</span>
-        <span class="v-badge v-badge-base">v2.1</span>
+        <span class="v-badge v-badge-base">v2.9</span>
       </a>
       <div class="bar-right">
-        <a class="brand-back" href="https://955827.xyz/" target="_blank" rel="noopener">RCJ Hub</a>
+        <button class="bar-gear" id="open-set" type="button">⚙ 设置</button>
         <a class="brand-back" id="ctx-back" href="https://955827.xyz" hidden>← 返回</a>
       </div>
     </div>
@@ -36,28 +36,47 @@
   </div>
 
   <main class="container">
+    <div class="group-banner" id="group-banner" hidden></div>
     <section class="hero">
-      <p class="eyebrow">找搭子 · 练面试</p>
-      <h1>FaceTalk 面试搭子</h1>
-      <p class="hero-en"><span class="en">Hear Before You Pair</span> · 听声识搭子，合得来再练</p>
-      <p class="hero-sub">一个人练没感觉？找个同岗考友，像真面试一样开口。</p>
+      <p class="eyebrow">面试群里的智能连接工具</p>
+      <h1>用 60 秒，开启一次真实表达训练</h1>
+      <p class="hero-sub">你缺的可能不是答案，而是一次开口的机会。</p>
+      <p class="hero-tag">FaceTalk，陪你从「<b>不敢说</b>」，到「<b>会表达</b>」。</p>
+
+      <!-- 四步旅程：认识 → 试音 → 匹配 → 一起成长 -->
+      <ol class="journey">
+        <li class="j-step"><span class="j-emoji">👋</span><b class="j-name">认识</b><span class="j-desc">考试群里已有一群想练的人</span></li>
+        <li class="j-step"><span class="j-emoji">🎧</span><b class="j-name">试音</b><span class="j-desc">60 秒录音，互相听声筛选</span></li>
+        <li class="j-step"><span class="j-emoji">🤝</span><b class="j-name">匹配</b><span class="j-desc">双方都愿意，才正式组队</span></li>
+        <li class="j-step"><span class="j-emoji">🌱</span><b class="j-name">一起成长</b><span class="j-desc">互评互练，岗位专项</span></li>
+      </ol>
+
       <div class="entry-grid">
         <a class="entry-card pair" href="#pair-details">
-          <span class="ec-emoji">🤝</span>
-          <span class="ec-title">真人对练</span>
-          <span class="ec-desc">发布意图 → 等搭子申请 → 双方点头进房间 → <b>60 秒试音互评</b> → 决定是否继续组队</span>
-          <span class="ec-go">去匹配搭子 →</span>
+          <span class="ec-emoji">🎧</span>
+          <span class="ec-title">开始 60 秒试音</span>
+          <span class="ec-desc">从考试群来 → <b>60 秒试音</b> → 双方听声筛选 → 合得来再组队</span>
+          <span class="ec-go">去试音 →</span>
         </a>
       </div>
-      <p class="solo-mini">🎤 <a href="/solo.html">一个人练 · 练题模式 / 自由说 →</a></p>
-      <div class="train-cta">
-        <span class="tc-emoji">🧭</span>
-        <div class="tc-body">
-          <b>练习沉淀，通向考试表达。</b>
-          <span>FaceTalk 是 Speak Series 里唯一天然连接考试表达的环节——练好开口，再进 RCJ Exam Hub 刷真题、做 AI 点评。</span>
-        </div>
-        <a class="tc-link" href="https://exam.955827.xyz" target="_blank" rel="noopener">RCJ Exam Hub →</a>
+      <p class="solo-mini">🎤 <a href="/solo.html">先一个人练 · 练题模式 / 自由说 →</a></p>
+
+      <div class="trust-strip">
+        <span class="ts-item">🔒 <b>双方提交才能互听</b></span>
+        <span class="ts-item">🕓 <b>录音阅后即焚</b></span>
+        <span class="ts-item">🚫 <b>严禁留微信 / 手机号</b></span>
       </div>
+    </section>
+
+    <!-- 发到社群里匹配：工具思维冷启动 —— 微信群无法直接点开外部链接，所以只提供「复制群发文案」 -->
+    <section class="share-card">
+      <div class="sc-head">
+        <span class="sc-emoji">📣</span>
+        <h2 class="sc-title">发到社群里匹配，互评组队，效果更佳</h2>
+      </div>
+      <p class="sc-sub">把下面这段话发到你的辅警 / 消防 / 公考面试群里，同样目标的人看到就会来试音。</p>
+      <div class="sc-text-preview" id="sc-preview">有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz</div>
+      <button class="sc-copy-main" id="sc-copy-text" type="button">📋 复制这段话，去群里发</button>
     </section>
 
     <!-- 我的信誉（桌面端按「信誉/匿名/在线」三栏横铺，避免左对齐单行空洞） -->
@@ -102,10 +121,6 @@
               <option value="video">📹 视频</option>
             </select>
           </label>
-          <label class="field">
-            <span class="field-label">会议链接（选填）</span>
-            <input id="i-meet" type="text" placeholder="腾讯会议链接，留空则房间内交换" />
-          </label>
         </div>
         <label class="field">
           <span class="field-label">一句话（选填）</span>
@@ -120,9 +135,10 @@
     <!-- 浏览搭子（核心发现面，常驻可见） -->
     <section class="board">
       <div class="board-head">
-        <h2 class="sec-title">🔍 找搭子（他人开放意图）</h2>
+        <h2 class="sec-title">🔍 公开大厅（没有群也能找）</h2>
         <button class="btn-mini" id="browse-refresh">刷新</button>
       </div>
+      <p class="board-note">群里没找到合适的？也能在这里浏览同岗考友的开放意图。</p>
       <div id="browse-list" class="list"></div>
       <p class="list-empty" id="browse-empty">加载中…</p>
       <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px">你已发布意图，这里只看别人的。刷新可见新上线的搭子。</p>
@@ -252,8 +268,9 @@
   </footer>
 
   <script src="/assets/ft-util.js?v=20260806p"></script>
-  <script src="/assets/wall.js?v=20260808a"></script>
-  <script src="/assets/app.js?v=20260808c"></script>
+  <script src="/assets/wall.js?v=20260812a"></script>
+  <script src="/assets/settings.js?v=20260812e"></script>
+  <script src="/assets/app.js?v=20260812c"></script>
   <script>
     // 从 RCJ 任一站点（955827.xyz 任意子域）进来时，显示「← 返回」并跳回来源页，形成产品矩阵闭环
     (function () {
@@ -270,6 +287,74 @@
         navigator.serviceWorker.register('/sw.js').catch(function () {});
       });
     }
+  </script>
+  <script>
+    // v2.6：从考试群分享链接（?group=群名）进入时，显示群上下文横幅，强化「面试群里的连接工具」定位
+    (function () {
+      try {
+        var g = new URLSearchParams(location.search).get('group');
+        if (g) {
+          var el = document.getElementById('group-banner');
+          if (el) {
+            var dec = (window.decodeURIComponent ? decodeURIComponent(g) : g);
+            el.appendChild(document.createTextNode('🎯 你正在为 '));
+            var b = document.createElement('b');
+            b.textContent = dec;
+            el.appendChild(b);
+            el.appendChild(document.createTextNode(' 找面试搭子 · 60 秒试音，找到合适的人'));
+            el.hidden = false;
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <script>
+    // 顶栏「设置」按钮 → 打开设置弹窗（含「关于 FaceTalk」说明）
+    (function () {
+      try {
+        var g = document.getElementById('open-set');
+        if (g) g.addEventListener('click', function () { if (window.FTSettings) window.FTSettings.open(); });
+      } catch (e) {}
+    })();
+
+    // 发到社群里匹配：一键复制群发文案（微信群无法直接点开外部链接，所以只提供文案复制）
+    (function () {
+      try {
+        var btn = document.getElementById('sc-copy-text');
+        if (!btn) return;
+        var TEXT = '有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz';
+
+        // 自带 toast（不依赖任何外部全局，确保「已复制」反馈一定出现）
+        var toastTimer = null;
+        function showToast(msg) {
+          var t = document.getElementById('ft-copy-toast');
+          if (!t) { t = document.createElement('div'); t.id = 'ft-copy-toast'; t.className = 'ft-copy-toast'; document.body.appendChild(t); }
+          t.textContent = msg;
+          t.classList.add('show');
+          if (toastTimer) clearTimeout(toastTimer);
+          toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1800);
+        }
+
+        function copy(text) {
+          function done() {
+            showToast('✅ 已复制，去群里粘贴吧');
+            var old = btn.textContent;
+            btn.textContent = '✓ 已复制';
+            setTimeout(function () { btn.textContent = old; }, 1800);
+          }
+          function fallback() {
+            try { var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+              document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+              done();
+            } catch (e2) { showToast('复制失败，请长按手动复制'); }
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(fallback);
+          } else { fallback(); }
+        }
+        btn.addEventListener('click', function () { copy(TEXT); });
+      } catch (e) {}
+    })();
   </script>
 </body>
 </html>

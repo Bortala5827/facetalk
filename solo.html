@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>自我练习 · FaceTalk 面试搭子</title>
-  <meta name="description" content="FaceTalk 面试搭子 — 录 1–3 分钟完整作答，AI 帮你点评。" />
+  <meta name="description" content="FaceTalk 面试搭子 — 录 1–3 分钟完整作答，回放自查、反复打磨。" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260811a" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260812e" />
 </head>
 <body>
   <div class="series-bar">
@@ -18,7 +18,6 @@
     <div class="brand"><a href="/">🎙 FaceTalk 面试搭子</a></div>
     <nav class="nav">
       <a href="/">首页</a>
-      <button class="btn-set" id="open-set">⚙ 接口</button>
     </nav>
   </header>
 
@@ -27,24 +26,13 @@
     <details class="solo-desc">
       <summary class="solo-desc-sum">ℹ 说明与隐私 <span class="solo-caret" aria-hidden="true">▾</span></summary>
       <div class="solo-desc-inner">
-    <p class="muted" style="margin:0 0 12px">两种练法：<b>练题模式</b>按题库真题作答、AI 按考官口径点评；<b>自由说</b>不给题随便开口、AI 只看表达（需自备 Key，仅存本机）。</p>
+    <p class="muted" style="margin:0 0 12px">按题库真题作答，录完回放自查。录音仅存本机浏览器，不上传服务器。</p>
 
     <p class="privacy-banner" id="privacy-banner">
       🔒 <b>隐私说明：</b>你的录音仅保存在<b>本机浏览器</b>，<b>不会上传任何服务器</b>；换设备、清缓存或关闭页面即消失，无需担心泄露。
     </p>
       </div>
     </details>
-
-    <div class="smode-switch" id="smode-switch">
-      <button class="smode on" data-smode="drill" type="button">练题模式</button>
-      <button class="smode" data-smode="free" type="button">自由说</button>
-    </div>
-
-    <section class="card free-card" id="free-card" hidden>
-      <p class="free-lead">不给题。想到什么说什么，卡壳、重复、沉默都算数。</p>
-      <p class="free-tip">没头绪就从这几个开始：今天最烦的一件事 · 昨天都干了啥 · 为什么想考这个岗</p>
-      <p class="free-cross">想按天坚持练开口？<a href="https://955827.xyz/solospeak/" target="_blank" rel="noopener">SoloSpeak · 独声 →</a></p>
-    </section>
 
     <section class="card" id="topic-card">
       <div class="topic-head">
@@ -84,18 +72,8 @@
         <audio id="audio" controls></audio>
         <div class="player-actions">
           <button class="btn-mini" id="replay">↺ 重录</button>
-          <button class="btn-mini ok" id="ai">✨ AI 点评</button>
           <button class="btn-mini" id="finish">✅ 完成练习</button>
         </div>
-      </div>
-    </section>
-
-    <section class="card" id="result-card" hidden>
-      <h2 class="sec-title">📝 点评结果</h2>
-      <div id="transcript" class="transcript"></div>
-      <div id="comment" class="comment"></div>
-      <div class="player-actions" style="margin-top:14px">
-        <button class="btn-mini" id="finish2">✅ 完成练习</button>
       </div>
     </section>
 
@@ -112,7 +90,6 @@
   </main>
 
     <script src="/assets/ft-util.js?v=20260806p"></script>
-    <script src="/assets/settings.js?v=20260807a"></script>
     <script src="/assets/ftwave.js"></script>
     <script>
   (function () {
@@ -309,34 +286,6 @@
       });
     });
 
-    // ===== 双模式：练题（题库 + 考官点评） / 自由说（SoloSpeak 模式，随意开口）=====
-    var SMODE_KEY = 'facetalk_solo_mode';
-    var soloMode = 'drill';
-    try { soloMode = localStorage.getItem(SMODE_KEY) === 'free' ? 'free' : 'drill'; } catch (e) {}
-    function isFree() { return soloMode === 'free'; }
-    function curMin() { return isFree() ? 20 : MIN; }
-    function applySoloMode(m, silent) {
-      soloMode = (m === 'free') ? 'free' : 'drill';
-      try { localStorage.setItem(SMODE_KEY, soloMode); } catch (e) {}
-      var free = isFree();
-      Array.prototype.forEach.call($('smode-switch').querySelectorAll('.smode'), function (b) {
-        b.classList.toggle('on', b.getAttribute('data-smode') === soloMode);
-      });
-      var inDone = $('done-card') && !$('done-card').hidden;
-      if (!inDone) { $('topic-card').hidden = free; $('free-card').hidden = !free; }
-      $('rec-hint').innerHTML = free
-        ? '⏱ 想说多久说多久（最长 3 分钟）。全程本地录音，不上传服务器。'
-        : '⏱ 建议答 <strong>1–3 分钟</strong>（最长 3 分钟，约满自动停止）。全程本地录音，不上传服务器。';
-      var ag = $('again'); if (ag) ag.textContent = free ? '🎤 再说一段' : '🎤 再练一题';
-      var dt = $('done-tip'); if (dt) dt.textContent = free
-        ? '下一段随时可以开始，上次录音已清除。'
-        : '下一次练习会从题库里重新随机抽题，上次录音已清除。';
-      if (!silent) setStatus(free ? '自由说：不给题，直接开口' : '练题模式：按题库真题作答');
-    }
-    Array.prototype.forEach.call($('smode-switch').querySelectorAll('.smode'), function (b) {
-      b.addEventListener('click', function () { applySoloMode(b.getAttribute('data-smode')); });
-    });
-
     var recBtn = $('rec'), recTime = $('rec-time'), recHint = $('rec-hint');
     var recStage = $('rec-stage'), recCaption = $('rec-caption');
     var player = $('player'), audio = $('audio'), status = $('status');
@@ -414,18 +363,16 @@
         audio.src = blobUrl;
         player.hidden = false;
         hasRecorded = true;
-        $('result-card').hidden = true;
         exitRecUI();
         // 本地保存：录音进 IndexedDB，题目/时长进 localStorage，刷新可恢复
         saveAudio(blob);
         saveState({
-          mode: soloMode,
           cat: curCat,
-          catLabel: isFree() ? '自由说' : $('topic-cat').textContent,
-          q: isFree() ? '' : $('topic').textContent,
+          catLabel: $('topic-cat').textContent,
+          q: $('topic').textContent,
           dur: Math.floor((Date.now() - recStart) / 1000)
         });
-        recCaption.textContent = '录好了，回放听听或直接点「AI 点评」';
+        recCaption.textContent = '录好了，回放听听，或点「完成练习」';
         setStatus('录好了 ✅ 已自动存到本机，刷新也能回放');
       };
       mediaRec.start();
@@ -451,12 +398,10 @@
       var dur = (Date.now() - recStart) / 1000;
       mediaRec.stop();
       recTime.textContent = fmt(dur);
-      if (dur < curMin()) {
+      if (dur < MIN) {
         resetRecUI();
         player.hidden = true; hasRecorded = false;
-        setStatus(isFree()
-          ? '太短了（不足 ' + curMin() + ' 秒），再多说两句'
-          : '有点短（不足 ' + curMin() + ' 秒，建议答满 1 分钟以上），再录一次', true);
+        setStatus('有点短（不足 ' + MIN + ' 秒，建议答满 1 分钟以上），再录一次', true);
       }
     }
 
@@ -473,77 +418,19 @@
       setStatus('重新录一段吧');
     });
 
-    // —— AI 点评：复用 /api/llm 同域代理（用户自备 Key，仅本机）——
-    $('ai').addEventListener('click', async function () {
-      if (!hasRecorded) { setStatus('先录一段再点评', true); return; }
-      var cfg = (window.FTSettings && window.FTSettings.get) ? window.FTSettings.get() : {};
-      var stt = (cfg.asrEngine === 'cloud') ? { base: cfg.sttBase, key: cfg.sttKey, model: cfg.sttModel } : null;
-      var llm = (cfg.llmEnabled) ? { base: cfg.llmBase, key: cfg.llmKey, model: cfg.llmModel } : null;
-      if (!stt || !stt.base || !stt.key || !stt.model) { setStatus('未配置语音转写（云端 STT）：点右上「⚙ 接口」填 Whisper 兼容 Key', true); return; }
-      if (!llm || !llm.base || !llm.key || !llm.model) { setStatus('未配置大模型：点右上「⚙ 接口」填 LLM Base/Key/Model', true); return; }
-
-      setStatus('转写中…');
-      $('result-card').hidden = false;
-      $('transcript').textContent = '⏳ 转写中…';
-      $('comment').textContent = '';
-
-      var blob = await (await fetch(blobUrl)).blob();
-      var fd = new FormData();
-      fd.append('base', stt.base); fd.append('key', stt.key); fd.append('model', stt.model); fd.append('file', blob, 'seg.webm');
-      var tr;
-      try {
-        var r = await fetch('/api/llm?type=transcribe', { method: 'POST', body: fd });
-        tr = await r.json();
-      } catch (e) { setStatus('转写请求失败（网络/CORS）', true); return; }
-      if (!tr || !tr.ok) { $('transcript').textContent = '❌ 转写失败：' + ((tr && tr.error) || '未知错误'); setStatus(''); return; }
-      $('transcript').textContent = (isFree() ? '🗣 你说的：\n' : '🗣 你的作答：\n') + tr.text;
-
-      setStatus('AI 点评中…');
-      var prompt = isFree()
-        ? ('你是一名口头表达教练，正在帮一个人练习"开口说话"（不是面试）。' +
-           '下面是他一段自由表达的转写稿。请按以下结构点评（用中文、分点、具体、可操作，语气鼓励但诚实）：\n' +
-           '1. 表达流畅度（语速、停顿、有没有明显卡壳）；\n' +
-           '2. 结构清晰度（有没有讲清楚一件事的起因经过结果）；\n' +
-           '3. 口头禅与冗余（列出重复出现的词，如"然后""就是""那个"）；\n' +
-           '4. 下一次可以试的一个小改进（只给一条，最具体的那条）。\n' +
-           '注意：不要用面试评分口径，不要打分，不要说"考生"。\n\n他说的内容：\n' + tr.text)
-        : ('你是一名严格的面试考官，正在点评一位报考辅警/公职人员的考生。' +
-           '下面是他对本面试题的口头作答转写稿。请按以下结构点评（用中文、分点、具体、可操作）：\n' +
-           '1. 整体印象（逻辑性、条理性、语气）；\n' +
-           '2. 内容亮点（说得好的地方）；\n' +
-           '3. 可改进点（内容空洞/跑题/口头禅/结构问题等）；\n' +
-           '4. 一句一句话术优化建议（给一个更好的开头或结尾示例）。\n' +
-           '面试题：' + $('topic').textContent + '\n\n考生作答：\n' + tr.text);
-      try {
-        var cr = await fetch('/api/llm?type=chat', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ base: llm.base, key: llm.key, model: llm.model, messages: [{ role: 'user', content: prompt }] })
-        });
-        var cd = await cr.json();
-        if (!cd || !cd.ok) { $('comment').textContent = '❌ 点评失败：' + ((cd && cd.error) || '未知错误'); }
-        else { $('comment').textContent = cd.content || '(空)'; }
-      } catch (e) { $('comment').textContent = '❌ 点评请求失败'; }
-      setStatus('点评完成 ✅');
-    });
-
     // —— 完成页 + 一键再练 ——
     function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
     function showDone() {
       var st = loadState() || {};
       var dur = st.dur || 0;
-      var free = (st.mode || soloMode) === 'free';
-      var label = free ? '自由说' : (st.catLabel || $('topic-cat').textContent);
-      var q = st.q || (free ? '' : $('topic').textContent);
+      var label = st.catLabel || $('topic-cat').textContent;
+      var q = st.q || $('topic').textContent;
       $('done-summary').innerHTML =
-        '<div class="done-row"><span class="done-k">' + (free ? '练习方式' : '练习题型') + '</span><span class="done-v">' + esc(label) + '</span></div>' +
+        '<div class="done-row"><span class="done-k">练习题型</span><span class="done-v">' + esc(label) + '</span></div>' +
         '<div class="done-row"><span class="done-k">本次时长</span><span class="done-v">' + fmt(dur) + '</span></div>' +
         (q ? '<p class="done-q"><span class="done-k">本场题目</span>' + esc(q) + '</p>' : '');
-      $('smode-switch').hidden = true;
-      $('free-card').hidden = true;
       $('topic-card').hidden = true;
       $('rec-card').hidden = true;
-      $('result-card').hidden = true;
       $('done-card').hidden = false;
       setStatus('');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -553,24 +440,19 @@
       if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
       hasRecorded = false; recorderReady = false;
       player.hidden = true; audio.src = '';
-      $('result-card').hidden = true;
       $('done-card').hidden = true;
-      $('smode-switch').hidden = false;
       $('rec-card').hidden = false;
       resetRecUI(); recTime.textContent = '00:00';
-      applySoloMode(soloMode, true);
-      if (!isFree()) pickTopic();
-      setStatus(isFree() ? '来，接着说 🎤' : '已重置，开始新一题 🎯');
+      pickTopic();
+      setStatus('已重置，开始新一题 🎯');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     $('finish').addEventListener('click', showDone);
-    $('finish2').addEventListener('click', showDone);
     $('again').addEventListener('click', resetForNew);
 
     // —— 状态恢复：刷新/重进后还原上一段本机录音与题目 ——
     (async function restore() {
       var st = loadState();
-      applySoloMode((st && st.mode) || soloMode, true);
       if (!st) return;
       if (st.cat) {
         curCat = st.cat;
@@ -587,11 +469,8 @@
       player.hidden = false;
       hasRecorded = true;
       recCaption.textContent = '已恢复上一段本地录音，回放或重录';
-      setStatus('已恢复上一段本机录音，可直接回放 / 点评');
+      setStatus('已恢复上一段本机录音，可直接回放');
     })();
-
-    // 打开设置（复用 FTSettings 弹窗）
-    $('open-set').addEventListener('click', function () { if (window.FTSettings && window.FTSettings.open) window.FTSettings.open(); });
   })();
   </script>
   <footer class="site-footer">

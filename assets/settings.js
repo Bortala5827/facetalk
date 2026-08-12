@@ -125,44 +125,78 @@
     wrap.id = 'set-mask';
     wrap.innerHTML =
       '<div class="set-modal">' +
-        '<div class="set-head"><span>🎙 语音 & AI 点评设置（自备 Key）</span><button class="set-x" id="set-x">✕</button></div>' +
-        '<p class="set-tip">语音转写和 AI 点评需你自己的 API Key，<b>Key 仅保存在本机浏览器</b>，不会上传给任何人。</p>' +
-        '<div class="set-section-title">🎙 语音转写引擎</div>' +
-        '<div class="set-engine-opt">' +
-          '<label class="set-engine-row"><input type="radio" name="aiAsrEngine" value="webspeech" /> <span><b>🌐 浏览器内置</b>（免费，部分手机/微信不支持）</span></label>' +
-          '<label class="set-engine-row"><input type="radio" name="aiAsrEngine" value="cloud" /> <span><b>☁️ 云端 API</b>（国内直连·推荐）</span></label>' +
+        '<div class="set-head"><span>⚙ 设置</span><button class="set-x" id="set-x">✕</button></div>' +
+        '<div class="set-tabs"><button class="set-tab active" data-tab="config">⚙ 接口设置</button><button class="set-tab" data-tab="about">ℹ 关于</button></div>' +
+        '<div class="set-panel set-panel-active" id="set-panel-config">' +
+          '<p class="set-tip">语音转写和 AI 点评需你自己的 API Key，<b>Key 仅保存在本机浏览器</b>，不会上传给任何人。</p>' +
+          '<div class="set-section-title">🎙 语音转写引擎</div>' +
+          '<div class="set-engine-opt">' +
+            '<label class="set-engine-row"><input type="radio" name="aiAsrEngine" value="webspeech" /> <span><b>🌐 浏览器内置</b>（免费，部分手机/微信不支持）</span></label>' +
+            '<label class="set-engine-row"><input type="radio" name="aiAsrEngine" value="cloud" /> <span><b>☁️ 云端 API</b>（国内直连·推荐）</span></label>' +
+          '</div>' +
+          '<p class="set-sub-hint">浏览器内置无需 Key，但 iOS Safari / 微信内置常无法转写；云端 API 需配置 Key，几乎全平台可用。</p>' +
+          '<div id="set-asr-cloud" hidden>' +
+            '<label class="set-field">API Base URL（Whisper 兼容）<input class="set-input" id="set-asrBase" placeholder="https://api.siliconflow.cn/v1" autocomplete="off" /></label>' +
+            '<label class="set-field">API Key<input class="set-input" id="set-asrKey" type="password" placeholder="sk-...（仅存本机）" autocomplete="off" /></label>' +
+            '<label class="set-field">模型名<input class="set-input" id="set-asrModel" placeholder="FunAudioLLM/SenseVoiceSmall" autocomplete="off" /></label>' +
+            '<p class="set-sub-hint">推荐硅基流动 SenseVoice：<code>https://api.siliconflow.cn/v1</code> + <code>FunAudioLLM/SenseVoiceSmall</code></p>' +
+          '</div>' +
+          '<div class="set-section-title">🤖 AI 点评</div>' +
+          '<label class="set-chk"><input type="checkbox" id="set-llmEnabled" /> <span>✅ 启用 AI 点评</span></label>' +
+          '<div id="set-llm-body">' +
+            '<label class="set-field">预设<select class="set-input" id="set-preset">' + Object.keys(PRESETS).map(function (k) { return '<option value="' + k + '">' + PRESETS[k].name + '</option>'; }).join('') + '</select></label>' +
+            '<label class="set-field">API Base URL<input class="set-input" id="set-llmBase" placeholder="https://api.siliconflow.cn/v1" autocomplete="off" /></label>' +
+            '<label class="set-field">API Key（sk- 开头）<input class="set-input" id="set-llmKey" type="password" placeholder="sk-...（仅存本机）" autocomplete="off" /></label>' +
+            '<label class="set-field">模型名<input class="set-input" id="set-llmModel" placeholder="Qwen/Qwen2.5-7B-Instruct 或 deepseek-chat" autocomplete="off" /></label>' +
+          '</div>' +
+          '<div class="set-actions">' +
+            '<button class="btn-mini" id="set-test" type="button">🧪 测试连接</button>' +
+            '<span class="set-test-result" id="set-test-result"></span>' +
+          '</div>' +
+          '<div class="set-actions set-actions-bottom">' +
+            '<button class="btn-mini grey" id="set-clear" type="button">清除全部</button>' +
+            '<button class="btn-mini grey" id="set-close" type="button">关闭</button>' +
+            '<button class="btn-primary" id="set-save" type="button">保存</button>' +
+          '</div>' +
+          '<p class="set-hint">📘 <a href="https://exam.955827.xyz/tutorials/api-key.html" target="_blank" rel="noopener">国内大模型免费 API 获取教程</a></p>' +
         '</div>' +
-        '<p class="set-sub-hint">浏览器内置无需 Key，但 iOS Safari / 微信内置常无法转写；云端 API 需配置 Key，几乎全平台可用。</p>' +
-        '<div id="set-asr-cloud" hidden>' +
-          '<label class="set-field">API Base URL（Whisper 兼容）<input class="set-input" id="set-asrBase" placeholder="https://api.siliconflow.cn/v1" autocomplete="off" /></label>' +
-          '<label class="set-field">API Key<input class="set-input" id="set-asrKey" type="password" placeholder="sk-...（仅存本机）" autocomplete="off" /></label>' +
-          '<label class="set-field">模型名<input class="set-input" id="set-asrModel" placeholder="FunAudioLLM/SenseVoiceSmall" autocomplete="off" /></label>' +
-          '<p class="set-sub-hint">推荐硅基流动 SenseVoice：<code>https://api.siliconflow.cn/v1</code> + <code>FunAudioLLM/SenseVoiceSmall</code></p>' +
+        '<div class="set-panel" id="set-panel-about">' +
+          '<div class="set-about">' +
+            '<p class="set-about-lead">FaceTalk 不是找人聊天的平台，而是<b>面试群里的智能连接工具</b>。没有量的时候先做工具、借已有的考试群冷启动；等群里每天都有人通过它流转，再自然长成生态。</p>' +
+            '<div class="set-journey">' +
+              '<span><b>认识</b> 考试群里已有一群想练的人</span>' +
+              '<span><b>试音</b> 60 秒录音互相听声</span>' +
+              '<span><b>匹配</b> 双方都愿意才组队</span>' +
+              '<span><b>成长</b> 互评互练，一起进步</span>' +
+            '</div>' +
+            '<ul class="set-about-list">' +
+              '<li>📉 <b>更低获客成本</b>：群里已在问"有人一起练吗"，你只要说"别私聊了，丢个 FaceTalk 60 秒试音"。</li>' +
+              '<li>🛡️ <b>更低信任成本</b>：同群都是冲同一个考试来的，天然同目标、同节点。</li>' +
+              '<li>⚡ <b>更低匹配成本</b>：文字尬聊半小时才发现一个考消防一个考教师；60 秒试音直接筛人。</li>' +
+            '</ul>' +
+            '<p class="set-about-safe">🔒 双方提交才能互听 · 🕓 录音阅后即焚 · 🚫 严禁留微信 / 手机号，防骗是底线。</p>' +
+            '<p class="set-about-safe">从「不敢说」到「会表达」，一条线：<b>SoloSpeak</b>（录音练习）→ <b>FaceTalk</b>（真人搭子）→ <b>RCJ Exam Hub</b>（真题刷题 + AI 点评）。</p>' +
+          '</div>' +
         '</div>' +
-        '<div class="set-section-title">🤖 AI 点评</div>' +
-        '<label class="set-chk"><input type="checkbox" id="set-llmEnabled" /> <span>✅ 启用 AI 点评</span></label>' +
-        '<div id="set-llm-body">' +
-          '<label class="set-field">预设<select class="set-input" id="set-preset">' + Object.keys(PRESETS).map(function (k) { return '<option value="' + k + '">' + PRESETS[k].name + '</option>'; }).join('') + '</select></label>' +
-          '<label class="set-field">API Base URL<input class="set-input" id="set-llmBase" placeholder="https://api.siliconflow.cn/v1" autocomplete="off" /></label>' +
-          '<label class="set-field">API Key（sk- 开头）<input class="set-input" id="set-llmKey" type="password" placeholder="sk-...（仅存本机）" autocomplete="off" /></label>' +
-          '<label class="set-field">模型名<input class="set-input" id="set-llmModel" placeholder="Qwen/Qwen2.5-7B-Instruct 或 deepseek-chat" autocomplete="off" /></label>' +
-        '</div>' +
-        '<div class="set-actions">' +
-          '<button class="btn-mini" id="set-test" type="button">🧪 测试连接</button>' +
-          '<span class="set-test-result" id="set-test-result"></span>' +
-        '</div>' +
-        '<div class="set-actions set-actions-bottom">' +
-          '<button class="btn-mini grey" id="set-clear" type="button">清除全部</button>' +
-          '<button class="btn-mini grey" id="set-close" type="button">关闭</button>' +
-          '<button class="btn-primary" id="set-save" type="button">保存</button>' +
-        '</div>' +
-        '<p class="set-hint">📘 <a href="https://exam.955827.xyz/tutorials/api-key.html" target="_blank" rel="noopener">国内大模型免费 API 获取教程</a></p>' +
       '</div>';
     document.body.appendChild(wrap);
 
     wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
     document.getElementById('set-x').addEventListener('click', close);
     document.getElementById('set-close').addEventListener('click', close);
+
+    // Tab 切换：接口设置 / 关于
+    var tabs = wrap.querySelectorAll('.set-tab');
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        var target = this.getAttribute('data-tab');
+        tabs.forEach(function (x) { x.classList.remove('active'); });
+        this.classList.add('active');
+        wrap.querySelectorAll('.set-panel').forEach(function (p) { p.classList.remove('set-panel-active'); });
+        var panel = document.getElementById('set-panel-' + target);
+        if (panel) panel.classList.add('set-panel-active');
+      });
+    });
 
     // 切预设：自动填 baseUrl/model（仅在用户没改过的情况下覆盖）
     document.getElementById('set-preset').addEventListener('change', function () {
@@ -293,12 +327,36 @@
     try { alert(m); } catch (e) {}
   }
 
-  function open() {
+  function open(opts) {
     build();
     // 每次打开时读最新（用户在另一个 tab 改了也能生效）
+    opts = opts || {};
+    var m = document.getElementById('set-mask');
+    var tabBar = m.querySelector('.set-tabs');
+    var headSpan = m.querySelector('.set-head > span');
+    var configTab = m.querySelector('.set-tab[data-tab="config"]');
+    var aboutTab = m.querySelector('.set-tab[data-tab="about"]');
+    var configPanel = document.getElementById('set-panel-config');
+    var aboutPanel = document.getElementById('set-panel-about');
+    if (opts.hideAbout) {
+      // 练习页（一个人练）只需配置接口，不重复展示产品理念
+      if (tabBar) tabBar.style.display = 'none';
+      if (headSpan) headSpan.textContent = '⚙ 接口设置';
+      if (configTab) configTab.classList.add('active');
+      if (aboutTab) aboutTab.classList.remove('active');
+      if (configPanel) configPanel.classList.add('set-panel-active');
+      if (aboutPanel) aboutPanel.classList.remove('set-panel-active');
+    } else {
+      // 落地页：接口设置 + 关于 两个 Tab 都给（默认停在接口设置）
+      if (tabBar) tabBar.style.display = '';
+      if (headSpan) headSpan.textContent = '⚙ 设置';
+      if (configTab) configTab.classList.add('active');
+      if (aboutTab) aboutTab.classList.remove('active');
+      if (configPanel) configPanel.classList.add('set-panel-active');
+      if (aboutPanel) aboutPanel.classList.remove('set-panel-active');
+    }
     S = load();
     fill();
-    var m = document.getElementById('set-mask');
     m.style.display = 'flex';
   }
   function close() { var m = document.getElementById('set-mask'); if (m) m.style.display = 'none'; }

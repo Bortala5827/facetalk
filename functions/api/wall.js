@@ -43,6 +43,9 @@ function hasSensitive(s) {
   for (var i = 0; i < SENSITIVE.length; i++) {
     if (s.indexOf(SENSITIVE[i]) >= 0) return SENSITIVE[i];
   }
+  // 前期（公开留言墙）严禁留个人联系方式：手机号 / 座机号
+  if (/(?:^|[^0-9])1[3-9]\d{9}(?:[^0-9]|$)/.test(s)) return '手机号';
+  if (/(?:^|[^0-9])\d{3,4}-?\d{7,8}(?:[^0-9]|$)/.test(s)) return '座机号';
   return null;
 }
 function getDB(env) {

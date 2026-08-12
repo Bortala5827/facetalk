@@ -144,12 +144,12 @@
     e.preventDefault();
     var body = {
       role: $('i-role').value, city: $('i-city').value.trim(),
-      mode: $('i-mode').value, meet: $('i-meet').value.trim(), note: $('i-note').value.trim(),
+      mode: $('i-mode').value, note: $('i-note').value.trim(),
     };
     var r = await api('POST', '/api/intents', body);
     if (r.status === 200 && r.data.ok) {
       toast('意图已发布，等搭子来申请');
-      $('i-city').value = ''; $('i-meet').value = ''; $('i-note').value = '';
+      $('i-city').value = ''; $('i-note').value = '';
       renderMineOptimistic({ id: r.data.id, role: body.role, city: body.city, mode: body.mode, note: body.note });
       loadBrowse(); loadInbox(); loadMine();
       // 发布成功后自动折叠表单区，让首屏聚焦「找搭子」

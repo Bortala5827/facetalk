@@ -783,7 +783,19 @@ a { color: inherit; text-decoration: none; }
 
 /* 设置弹窗 */
 .set-mask { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 1000; align-items: flex-start; justify-content: center; padding: 24px 12px; overflow-y: auto; }
-.set-modal { background: #fff; width: 100%; max-width: 480px; border-radius: 16px; padding: 18px 18px 16px; box-shadow: 0 18px 50px rgba(0,0,0,.25); }
+.set-modal { background: #fff; width: 100%; max-width: 480px; border-radius: 16px; padding: 0 0 16px; box-shadow: 0 18px 50px rgba(0,0,0,.25); overflow: hidden; }
+/* 设置 Tab 栏 */
+.set-tabs { display: flex; border-bottom: 1px solid var(--line); background: #f8fafc; }
+.set-tab {
+  flex: 1; padding: 12px 8px; font-size: 14px; font-weight: 600;
+  color: var(--ink-3); background: transparent; border: none; border-bottom: 2px solid transparent;
+  cursor: pointer; transition: color .15s, border-color .15s;
+}
+.set-tab.active { color: var(--accent-d); border-bottom-color: var(--accent); }
+.set-tab:hover:not(.active) { color: var(--ink-2); }
+/* 设置面板：仅当前 Tab 可见 */
+.set-panel { display: none; padding: 16px 18px 4px; }
+.set-panel-active { display: block; }
 .set-head { display: flex; justify-content: space-between; align-items: center; font-size: 17px; font-weight: 800; margin-bottom: 6px; }
 .set-x { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
 .set-tip { font-size: 12.5px; color: var(--ink-2); line-height: 1.6; background: #f1f5fb; border-radius: 8px; padding: 9px 11px; margin: 6px 0 12px; }
@@ -1042,30 +1054,6 @@ a { color: inherit; text-decoration: none; }
 .done-tip { font-size: 12.5px; color: var(--ink-3); margin: 14px 0 0; line-height: 1.6; }
 .done-card .btn-primary { max-width: 360px; margin: 0 auto; }
 
-/* 独练双模式：练题 / 自由说（SoloSpeak 模式） */
-.smode-switch {
-  display: inline-flex; gap: 4px; padding: 4px;
-  background: var(--bg-soft); border: 1px solid var(--line);
-  border-radius: 999px; margin: 4px 0 14px;
-}
-.smode {
-  border: none; background: transparent; cursor: pointer;
-  font-size: 13.5px; color: var(--ink-2); padding: 7px 16px;
-  border-radius: 999px; transition: .15s;
-}
-.smode:hover { color: var(--ink); }
-.smode.on {
-  background: var(--card); color: var(--accent);
-  font-weight: 700; box-shadow: var(--shadow-sm);
-}
-
-.free-card { border-left: 3px solid var(--energy); }
-.free-lead { margin: 0 0 8px; font-size: 15.5px; line-height: 1.7; color: var(--ink); font-weight: 600; }
-.free-tip { margin: 0 0 10px; font-size: 13px; line-height: 1.75; color: var(--ink-2); }
-.free-cross { margin: 0; font-size: 13px; color: var(--ink-3); }
-.free-cross a { color: var(--accent); text-decoration: none; font-weight: 600; }
-.free-cross a:hover { text-decoration: underline; }
-
 /* 柔蓝实时波形（面试练习时给自己 / 对方看） */
 .ft-wave {
   display: block;
@@ -1075,4 +1063,187 @@ a { color: inherit; text-decoration: none; }
   border-radius: 12px;
   background: linear-gradient(180deg, #f3f6fd 0%, #eef2fb 100%);
   border: 1px solid var(--line);
+}
+
+/* ===== 新定位：面试群里的智能连接工具（v2.6 改版） ===== */
+.group-banner {
+  display: flex; align-items: center; gap: 8px;
+  margin: 14px 0 0; padding: 10px 16px;
+  background: var(--accent-soft); border: 1px solid #d7e0fb;
+  border-left: 4px solid var(--accent); border-radius: 12px;
+  font-size: 14px; color: var(--ink-2); line-height: 1.6;
+}
+.group-banner[hidden] { display: none; }
+.group-banner b { color: var(--accent-d); }
+
+.why { margin: 30px 0 6px; }
+.why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 4px; }
+.why-item {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 18px 16px; box-shadow: var(--shadow);
+}
+.why-emoji { font-size: 24px; line-height: 1; display: block; margin-bottom: 10px; }
+.why-item h3 { font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 6px; letter-spacing: -.2px; }
+.why-item p { font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+.why-item b { color: var(--ink); font-weight: 700; }
+@media (max-width: 640px) { .why-grid { grid-template-columns: 1fr; gap: 12px; } }
+
+.trust-strip {
+  display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+  margin: 18px 0 0; padding: 12px 16px;
+  background: var(--bg-soft); border: 1px solid var(--line); border-radius: 12px;
+  font-size: 13px; color: var(--ink-2); line-height: 1.5;
+}
+.trust-strip .ts-item { display: inline-flex; align-items: center; gap: 6px; }
+.trust-strip b { color: var(--ink); font-weight: 700; }
+
+.board-note { font-size: 12.5px; color: var(--ink-3); margin: 0 0 12px; line-height: 1.6; }
+
+/* ===== 四步旅程：认识 → 试音 → 匹配 → 一起成长 ===== */
+.journey {
+  list-style: none; margin: 22px 0 4px; padding: 0;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+}
+.j-step {
+  position: relative;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md);
+  padding: 14px 10px 12px; text-align: center; box-shadow: var(--shadow-sm);
+}
+.j-step::after {
+  content: "→"; position: absolute; right: -9px; top: 50%; transform: translateY(-50%);
+  color: var(--ink-3); font-size: 15px; font-weight: 700; z-index: 2;
+}
+.j-step:last-child::after { display: none; }
+.j-emoji { font-size: 26px; line-height: 1; display: block; margin-bottom: 6px; }
+.j-name { display: block; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 3px; letter-spacing: -.2px; }
+.j-desc { display: block; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
+.hero-tag { font-size: 15px; color: var(--ink-2); margin: 6px 0 0; font-weight: 600; }
+.hero-tag b { color: var(--accent-d); }
+@media (max-width: 560px) {
+  .journey { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .j-step::after { display: none; }
+  .j-desc { font-size: 12px; }
+}
+
+/* ===== 发到社群里匹配（工具思维冷启动） ===== */
+.share-card {
+  margin: 26px 0; padding: 20px;
+  background: var(--card); border: 1px solid var(--line);
+  border-left: 4px solid var(--accent); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.sc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sc-emoji { font-size: 24px; line-height: 1; flex: none; }
+.sc-title { font-size: 17px; font-weight: 800; color: var(--ink); margin: 0; line-height: 1.4; }
+.sc-sub { font-size: 13.5px; color: var(--ink-2); line-height: 1.65; margin: 0 0 14px; }
+.sc-text-preview {
+  padding: 14px 16px; font-size: 14.5px; line-height: 1.6; color: var(--ink);
+  background: #f8fafc; border: 1px solid var(--line); border-radius: var(--r-sm);
+  margin-bottom: 12px; word-break: break-all;
+}
+.sc-copy-main {
+  display: block; width: 100%; padding: 13px 18px;
+  font-size: 15.5px; font-weight: 700; text-align: center;
+  color: #fff; background: var(--accent-grad);
+  border: none; border-radius: var(--r-md);
+  cursor: pointer; box-shadow: 0 4px 14px rgba(79,70,229,.28);
+  transition: filter .15s, transform .1s;
+}
+.sc-copy-main:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.sc-copy-main:active { transform: translateY(0); }
+
+/* ===== 复制成功 toast（自带，不依赖外部全局） ===== */
+.ft-copy-toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(16px);
+  z-index: 9999; max-width: 88vw; padding: 11px 20px;
+  font-size: 14.5px; font-weight: 600; color: #fff; text-align: center;
+  background: rgba(17,24,39,.92); border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.28);
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+}
+.ft-copy-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== 设置弹窗「关于 FaceTalk」 ===== */
+.set-about { font-size: 13px; color: var(--ink-2); line-height: 1.7; margin: 4px 0 8px; }
+.set-about-lead { margin: 0 0 10px; }
+.set-about-lead b { color: var(--accent-d); }
+.set-journey { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 14px; margin: 0 0 10px; }
+.set-journey span { font-size: 12.5px; color: var(--ink-2); }
+.set-journey b { color: var(--accent-d); }
+.set-about-list { margin: 0 0 10px; padding-left: 2px; list-style: none; }
+.set-about-list li { font-size: 12.5px; color: var(--ink-2); margin-bottom: 5px; line-height: 1.6; }
+.set-about-list b { color: var(--ink); }
+.set-about-safe { font-size: 12.5px; color: var(--ink-2); background: #f1f5fb; border-radius: 8px; padding: 9px 11px; margin: 0; line-height: 1.6; }
+.set-about-safe a { color: var(--accent-d); font-weight: 700; }
+.set-about-safe b { color: var(--ink); }
+
+/* ============================================================
+   FaceTalk 设计语言升级（v2.9）— 对齐 Speak Series 玻璃质感
+   参考：SoloSpeak（安静 · 克制 · 呼吸感）/ LetOut（玻璃 · 辉光 · 颗粒）
+   纯视觉层增强，不改任何结构/脚本；尊重 prefers-reduced-motion
+   ============================================================ */
+
+/* 统一缓动曲线（弹性回弹，LetOut 同款） */
+:root { --ease: cubic-bezier(.34, 1.56, .64, 1); --ease-soft: cubic-bezier(.22, .61, .36, 1); }
+
+/* 1) 环境颗粒噪点（LetOut 同款，纯 CSS 零 JS，super subtle，置于内容之上、弹窗/toast 之下） */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 3;
+  pointer-events: none; opacity: .035; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* 2) Hero 辉光呼吸（SoloSpeak 的「安静呼吸感」移植到靛蓝品牌） */
+@keyframes heroBreathe { 0%,100% { opacity:.5; transform: translateX(-50%) scale(1); } 50% { opacity:.82; transform: translateX(-50%) scale(1.06); } }
+.hero::before { animation: heroBreathe 7s ease-in-out infinite; }
+
+/* 3) 入场动画：轻量 fade-up，错峰展开（让首屏有“活”的质感） */
+@keyframes ftRise { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform: translateY(0); } }
+.hero > *, .share-card, .form-collapse, .board, .b-collapse, .me-bar, .wall {
+  animation: ftRise .6s var(--ease-soft) both;
+}
+.eyebrow   { animation-delay: .02s; }
+.hero h1   { animation-delay: .06s; }
+.hero-sub  { animation-delay: .10s; }
+.hero-tag  { animation-delay: .14s; }
+.journey   { animation-delay: .18s; }
+.entry-grid{ animation-delay: .22s; }
+.solo-mini { animation-delay: .26s; }
+
+/* 4) 四步旅程：箭头辉光 + hover 抬升（把“认识→试音→匹配→成长”做成可感的路径） */
+.j-step { transition: transform .25s var(--ease-soft), box-shadow .25s, border-color .25s; }
+.j-step:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: #d3defb; }
+.j-step::after { color: var(--accent-soft); }
+.j-step:hover::after { color: var(--accent); }
+
+/* 5) 入口卡：玻璃质感 + 顶部高光（主行动更“立”起来） */
+.entry-card {
+  position: relative; overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+.entry-card::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+}
+.entry-card.pair { border-top: 3px solid #16a34a; }
+
+/* 6) 分享卡：品牌渐变底，强化“工具冷启动”主行动 */
+.share-card {
+  background: linear-gradient(180deg, #fbfcff 0%, #f3f5ff 100%);
+  border-left: 4px solid var(--accent);
+  transition: box-shadow .25s var(--ease-soft);
+}
+.share-card:hover { box-shadow: var(--shadow-lg); }
+
+/* 7) 顶栏 logo 微辉光（呼应 Hero 呼吸） */
+.brand-mark { box-shadow: 0 2px 10px rgba(79,70,229,.35); }
+
+/* 8) 主按钮 hover 用弹性缓动，点按更有“反馈感” */
+.btn-primary, .sc-copy-main { transition-timing-function: var(--ease-soft); }
+
+/* 无障碍：减少动效时不打扰 */
+@media (prefers-reduced-motion: reduce) {
+  body::after { display: none; }
+  .hero::before { animation: none; }
+  .hero > *, .share-card, .form-collapse, .board, .b-collapse, .me-bar, .wall { animation: none !important; }
+  .j-step, .entry-card, .share-card, .btn-primary, .sc-copy-main { transition: none !important; }
 }

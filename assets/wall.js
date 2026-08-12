@@ -91,6 +91,9 @@
     if (!textEl || !btn) return;
     var text = (textEl.value || '').trim();
     if (!text) { showErr('写点内容再发布吧'); return; }
+    // 前期（公开留言墙）严禁留个人微信 / 手机号：先在前端拦一道，避免绕过后端
+    var contactHit = /微信|vx|v信|wechat|微信号|加我|私聊|1[3-9]\d{9}/i.test((nameEl.value || '') + ' ' + text);
+    if (contactHit) { showErr('请勿在留言墙留个人微信或手机号，防骗'); return; }
     btn.disabled = true;
     try {
       var r = await fetch(BASE + '/api/wall', {

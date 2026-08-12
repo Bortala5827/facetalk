@@ -607,6 +607,11 @@
 
     document.getElementById('info-save').addEventListener('click', function(){
       var v = document.getElementById('info-mine').value.replace(/\s+/g,' ').trim();
+      // 坚决反对在联机信息里留个人微信 / 手机号：这里只收腾讯会议 / 飞书会议号
+      if (/微信|vx|v信|wechat|微信号|加我|私聊|1[3-9]\d{9}/i.test(v)) {
+        toast('请只留腾讯会议 / 飞书会议号，勿留个人微信或手机号', true);
+        return;
+      }
       apiA('POST',{action:'set-info',pairId:pairId,info:v}).then(function(r){
         if(r.status===200 && r.data.ok){ toast('已保存，对方即将看到'); }
         else toast('保存失败：'+(r.data.error||r.status), true);
