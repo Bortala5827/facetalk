@@ -83,7 +83,7 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 560px) { .brand-tag { display: none; } }
 
 /* hero */
-.hero { position: relative; padding: 52px 0 14px; }
+.hero { position: relative; padding: 52px 0 24px; overflow: hidden; }
 .hero::before {
   content: ""; position: absolute; top: -70px; left: 50%; transform: translateX(-50%);
   width: 540px; height: 320px; max-width: 110%;
@@ -93,12 +93,15 @@ a { color: inherit; text-decoration: none; }
 
 /* ═══ GSAP 风格 Hero：超大字 + 拖拽手势 + 四步流程卡 ═══ */
 .hero-stage {
-  position: relative; text-align: center; padding: 40px 0 20px;
+  position: relative; text-align: center;
+  /* 给超大字留足空间：字号最大 260px × line-height 0.9 ≈ 234px + 拖拽区 + 间距 */
+  min-height: 280px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 .hero-big {
   display: inline-block;
-  font-size: clamp(120px, 22vw, 260px);
-  font-weight: 900; line-height: 0.9;
+  font-size: clamp(100px, 18vw, 220px);
+  font-weight: 900; line-height: 0.95;
   background: var(--accent-grad);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -106,7 +109,7 @@ a { color: inherit; text-decoration: none; }
   user-select: none;
 }
 .hero-drag {
-  position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   z-index: 2; touch-action: none; will-change: transform;
 }
@@ -117,9 +120,9 @@ a { color: inherit; text-decoration: none; }
   white-space: nowrap;
 }
 .hero-kicker {
-  text-align: center; font-size: clamp(15px, 2.6vw, 20px);
+  text-align: center; font-size: clamp(14px, 2.4vw, 18px);
   color: var(--ink-2); line-height: 1.55;
-  margin: 16px auto 0; max-width: 520px;
+  margin: 20px auto 0; max-width: 520px;
   padding: 0 16px;
 }
 
@@ -148,10 +151,11 @@ a { color: inherit; text-decoration: none; }
   .step-name { font-size: 16px; }
   .step-desc { font-size: 13px; }
   .drag-hand { font-size: 44px; }
-  .hero-stage { padding: 56px 0 28px; }
+  .hero-stage { min-height: 320px; }
 }
 @media (max-width: 480px) {
-  .hero-big { font-size: clamp(80px, 26vw, 140px); }
+  .hero-big { font-size: clamp(70px, 22vw, 120px); }
+  .hero-stage { min-height: 200px; }
   .steps-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .step-card { padding: 14px 10px; }
   .step-emoji { font-size: 26px; }
