@@ -86,31 +86,36 @@
 
     <!-- 面试前解压：GSAP 愤怒小鸟式拖拽，纯解压用，放在正式配对之前 -->
     <section class="decomp" id="decomp">
+      <p class="decomp-eyebrow">暖场 · 面试前松一松</p>
       <div class="decomp-head">
         <span class="decomp-emoji">🪀</span>
-        <h2 class="decomp-title">先松松手 · 面试前拽着玩</h2>
+        <h2 class="decomp-title">先松松手 · 拽着玩</h2>
       </div>
       <p class="decomp-sub">拖一拖、甩出去 —— 把紧张先扔出去，再开始 60 秒试音。</p>
       <div class="decomp-stage" id="decomp-stage">
-        <div class="decomp-ball b1" data-ball>🐤</div>
-        <div class="decomp-ball b2" data-ball>🍅</div>
-        <div class="decomp-ball b3" data-ball>🐦</div>
-        <div class="decomp-ball b4" data-ball>💡</div>
-        <div class="decomp-ball b5" data-ball>⭐</div>
+        <div class="decomp-ball b1" data-ball><span class="db-inner">🐤</span></div>
+        <div class="decomp-ball b2" data-ball><span class="db-inner">🍅</span></div>
+        <div class="decomp-ball b3" data-ball><span class="db-inner">🐦</span></div>
+        <div class="decomp-ball b4" data-ball><span class="db-inner">💡</span></div>
+        <div class="decomp-ball b5" data-ball><span class="db-inner">⭐</span></div>
+        <span class="decomp-hint">拖一拖 · 甩出去 · 松手让它飞 💨</span>
       </div>
       <button class="decomp-reset" id="decomp-reset" type="button">↺ 收回去重玩</button>
     </section>
 
-    <!-- 发到社群里匹配：工具思维冷启动 —— 微信群无法直接点开外部链接，所以只提供「复制群发文案」 -->
-    <section class="share-card">
-      <div class="sc-head">
+    <!-- 发到社群里匹配：工具思维冷启动 —— 微信群无法直接点开外部链接，所以只提供「复制群发文案」。默认折叠，避免首页信息过载 -->
+    <details class="share-card">
+      <summary class="sc-sum">
         <span class="sc-emoji">📣</span>
         <h2 class="sc-title">发到社群里匹配，互评组队，效果更佳</h2>
+        <span class="sc-caret" aria-hidden="true">▾</span>
+      </summary>
+      <div class="sc-body">
+        <p class="sc-sub">把下面这段话发到你的辅警 / 消防 / 公考面试群里，同样目标的人看到就会来试音。</p>
+        <div class="sc-text-preview" id="sc-preview">有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz</div>
+        <button class="sc-copy-main" id="sc-copy-text" type="button">📋 复制这段话，去群里发</button>
       </div>
-      <p class="sc-sub">把下面这段话发到你的辅警 / 消防 / 公考面试群里，同样目标的人看到就会来试音。</p>
-      <div class="sc-text-preview" id="sc-preview">有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz</div>
-      <button class="sc-copy-main" id="sc-copy-text" type="button">📋 复制这段话，去群里发</button>
-    </section>
+    </details>
 
     <!-- 我的信誉（桌面端按「信誉/匿名/在线」三栏横铺，避免左对齐单行空洞） -->
     <p class="me-bar">
@@ -370,15 +375,35 @@
       var home = [];
       balls.forEach(function(b){ home.push({ x: b.offsetLeft, y: b.offsetTop }); });
 
+      // 按压涟漪（落在球心，松开后淡出）
+      function popRipple(ball){
+        var r = document.createElement('span');
+        r.className = 'decomp-ripple';
+        ball.appendChild(r);
+        setTimeout(function(){ if (r.parentNode) r.parentNode.removeChild(r); }, 620);
+      }
+
       Draggable.create(balls, {
         type: 'x,y',
         inertia: true,
         bounds: stage,
-        edgeResistance: 0.7,
-        throwResistance: 1400,
-        dragResistance: 0.05,
-        onPress: function(){ gsap.to(this.target, { scale: 1.14, duration: 0.15, ease: 'power2.out' }); },
-        onRelease: function(){ gsap.to(this.target, { scale: 1, duration: 0.25, ease: 'power2.inOut' }); }
+        edgeResistance: 0.35,        // 撞墙更有弹性，不硬停
+        throwResistance: 2200,       // 甩出去飞得更远，更解压
+        dragResistance: 0.04,
+        onPress: function(){
+          gsap.to(this.target, { scale: 0.84, duration: 0.12, ease: 'power2.out' });
+          gsap.to(this.target, { boxShadow: '0 16px 40px rgba(79,70,229,.45)', duration: 0.15 });
+          popRipple(this.target);
+        },
+        onRelease: function(){
+          // 松手：果冻回弹（squash & stretch）
+          gsap.to(this.target, { scale: 1, duration: 0.75, ease: 'elastic.out(1, 0.4)' });
+          gsap.to(this.target, { boxShadow: '0 10px 24px rgba(79,70,229,.25)', duration: 0.4 });
+        },
+        onThrowComplete: function(){
+          // 落地再来一下轻微果冻，强化"被接住"的安心感
+          gsap.fromTo(this.target, { scale: 0.9 }, { scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.35)' });
+        }
       });
 
       // 入场：错落弹入
