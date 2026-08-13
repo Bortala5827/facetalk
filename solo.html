@@ -3,10 +3,92 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>自我练习 · FaceTalk 面试搭子</title>
-  <meta name="description" content="FaceTalk 面试搭子 — 录 1–3 分钟完整作答，回放自查、反复打磨。" />
+  <title>结构化 & 口才练习专区 · FaceTalk 面试搭子</title>
+  <meta name="description" content="FaceTalk 面试搭子 — 结构化 & 口才练习专区：内置各岗位题库，支持自定义上传，练习录音本机留存、可回放、可导出备份。" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="/assets/style.css?v=20260813a" />
+  <style>
+    /* ===== 结构化 & 口才练习专区（独立组件，不影响主页 style.css） ===== */
+    .pz-banner {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412;
+      border-radius: 14px; padding: 12px 14px; margin: 0 0 20px; font-size: 0.86rem; line-height: 1.5;
+    }
+    .pz-banner .pb-ico { font-size: 18px; line-height: 1.2; }
+    .pz-banner .pb-body { flex: 1; }
+    .pz-banner .pb-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .pz-banner button {
+      border: 1px solid #fdba74; background: #fff; color: #c2410c;
+      border-radius: 999px; padding: 5px 12px; font-size: 0.8rem; cursor: pointer;
+    }
+    .pz-banner button.pb-primary { background: #ea580c; color: #fff; border-color: #ea580c; }
+    .pz-banner .pb-dismiss { margin-left: auto; border: none; background: none; color: #9a3412; font-size: 1rem; line-height: 1; padding: 0 2px; }
+
+    .pz-panel { margin: 26px 0; padding: 20px 16px; border: 1px solid #e5e7eb; border-radius: 18px; background: #fff; }
+    .pz-panel h2 { font-size: 1.05rem; margin: 0 0 4px; color: #312e81; }
+    .pz-panel .pz-sub { color: #6b7280; font-size: 0.84rem; margin: 0 0 14px; }
+    .pz-empty { color: #9ca3af; font-size: 0.85rem; padding: 8px 0; }
+
+    /* 自定义题库：单题录入 + 批量粘贴 */
+    .pz-addrow { display: flex; gap: 8px; margin-bottom: 10px; }
+    .pz-addrow input[type=text] {
+      flex: 1; border: 1px solid #d1d5db; border-radius: 10px; padding: 9px 12px; font-size: 0.9rem;
+    }
+    .pz-addrow button, .pz-tools button {
+      border: none; background: #4f46e5; color: #fff; border-radius: 10px; padding: 9px 14px; font-size: 0.85rem; cursor: pointer;
+    }
+    .pz-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    .pz-tools button.pz-ghost { background: #eef2ff; color: #4338ca; }
+    .pz-tools button.pz-danger { background: #fee2e2; color: #b91c1c; }
+    .pz-tools .pz-count { color: #6b7280; font-size: 0.82rem; margin-left: auto; }
+    textarea.pz-csv {
+      width: 100%; min-height: 88px; border: 1px solid #d1d5db; border-radius: 10px; padding: 10px 12px;
+      font-size: 0.85rem; font-family: ui-monospace, Menlo, Consolas, monospace; resize: vertical; box-sizing: border-box;
+    }
+    .pz-hint { color: #9ca3af; font-size: 0.76rem; margin: 6px 0 0; line-height: 1.5; }
+    .pz-custom-list { margin: 10px 0 0; max-height: 180px; overflow-y: auto; }
+    .pz-custom-list li {
+      list-style: none; padding: 7px 10px; border-bottom: 1px dashed #eee; font-size: 0.84rem; color: #374151;
+      display: flex; gap: 8px;
+    }
+    .pz-custom-list li .pc-idx { color: #a5b4fc; font-weight: 700; min-width: 20px; }
+
+    /* 练习日志 */
+    .pz-log { display: flex; flex-direction: column; gap: 12px; }
+    .pz-session {
+      border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px 14px; background: #fafafa;
+    }
+    .pz-session-top { display: flex; align-items: center; gap: 10px; }
+    .pz-sess-play {
+      width: 36px; height: 36px; border-radius: 50%; border: none; background: #4f46e5; color: #fff;
+      cursor: pointer; font-size: 0.85rem; flex: 0 0 auto;
+    }
+    .pz-sess-meta { flex: 1; min-width: 0; }
+    .pz-sess-cat { font-size: 0.72rem; color: #6366f1; font-weight: 600; }
+    .pz-sess-q { font-size: 0.85rem; color: #1f2937; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .pz-sess-del { border: none; background: none; color: #9ca3af; cursor: pointer; font-size: 1rem; flex: 0 0 auto; }
+    .pz-sess-del:hover { color: #dc2626; }
+    .pz-sess-bottom { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+    .pz-stars { display: inline-flex; gap: 2px; }
+    .pz-stars button { border: none; background: none; cursor: pointer; font-size: 1.05rem; color: #d1d5db; padding: 0 1px; line-height: 1; }
+    .pz-stars button.on { color: #f59e0b; }
+    .pz-sess-dur { color: #9ca3af; font-size: 0.76rem; }
+    .pz-sess-note {
+      width: 100%; margin-top: 8px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 9px;
+      font-size: 0.8rem; box-sizing: border-box; resize: vertical; min-height: 30px;
+    }
+
+    /* 导出 */
+    .pz-export-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .pz-export-group { flex: 1 1 220px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px 14px; }
+    .pz-export-group h3 { font-size: 0.9rem; margin: 0 0 8px; color: #312e81; }
+    .pz-export-group .eg-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pz-export-group button { border: 1px solid #c7d2fe; background: #eef2ff; color: #4338ca; border-radius: 8px; padding: 6px 11px; font-size: 0.8rem; cursor: pointer; }
+    .pz-export-opt { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 0.8rem; color: #4b5563; }
+
+    /* 自定义题库 chip */
+    .chip[data-cat="custom"] { position: relative; }
+  </style>
 </head>
 <body>
   <div class="series-bar">
@@ -22,9 +104,21 @@
   </header>
 
   <main class="wrap" style="max-width:680px;margin:0 auto;padding:28px 16px 80px">
+    <!-- 缓存提醒横幅 -->
+    <div class="pz-banner" id="cacheBanner">
+      <span class="pb-ico">⚠️</span>
+      <div class="pb-body">
+        <b>你的练习数据只存在本机浏览器。</b>录音、练习日志、自定义题库都存本地，<b>清理缓存 / 换设备就会丢失</b>。建议定期导出备份。
+        <div class="pb-actions">
+          <button class="pb-primary" id="bannerExport">⬇️ 立即导出备份</button>
+        </div>
+      </div>
+      <button class="pb-dismiss" id="bannerDismiss" title="不再提醒">✕</button>
+    </div>
+
     <!-- 顶部：标题 + 换题 -->
     <div class="solo-head">
-      <h1 class="solo-h">🎤 先一个人练</h1>
+      <h1 class="solo-h">🎤 结构化 & 口才练习专区</h1>
       <button class="solo-shuffle" id="shuffle" type="button" title="换一题" aria-label="换一题">🔀</button>
     </div>
     <p class="solo-privacy">🔒 录音仅存本机浏览器，不上传任何服务器</p>
@@ -41,6 +135,7 @@
         <button class="chip" data-cat="teacher" title="教师招聘">📚</button>
         <button class="chip" data-cat="gk" title="公考 / 事业">🏛️</button>
         <button class="chip" data-cat="gen" title="通用模拟">💡</button>
+        <button class="chip" data-cat="custom" title="我的自定义题库">📥</button>
       </div>
     </section>
 
@@ -77,7 +172,61 @@
       <h2 class="sec-title done-title">本次练习完成</h2>
       <div class="done-summary" id="done-summary"></div>
       <button class="btn-primary" id="again">🎤 再练一次</button>
-      <p class="done-tip" id="done-tip">下一次练习会从题库里重新随机抽题，上次录音已清除。</p>
+      <p class="done-tip" id="done-tip">本次录音已记入「练习日志」，可回放、打分、导出。点再练一次开始新一题。</p>
+    </section>
+
+    <!-- 自定义题库 -->
+    <section class="pz-panel" id="customPanel">
+      <h2>📥 我的题库（自定义）</h2>
+      <p class="pz-sub">支持单题录入、批量粘贴（CSV / Excel 另存为 CSV），或上传 CSV 文件。数据只存在本机。</p>
+      <div class="pz-addrow">
+        <input type="text" id="customOne" placeholder="输入一道题，回车或点添加…" />
+        <button id="customAdd">添加</button>
+      </div>
+      <textarea class="pz-csv" id="customBulk" placeholder="批量粘贴：每行一道题&#10;例：&#10;请谈谈你对基层减负的理解。&#10;单位组织消防演练，你如何策划？"></textarea>
+      <div class="pz-tools">
+        <button class="pz-ghost" id="customImport">导入粘贴内容</button>
+        <button class="pz-ghost" id="customFileBtn">上传 CSV 文件</button>
+        <input type="file" id="customFile" accept=".csv,text/csv" hidden />
+        <button class="pz-danger" id="customClear">清空我的题库</button>
+        <span class="pz-count" id="customCount">0 题</span>
+      </div>
+      <p class="pz-hint">CSV 格式：每行一道题；若用 Excel / WPS / Numbers，请「另存为 CSV」后粘贴或上传。也可在「全部 / 📥」里抽到这些题。</p>
+      <ul class="pz-custom-list" id="customList"></ul>
+    </section>
+
+    <!-- 练习日志 -->
+    <section class="pz-panel" id="logPanel">
+      <h2>🗂 练习日志（本机留存）</h2>
+      <p class="pz-sub">每完成一次练习，录音与题目会被记到这里。可回放、给星评分、写备注，也能一键导出备份。</p>
+      <div class="pz-log" id="logList"></div>
+      <p class="pz-empty" id="logEmpty">还没有完成的练习。录完点 ✓ 完成，会被记到这里。</p>
+    </section>
+
+    <!-- 导出与备份 -->
+    <section class="pz-panel" id="exportPanel">
+      <h2>⬇️ 导出与备份</h2>
+      <p class="pz-sub">把练习日志和我的题库导出到本机文件，清理缓存前务必备份。</p>
+      <div class="pz-export-grid">
+        <div class="pz-export-group">
+          <h3>练习日志</h3>
+          <div class="eg-row">
+            <button data-exp="log" data-fmt="json">JSON</button>
+            <button data-exp="log" data-fmt="csv">CSV</button>
+            <button data-exp="log" data-fmt="md">Markdown</button>
+          </div>
+        </div>
+        <div class="pz-export-group">
+          <h3>我的题库</h3>
+          <div class="eg-row">
+            <button data-exp="custom" data-fmt="csv">CSV</button>
+            <button data-exp="custom" data-fmt="json">JSON</button>
+          </div>
+        </div>
+      </div>
+      <label class="pz-export-opt">
+        <input type="checkbox" id="expAudio" /> 导出练习日志时包含录音音频（文件会明显变大）
+      </label>
     </section>
 
     <p id="status" class="muted" style="min-height:20px;margin-top:14px"></p>
@@ -86,9 +235,11 @@
 
     <script src="/assets/ft-util.js?v=20260806p"></script>
     <script src="/assets/ftwave.js?v=20260813a"></script>
+    <script src="/assets/practice-store.js?v=20260813a"></script>
     <script>
   (function () {
     var ftAudioCtx = null, ftAnalyser = null, ftWaveStop = null;
+    var Store = window.RCJPracticeStore;
     // c: 'fj'=辅警真题, 'fire'=消防, 'comm'=社区, 'teacher'=教师, 'gk'=公考/事业, 'gen'=通用
     var TOPICS = [
       // ===== 辅警·真题（2018–2025 考生回忆版）=====
@@ -223,9 +374,10 @@
       { c:'gk', q:'如何推动惠民政策落实？如何看待形式主义？' },
       { c:'gk', q:'为什么报考公务员或事业单位？你的优势和不足是什么？' },
     ];
-    var CAT_LABEL = { all:'今日练习题', fj:'辅警·真题', fire:'消防结构化', comm:'社区工作者', teacher:'教师招聘', gk:'公考/事业', gen:'通用模拟' };
+    var CAT_LABEL = { all:'今日练习题', fj:'辅警·真题', fire:'消防结构化', comm:'社区工作者', teacher:'教师招聘', gk:'公考/事业', gen:'通用模拟', custom:'我的题库' };
     var MIN = 60, MAX = 180;
     var $ = function (id) { return document.getElementById(id); };
+    var customTopics = []; // {id, q}
 
     // ===== 本地存储（录音存 IndexedDB，练习状态存 localStorage）=====
     // 仅本机，不上传；刷新/重进可恢复上一段录音与题目。
@@ -261,13 +413,16 @@
     function clearState() { try { localStorage.removeItem(STATE_KEY); } catch (e) {} }
 
     var curCat = 'all';
-    function pool() { return curCat === 'all' ? TOPICS : TOPICS.filter(function (t) { return t.c === curCat; }); }
+    function pool() {
+      if (curCat === 'custom') return customTopics.map(function (t) { return { c: 'custom', q: t.q }; });
+      if (curCat === 'all') return TOPICS.concat(customTopics.map(function (t) { return { c: 'custom', q: t.q }; }));
+      return TOPICS.filter(function (t) { return t.c === curCat; });
+    }
     function pickTopic() {
       var p = pool();
-      if (!p.length) return;
+      if (!p.length) { $('topic').textContent = '（该分类暂无题目，去「我的题库」加点题）'; $('topic-cat').textContent = CAT_LABEL[curCat]; return; }
       var t = p[Math.floor(Math.random() * p.length)];
       $('topic').textContent = t.q;
-      // 「全部」时标签统一为「今日练习题」,与选中的分类按钮保持一致;具体分类时如实标注题源
       $('topic-cat').textContent = (curCat === 'all') ? CAT_LABEL.all : CAT_LABEL[t.c];
     }
     pickTopic();
@@ -284,7 +439,7 @@
     var recBtn = $('rec'), recTime = $('rec-time'), recHint = $('rec-hint');
     var recStage = $('rec-stage'), recCaption = $('rec-caption');
     var player = $('player'), audio = $('audio'), status = $('status');
-    var mediaRec = null, chunks = [], recStart = 0, timer = null, blobUrl = null;
+    var mediaRec = null, chunks = [], recStart = 0, timer = null, blobUrl = null, lastBlob = null, lastDur = 0;
     var recorderReady = false, hasRecorded = false;
     var leavingGuard = false;
     function addLeaveGuard() {
@@ -316,7 +471,6 @@
       recCaption.textContent = '点击开始录音';
       recTime.style.color = '';
     }
-    // 重置为"可重新录制"状态（停止后仍未达时长/重录）
     function resetRecUI() {
       exitRecUI();
       recBtn.classList.remove('recording');
@@ -329,7 +483,6 @@
         var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (e) { setStatus('无法访问麦克风，请允许麦克风权限', true); return; }
       chunks = [];
-      // 柔蓝实时波形（面试练习时给自己看）
       try {
         var AC = window.AudioContext || window.webkitAudioContext;
         ftAudioCtx = new AC();
@@ -355,17 +508,18 @@
         if (blobUrl) URL.revokeObjectURL(blobUrl);
         var blob = new Blob(chunks, { type: mediaRec.mimeType || 'audio/webm' });
         blobUrl = URL.createObjectURL(blob);
+        lastBlob = blob;
+        lastDur = Math.floor((Date.now() - recStart) / 1000);
         audio.src = blobUrl;
         player.hidden = false;
         hasRecorded = true;
         exitRecUI();
-        // 本地保存：录音进 IndexedDB，题目/时长进 localStorage，刷新可恢复
         saveAudio(blob);
         saveState({
           cat: curCat,
           catLabel: $('topic-cat').textContent,
           q: $('topic').textContent,
-          dur: Math.floor((Date.now() - recStart) / 1000)
+          dur: lastDur
         });
         recCaption.textContent = '录好了，回放听听，或点「完成练习」';
         setStatus('录好了 ✅ 已自动存到本机，刷新也能回放');
@@ -417,7 +571,7 @@
     function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
     function showDone() {
       var st = loadState() || {};
-      var dur = st.dur || 0;
+      var dur = st.dur || lastDur || 0;
       var label = st.catLabel || $('topic-cat').textContent;
       var q = st.q || $('topic').textContent;
       $('done-summary').innerHTML =
@@ -433,6 +587,7 @@
     function resetForNew() {
       clearAudio(); clearState();
       if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
+      lastBlob = null;
       hasRecorded = false; recorderReady = false;
       player.hidden = true; audio.src = '';
       $('done-card').hidden = true;
@@ -442,8 +597,32 @@
       setStatus('已重置，开始新一题 🎯');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    $('finish').addEventListener('click', showDone);
+
+    // —— 完成：把本次练习存进练习日志（practice-store）——
+    $('finish').addEventListener('click', async function () {
+      var st = loadState() || {};
+      var blob = lastBlob;
+      if (blob) {
+        try {
+          await Store.addSession({
+            cat: st.cat || curCat,
+            catLabel: st.catLabel || $('topic-cat').textContent,
+            q: st.q || $('topic').textContent,
+            durMs: (st.dur || lastDur || 0) * 1000,
+            audioBlob: blob,
+            rating: 0,
+            note: ''
+          });
+          renderLog();
+          setStatus('已记入练习日志 ✅ 可回放、评分、导出');
+        } catch (e) {
+          setStatus('记录失败：' + (e && e.message ? e.message : e), true);
+        }
+      }
+      showDone();
+    });
     $('again').addEventListener('click', resetForNew);
+
     // —— 自定义符号播放器（▶ 播放 / 进度 / ↺ 重录 / ✓ 完成）——
     (function () {
       var sp = document.getElementById('spPlay'), pg = document.getElementById('spProg');
@@ -475,12 +654,217 @@
       var blob = await loadAudio();
       if (!blob) return;
       blobUrl = URL.createObjectURL(blob);
+      lastBlob = blob;
       audio.src = blobUrl;
       player.hidden = false;
       hasRecorded = true;
       recCaption.textContent = '已恢复上一段本地录音，回放或重录';
       setStatus('已恢复上一段本机录音，可直接回放');
     })();
+
+    // ================= 练习日志 =================
+    var logUrls = []; // 已创建的 objectURL，重渲染时回收
+    function revokeLogUrls() { logUrls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} }); logUrls = []; }
+    async function renderLog() {
+      var list = $('logList');
+      var rows = await Store.getAllSessions();
+      revokeLogUrls();
+      $('logEmpty').hidden = rows.length > 0;
+      list.innerHTML = '';
+      rows.forEach(function (s) {
+        var url = URL.createObjectURL(s.audioBlob);
+        logUrls.push(url);
+        var el = document.createElement('div');
+        el.className = 'pz-session';
+        var stars = '';
+        for (var i = 1; i <= 5; i++) stars += '<button data-r="' + i + '" class="' + (i <= (s.rating || 0) ? 'on' : '') + '">★</button>';
+        el.innerHTML =
+          '<div class="pz-session-top">' +
+            '<button class="pz-sess-play" data-play>▶</button>' +
+            '<div class="pz-sess-meta">' +
+              '<div class="pz-sess-cat">' + esc(s.catLabel || CAT_LABEL[s.cat] || '练习') + '</div>' +
+              '<p class="pz-sess-q">' + esc(s.q || '（无题面）') + '</p>' +
+            '</div>' +
+            '<button class="pz-sess-del" data-del title="删除">🗑</button>' +
+          '</div>' +
+          '<div class="pz-sess-bottom">' +
+            '<span class="pz-stars" data-stars>' + stars + '</span>' +
+            '<span class="pz-sess-dur">' + fmt((s.durMs || 0) / 1000) + '</span>' +
+          '</div>' +
+          '<textarea class="pz-sess-note" data-note placeholder="写点备注，比如卡壳的地方、改进方向…">' + esc(s.note || '') + '</textarea>';
+        var a = new Audio(url);
+        el.querySelector('[data-play]').addEventListener('click', function () {
+          if (a.paused) { a.play(); this.textContent = '❚❚'; } else { a.pause(); this.textContent = '▶'; }
+        });
+        a.addEventListener('ended', function () { el.querySelector('[data-play]').textContent = '▶'; });
+        el.querySelector('[data-del]').addEventListener('click', async function () {
+          if (!confirm('删除这条练习记录？录音也将一并删除，不可恢复。')) return;
+          await Store.deleteSession(s.id);
+          renderLog();
+        });
+        el.querySelectorAll('[data-stars] button').forEach(function (b) {
+          b.addEventListener('click', async function () {
+            var r = parseInt(b.getAttribute('data-r'), 10);
+            await Store.updateSession(s.id, { rating: r });
+            el.querySelectorAll('[data-stars] button').forEach(function (x) {
+              x.classList.toggle('on', parseInt(x.getAttribute('data-r'), 10) <= r);
+            });
+          });
+        });
+        el.querySelector('[data-note]').addEventListener('blur', async function () {
+          await Store.updateSession(s.id, { note: this.value });
+        });
+        list.appendChild(el);
+      });
+    }
+
+    // ================= 自定义题库 =================
+    async function refreshCustom() {
+      customTopics = await Store.getCustomTopics();
+      $('customCount').textContent = customTopics.length + ' 题';
+      var ul = $('customList');
+      ul.innerHTML = '';
+      customTopics.slice(0, 30).forEach(function (t, i) {
+        var li = document.createElement('li');
+        li.innerHTML = '<span class="pc-idx">' + (i + 1) + '</span><span>' + esc(t.q) + '</span>';
+        ul.appendChild(li);
+      });
+      if (customTopics.length > 30) {
+        var more = document.createElement('li');
+        more.style.color = '#9ca3af';
+        more.textContent = '… 共 ' + customTopics.length + ' 题';
+        ul.appendChild(more);
+      }
+    }
+    function parseLines(txt) {
+      return txt.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(function (l) { return l.length > 0; });
+    }
+    $('customAdd').addEventListener('click', async function () {
+      var v = $('customOne').value.trim();
+      if (!v) return;
+      await Store.addCustomTopics([v]);
+      $('customOne').value = '';
+      await refreshCustom();
+      setStatus('已添加 1 题到我的题库 ✅');
+    });
+    $('customOne').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('customAdd').click(); });
+    $('customImport').addEventListener('click', async function () {
+      var lines = parseLines($('customBulk').value);
+      if (!lines.length) { setStatus('没有可导入的内容', true); return; }
+      var n = await Store.addCustomTopics(lines);
+      $('customBulk').value = '';
+      await refreshCustom();
+      setStatus('已导入 ' + n + ' 题到我的题库 ✅');
+    });
+    $('customFileBtn').addEventListener('click', function () { $('customFile').click(); });
+    $('customFile').addEventListener('change', async function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      try {
+        var txt = await f.text();
+        var lines = parseLines(txt);
+        if (!lines.length) { setStatus('CSV 里没有可识别的题目', true); return; }
+        var n = await Store.addCustomTopics(lines);
+        await refreshCustom();
+        setStatus('已从文件导入 ' + n + ' 题 ✅');
+      } catch (e) { setStatus('读取文件失败', true); }
+      this.value = '';
+    });
+    $('customClear').addEventListener('click', async function () {
+      if (!confirm('清空我的题库？此操作不可恢复。')) return;
+      await Store.clearCustomTopics();
+      await refreshCustom();
+      setStatus('已清空我的题库');
+    });
+
+    // ================= 导出与备份 =================
+    function download(name, content, mime) {
+      var blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 800);
+    }
+    function stamp() { return new Date().toISOString().slice(0, 10); }
+    function csvCell(s) { s = String(s == null ? '' : s); return '"' + s.replace(/"/g, '""') + '"'; }
+    async function blobToB64(blob) {
+      return new Promise(function (res, rej) {
+        var r = new FileReader();
+        r.onload = function () { res((r.result || '').split(',')[1] || ''); };
+        r.onerror = function () { rej(r.error); };
+        r.readAsDataURL(blob);
+      });
+    }
+    function exportLog(fmtType) {
+      return Store.getAllSessions().then(async function (rows) {
+        if (!rows.length) { setStatus('练习日志为空，没有可导出的内容', true); return; }
+        var withAudio = $('expAudio').checked;
+        if (fmtType === 'json') {
+          var data = await Promise.all(rows.map(async function (s) {
+            return {
+              id: s.id, createdAt: s.createdAt, cat: s.cat, catLabel: s.catLabel,
+              q: s.q, durMs: s.durMs, rating: s.rating, note: s.note,
+              audio: withAudio && s.audioBlob ? await blobToB64(s.audioBlob) : null
+            };
+          }));
+          download('facetalk-练习日志-' + stamp() + '.json', JSON.stringify(data, null, 2), 'application/json');
+        } else if (fmtType === 'csv') {
+          var head = ['日期', '类别', '题面', '时长(秒)', '评分', '备注'];
+          var lines = [head.map(csvCell).join(',')];
+          rows.forEach(function (s) {
+            lines.push([new Date(s.createdAt).toLocaleString(), s.catLabel || CAT_LABEL[s.cat] || '', s.q, Math.round((s.durMs || 0) / 1000), s.rating || '', s.note || ''].map(csvCell).join(','));
+          });
+          download('facetalk-练习日志-' + stamp() + '.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
+        } else if (fmtType === 'md') {
+          var md = '# FaceTalk 练习日志（' + stamp() + '）\n\n';
+          rows.forEach(function (s, i) {
+            md += '## ' + (i + 1) + '. ' + (s.catLabel || CAT_LABEL[s.cat] || '练习') + '\n';
+            md += '- 日期：' + new Date(s.createdAt).toLocaleString() + '\n';
+            md += '- 时长：' + fmt((s.durMs || 0) / 1000) + '\n';
+            md += '- 评分：' + (s.rating || 0) + ' ★\n';
+            if (s.note) md += '- 备注：' + s.note + '\n';
+            md += '- 题面：' + (s.q || '') + '\n\n';
+          });
+          download('facetalk-练习日志-' + stamp() + '.md', md, 'text/markdown;charset=utf-8');
+        }
+        setStatus('练习日志已导出（' + fmtType.toUpperCase() + '）✅');
+      });
+    }
+    function exportCustom(fmtType) {
+      return Store.getCustomTopics().then(function (rows) {
+        if (!rows.length) { setStatus('我的题库为空，没有可导出的内容', true); return; }
+        if (fmtType === 'csv') {
+          var lines = rows.map(function (t) { return csvCell(t.q); });
+          download('facetalk-我的题库-' + stamp() + '.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
+        } else {
+          download('facetalk-我的题库-' + stamp() + '.json', JSON.stringify(rows.map(function (t) { return t.q; }), null, 2), 'application/json');
+        }
+        setStatus('我的题库已导出（' + fmtType.toUpperCase() + '）✅');
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-exp]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var kind = btn.getAttribute('data-exp'), f = btn.getAttribute('data-fmt');
+        if (kind === 'log') exportLog(f); else exportCustom(f);
+      });
+    });
+    $('bannerExport').addEventListener('click', function () {
+      var p = document.getElementById('exportPanel');
+      if (p) p.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // ================= 缓存提醒横幅 =================
+    var BANNER_KEY = 'facetalk_pz_banner_off';
+    try { if (localStorage.getItem(BANNER_KEY) === '1') $('cacheBanner').hidden = true; } catch (e) {}
+    $('bannerDismiss').addEventListener('click', function () {
+      try { localStorage.setItem(BANNER_KEY, '1'); } catch (e) {}
+      $('cacheBanner').hidden = true;
+    });
+
+    // 初始化
+    refreshCustom();
+    renderLog();
   })();
   </script>
   <footer class="site-footer">
