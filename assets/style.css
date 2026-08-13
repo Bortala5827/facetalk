@@ -90,6 +90,73 @@ a { color: inherit; text-decoration: none; }
   background: var(--accent-glow); pointer-events: none; z-index: 0;
 }
 .hero > * { position: relative; z-index: 1; }
+
+/* ═══ GSAP 风格 Hero：超大字 + 拖拽手势 + 四步流程卡 ═══ */
+.hero-stage {
+  position: relative; text-align: center; padding: 40px 0 20px;
+}
+.hero-big {
+  display: inline-block;
+  font-size: clamp(120px, 22vw, 260px);
+  font-weight: 900; line-height: 0.9;
+  background: var(--accent-grad);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.03em;
+  user-select: none;
+}
+.hero-drag {
+  position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  z-index: 2; touch-action: none; will-change: transform;
+}
+.drag-hand { font-size: 36px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.15)); }
+.drag-label {
+  font-size: 11px; font-weight: 600; color: var(--ink-3);
+  letter-spacing: .08em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.hero-kicker {
+  text-align: center; font-size: clamp(15px, 2.6vw, 20px);
+  color: var(--ink-2); line-height: 1.55;
+  margin: 16px auto 0; max-width: 520px;
+  padding: 0 16px;
+}
+
+.steps-grid {
+  list-style: none; display: grid;
+  grid-template-columns: repeat(2, 1fr); gap: 12px;
+  margin: 28px 0 0; padding: 0;
+}
+.step-card {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 18px 14px; border-radius: var(--r-md);
+  background: var(--card); border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm); text-align: center;
+  transition: box-shadow .25s, border-color .25s;
+  cursor: default; will-change: transform;
+}
+.step-card:hover { border-color: #c7d2fe; box-shadow: var(--shadow-lg); }
+.step-emoji { font-size: 32px; line-height: 1; }
+.step-name { font-size: 15px; font-weight: 700; color: var(--ink); }
+.step-desc { font-size: 12.5px; color: var(--ink-3); line-height: 1.45; }
+
+@media (min-width: 860px) {
+  .steps-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .step-card { padding: 24px 16px; gap: 8px; }
+  .step-emoji { font-size: 40px; }
+  .step-name { font-size: 16px; }
+  .step-desc { font-size: 13px; }
+  .drag-hand { font-size: 44px; }
+  .hero-stage { padding: 56px 0 28px; }
+}
+@media (max-width: 480px) {
+  .hero-big { font-size: clamp(80px, 26vw, 140px); }
+  .steps-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .step-card { padding: 14px 10px; }
+  .step-emoji { font-size: 26px; }
+  .drag-hand { font-size: 28px; }
+}
 .hero-sub { font-size: 15px; color: var(--ink-2); margin: 12px 0 4px; line-height: 1.65; }
 /* 首页英文 slogan（Hear Before You Pair）—— 弱化处理，做品牌副标，不抢中文主文案 */
 .hero-en { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; letter-spacing: .2px; }
