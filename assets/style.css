@@ -83,46 +83,31 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 560px) { .brand-tag { display: none; } }
 
 /* hero */
-.hero { position: relative; padding: 52px 0 24px; overflow: hidden; }
+.hero { position: relative; padding: 40px 0 24px; }
 .hero::before {
   content: ""; position: absolute; top: -70px; left: 50%; transform: translateX(-50%);
-  width: 540px; height: 320px; max-width: 110%;
+  width: 540px; height: 280px; max-width: 110%;
   background: var(--accent-glow); pointer-events: none; z-index: 0;
 }
 .hero > * { position: relative; z-index: 1; }
 
-/* ═══ GSAP 风格 Hero：超大字 + 拖拽手势 + 四步流程卡 ═══ */
-.hero-stage {
-  position: relative; text-align: center;
-  /* 给超大字留足空间：字号最大 260px × line-height 0.9 ≈ 234px + 拖拽区 + 间距 */
-  min-height: 280px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+/* ═══ 稳定 Hero：标题 + kicker + 四步流程卡（文档流，不塌） ═══ */
+.hero-eyebrow {
+  text-align: center; font-size: 13px; font-weight: 600;
+  color: var(--accent); letter-spacing: .08em; text-transform: uppercase;
+  margin: 0 0 12px;
 }
-.hero-big {
-  display: inline-block;
-  font-size: clamp(100px, 18vw, 220px);
-  font-weight: 900; line-height: 0.95;
-  background: var(--accent-grad);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.03em;
-  user-select: none;
-}
-.hero-drag {
-  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  z-index: 2; touch-action: none; will-change: transform;
-}
-.drag-hand { font-size: 36px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.15)); }
-.drag-label {
-  font-size: 11px; font-weight: 600; color: var(--ink-3);
-  letter-spacing: .08em; text-transform: uppercase;
-  white-space: nowrap;
+.hero-title {
+  text-align: center;
+  font-size: clamp(28px, 6vw, 46px);
+  font-weight: 900; line-height: 1.15;
+  color: var(--ink); letter-spacing: -0.02em;
+  margin: 0 auto 16px; max-width: 520px;
 }
 .hero-kicker {
   text-align: center; font-size: clamp(14px, 2.4vw, 18px);
   color: var(--ink-2); line-height: 1.55;
-  margin: 20px auto 0; max-width: 520px;
+  margin: 0 auto 28px; max-width: 480px;
   padding: 0 16px;
 }
 
@@ -150,12 +135,9 @@ a { color: inherit; text-decoration: none; }
   .step-emoji { font-size: 40px; }
   .step-name { font-size: 16px; }
   .step-desc { font-size: 13px; }
-  .drag-hand { font-size: 44px; }
-  .hero-stage { min-height: 320px; }
 }
 @media (max-width: 480px) {
-  .hero-big { font-size: clamp(70px, 22vw, 120px); }
-  .hero-stage { min-height: 200px; }
+  .hero-title { font-size: clamp(24px, 7vw, 36px); }
   .steps-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .step-card { padding: 14px 10px; }
   .step-emoji { font-size: 26px; }
