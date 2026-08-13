@@ -1,0 +1,36 @@
+name: 逻辑自测（面试搭子）
+
+# push 到 main 时自动跑端到端逻辑自测，防止房间自动结算 / 留言管理密码 等核心逻辑回归。
+# 自测为内存 mock（不依赖真实 D1 / Cloudflare），秒级完成。任一用例失败 → 任务标红、阻断合并信号。
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'scripts/selftest-*.js'
+      - '.github/workflows/selftest.yml'
+  workflow_dispatch: {}   # 允许在 Actions 页面手动 Run workflow 立即验证
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 房间自动结算逻辑自测
+        run: node scripts/selftest-autosettle.js
+
+      - name: 留言管理密码校验自测
+        run: node scripts/selftest-wall-admin.js
+
+      - name: 房间解散后申请卡变灰+3天自动删+解锁重选 自测
+        run: node scripts/selftest-dissolved.js
+
+      - name: 2.0 试音互评逻辑自测（阅后即焚/婉拒解散/降级）
+        run: node scripts/selftest-voice.js

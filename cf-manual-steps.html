@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>面试搭子 · Cloudflare 手动操作清单</title>
+<style>
+  :root{ --bg:#f6f7f9; --card:#fff; --bd:#e5e7eb; --txt:#1f2937; --sub:#6b7280;
+         --accent:#2563eb; --ok:#16a34a; --warn:#d97706; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--txt);line-height:1.6;padding:24px 16px 60px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .lede{color:var(--sub);font-size:14px;margin:0 0 20px}
+  .lede code{background:#eef2ff;color:#3730a3;padding:1px 6px;border-radius:5px;font-size:12.5px}
+  .group{margin:26px 0 10px;font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--accent);
+         text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .group.warn{color:var(--warn)}
+  .group::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px 16px 14px;margin:12px 0;
+        box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .card h3{margin:0 0 4px;font-size:15.5px}
+  .card p{margin:0 0 12px;font-size:13px;color:var(--sub)}
+  .codebox{position:relative;background:#0f172a;border-radius:9px;padding:14px 14px 12px;overflow:auto}
+  .codebox code{display:block;color:#e2e8f0;font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+        font-size:12.5px;white-space:pre;line-height:1.55}
+  .copy{position:absolute;top:8px;right:8px;border:none;background:#1e293b;color:#cbd5e1;font-size:12px;
+        padding:5px 11px;border-radius:6px;cursor:pointer;transition:.15s}
+  .copy:hover{background:#334155}
+  .copy.ok{background:var(--ok);color:#fff}
+  .env .codebox{background:#052e16}
+  .env .codebox code{color:#bbf7d0}
+  .note{font-size:12px;color:var(--sub);margin-top:10px;padding-left:12px;border-left:3px solid #e5e7eb}
+  .foot{margin-top:30px;font-size:12px;color:var(--sub);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>面试搭子 · Cloudflare 手动操作清单</h1>
+  <p class="lede">所有 SQL 在 <code>CF 后台 → Pages → mianshi-dazi → D1 → mianshi-dazi-d1 → 控制台</code> 粘贴执行。每块点「复制」即可。ALTER 重复执行报 <b>duplicate column</b> 属正常，忽略；<code>CREATE TABLE IF NOT EXISTS</code> 可重复跑。</p>
+
+  <div class="group">必做（本次 6 项修复依赖，不跑则功能不生效）</div>
+
+  <div class="card">
+    <h3>① 房间自动解散 + IP 在线人数</h3>
+    <p>退出组队 60s 倒计时解散、互评完 5 分钟自动解散、首页「当前在线发需求人数」统计。对应 <code>alter-room-dissolve.sql</code>。</p>
+    <div class="codebox"><code>ALTER TABLE pairs ADD COLUMN dissolve_at INTEGER DEFAULT 0;
+ALTER TABLE pairs ADD COLUMN closed_at   INTEGER DEFAULT 0;
+ALTER TABLE intents ADD COLUMN ip TEXT DEFAULT '';</code><button class="copy" onclick="copy(this)">复制</button></div>
+  </div>
+
+  <div class="card">
+    <h3>② 阅后即焚</h3>
+    <p>消息「🔥阅后即焚」勾选后，接收方读取即删。对应 <code>alter-messages-burn.sql</code>。</p>
+    <div class="codebox"><code>ALTER TABLE messages ADD COLUMN burn INTEGER DEFAULT 0;
+ALTER TABLE messages ADD COLUMN read INTEGER DEFAULT 0;</code><button class="copy" onclick="copy(this)">复制</button></div>
+  </div>
+
+  <div class="card">
+    <h3>③ 搭子屏蔽表</h3>
+    <p>评价时勾「不再匹配此搭子」写入本表，之后浏览/收件箱过滤被屏蔽的人。对应 <code>schema.sql</code> 内 blocks 段。</p>
+    <div class="codebox"><code>CREATE TABLE IF NOT EXISTS blocks (
+  user_id     TEXT NOT NULL,
+  blocked_id  TEXT NOT NULL,
+  created     INTEGER NOT NULL,
+  PRIMARY KEY (user_id, blocked_id)
+);
+CREATE INDEX IF NOT EXISTS idx_blocks_user ON blocks(user_id);</code><button class="copy" onclick="copy(this)">复制</button></div>
+  </div>
+
+  <div class="card env">
+    <h3>④ 管理员密码解锁限流（环境变量）</h3>
+    <p>超频（每日 30 次）时弹框输入此密码即可继续。不是 SQL，是 CF 环境变量。</p>
+    <div class="codebox"><code>变量名：MS_ADMIN_KEY
+变量值：自定义管理员密码（例如 rcj9527admin）
+位置：CF Pages → mianshi-dazi → Settings → Environment variables → Production → Add variable</code><button class="copy" onclick="copy(this)">复制变量名</button></div>
+    <p class="note">不设则超频时只能等次日重置；设了之后前端弹框输入密码本次会话免再输。</p>
+  </div>
+
+  <div class="group warn">顺带确认（之前功能依赖，没跑过会报错或功能缺）</div>
+
+  <div class="card">
+    <h3>⑤ 联机信息列（会议号 / 联系方式）</h3>
+    <p>搭子房顶部常驻的腾讯会议号 / 联系方式互看功能依赖这两列。对应 <code>alter-pairs-info.sql</code>。</p>
+    <div class="codebox"><code>ALTER TABLE pairs ADD COLUMN info_a TEXT DEFAULT '';
+ALTER TABLE pairs ADD COLUMN info_b TEXT DEFAULT '';</code><button class="copy" onclick="copy(this)">复制</button></div>
+  </div>
+
+  <div class="card">
+    <h3>⑥ 留言墙表</h3>
+    <p>首页公开留言墙（已上线在用）。若 D1 库是早期建的，可能缺这三张表。对应 <code>wall-tables.sql</code>，可安全重复跑。</p>
+    <div class="codebox"><code>CREATE TABLE IF NOT EXISTS wall (
+  id          TEXT PRIMARY KEY,
+  name        TEXT,
+  text        TEXT,
+  created_at  INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_wall_created ON wall(created_at DESC);
+CREATE TABLE IF NOT EXISTS wall_rl (
+  ip      TEXT PRIMARY KEY,
+  last_ts INTEGER
+);
+CREATE TABLE IF NOT EXISTS wall_day (
+  ip  TEXT NOT NULL,
+  day TEXT NOT NULL,
+  n   INTEGER DEFAULT 0,
+  PRIMARY KEY (ip, day)
+);</code><button class="copy" onclick="copy(this)">复制</button></div>
+  </div>
+
+  <div class="group">v2.0 试音互评（建表，启用 30 秒试音互评必需）</div>
+
+  <div class="card">
+    <h3>⑦ 试音互评三张表（voice_clips / voice_chunks / voice_reviews）</h3>
+    <p>30 秒试音互评（录音分片 + 阅后即焚 + 互评）依赖这三张新表。对应 <code>voice-tables.sql</code>，全部 <code>CREATE TABLE IF NOT EXISTS</code>，不改动任何老表，可安全重复跑。</p>
+    <div class="codebox"><code>CREATE TABLE IF NOT EXISTS voice_clips (
+  id       TEXT PRIMARY KEY,
+  pair_id  TEXT NOT NULL,
+  owner    TEXT NOT NULL,
+  mime     TEXT NOT NULL DEFAULT 'audio/webm',
+  dur      INTEGER NOT NULL DEFAULT 0,
+  bytes    INTEGER NOT NULL DEFAULT 0,
+  chunks   INTEGER NOT NULL DEFAULT 0,
+  plays    INTEGER NOT NULL DEFAULT 0,
+  ready    INTEGER NOT NULL DEFAULT 0,
+  created  INTEGER NOT NULL,
+  expires  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_vclips_pair ON voice_clips(pair_id);
+CREATE INDEX IF NOT EXISTS idx_vclips_expires ON voice_clips(expires);
+
+CREATE TABLE IF NOT EXISTS voice_chunks (
+  clip_id TEXT NOT NULL,
+  seq     INTEGER NOT NULL,
+  data    TEXT NOT NULL,
+  PRIMARY KEY (clip_id, seq)
+);
+
+CREATE TABLE IF NOT EXISTS voice_reviews (
+  pair_id  TEXT NOT NULL,
+  reviewer TEXT NOT NULL,
+  target   TEXT NOT NULL,
+  clarity  INTEGER NOT NULL DEFAULT 3,
+  logic    INTEGER NOT NULL DEFAULT 3,
+  pace     INTEGER NOT NULL DEFAULT 3,
+  comment  TEXT DEFAULT '',
+  willing  INTEGER NOT NULL DEFAULT 0,
+  created  INTEGER NOT NULL,
+  PRIMARY KEY (pair_id, reviewer)
+);
+CREATE INDEX IF NOT EXISTS idx_vreviews_pair ON voice_reviews(pair_id);</code><button class="copy" onclick="copy(this)">复制</button></div>
+    <p class="note">未建这三张表时，<code>/api/voice</code> 返回 <code>ready:false</code>，前端自动跳过试音环节，v1.0 的匹配/留言/互评照常可用，不会报错。建好后无需改代码，试音互评即上线。</p>
+  </div>
+
+  <p class="foot">执行完任意 ALTER 后，_functions 代码已 try/catch 兼容，无需重新部署即可生效；若仍报错，去 Deployments 点 Retry 一次。</p>
+</div>
+
+<script>
+function copy(btn){
+  var box = btn.parentElement;
+  var code = box.querySelector('code').innerText;
+  var done = function(){
+    var t = btn.textContent; btn.textContent = '已复制 ✓'; btn.classList.add('ok');
+    setTimeout(function(){ btn.textContent = t; btn.classList.remove('ok'); }, 1400);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(done).catch(function(){ fallback(code, done); });
+  } else { fallback(code, done); }
+}
+function fallback(text, cb){
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.top = '-9999px'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); cb(); }
+  catch(e){ alert('复制失败，请手动长按选择文本复制'); }
+  document.body.removeChild(ta);
+}
+</script>
+</body>
+</html>
