@@ -324,19 +324,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ===== Speak Series 统一骨架：系列条 + 母 slogan 页脚 ===== */
-.series-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 7px 18px;
-  background: var(--bg-soft);
-  border-bottom: 1px solid var(--line);
-  font-size: 11px; letter-spacing: .1em;
-}
-.series-bar a { color: var(--ink-3); text-decoration: none; transition: color .15s; }
-.series-bar a:hover { color: var(--accent); }
-.series-bar .series-name {
-  color: var(--accent); font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; font-size: 10.5px;
-}
 .mother-slogan {
   text-align: center; font-size: 13px; color: var(--ink-2);
   letter-spacing: .06em; margin: 0 0 12px;
@@ -1458,3 +1445,9 @@ body::after {
 @media (prefers-reduced-motion: reduce) {
   .vw-face { transform: none !important; }
 }
+
+/* ═══ 视觉减负（2026-08-14）：统一节奏，减少「杂」感 ═══ */
+/* 折叠区 / 区块标题统一字重，整体更有一致章法 */
+.b-ttl, .fs-ttl, .vwarm-sum-ttl, .sc-title, .sec-title { font-weight: 800; }
+/* 顶部跨链胶囊：小屏隐藏，避免顶栏拥挤（移动端走页脚跨链） */
+@media (max-width: 480px) { .nav-x { display: none; } }
