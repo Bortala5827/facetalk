@@ -1,5 +1,6 @@
 /
   Cache-Control: public, max-age=0, must-revalidate
+  Permissions-Policy: microphone=(self)
 /assets/*
   Cache-Control: public, max-age=0, must-revalidate
 /manifest.webmanifest
