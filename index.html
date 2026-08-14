@@ -60,23 +60,30 @@
       </div>
     </section>
 
-    <!-- 面试前声纹热身：对着麦克风说几句，看表情跟着声纹蹦，纯暖场用，放在正式配对之前 -->
-    <section class="vwarm" id="vwarm">
-      <p class="vwarm-eyebrow">暖场 · 面试前松一松</p>
-      <div class="vwarm-head">
+    <!-- 面试前声纹热身：暖场用，默认折叠降低首屏密度；点标题展开 -->
+    <details class="vwarm-details" id="vwarmDetails">
+      <summary class="vwarm-sum">
         <span class="vwarm-emoji">🪀</span>
-        <h2 class="vwarm-title">先松松手 · 对着声纹吐个槽</h2>
-      </div>
-      <p class="vwarm-sub" id="vwarm-sub">对着麦克风随便说几句 —— 看表情跟着声纹蹦，把紧张先抖出去，再开始 60 秒试音。</p>
-      <div class="vwarm-stage" id="vwarm-stage">
-        <span class="vw-face" data-face>😀</span>
-        <span class="vw-face" data-face>😮</span>
-        <span class="vw-face" data-face>😎</span>
-        <span class="vw-face" data-face>🤩</span>
-        <span class="vw-face" data-face>😺</span>
-      </div>
-      <button class="vwarm-btn" id="vwarm-btn" type="button">🎤 开始声纹热身</button>
-    </section>
+        <span class="vwarm-sum-ttl">先松松手 · 面试前声纹暖场</span>
+        <span class="vwarm-caret" aria-hidden="true">▾</span>
+      </summary>
+      <section class="vwarm" id="vwarm">
+        <p class="vwarm-eyebrow">暖场 · 面试前松一松</p>
+        <div class="vwarm-head">
+          <span class="vwarm-emoji">🪀</span>
+          <h2 class="vwarm-title">先松松手 · 对着声纹吐个槽</h2>
+        </div>
+        <p class="vwarm-sub" id="vwarm-sub">对着麦克风随便说几句 —— 看表情跟着声纹蹦，把紧张先抖出去，再开始 60 秒试音。</p>
+        <div class="vwarm-stage" id="vwarm-stage">
+          <span class="vw-face" data-face>😀</span>
+          <span class="vw-face" data-face>😮</span>
+          <span class="vw-face" data-face>😎</span>
+          <span class="vw-face" data-face>🤩</span>
+          <span class="vw-face" data-face>😺</span>
+        </div>
+        <button class="vwarm-btn" id="vwarm-btn" type="button">🎤 开始声纹热身</button>
+      </section>
+    </details>
 
     <!-- 发到社群里匹配：工具思维冷启动 —— 微信群无法直接点开外部链接，所以只提供「复制群发文案」。默认折叠，避免首页信息过载 -->
     <details class="share-card">
