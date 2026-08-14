@@ -29,6 +29,15 @@
     .pz-panel .pz-sub { color: #6b7280; font-size: 0.84rem; margin: 0 0 14px; }
     .pz-empty { color: #9ca3af; font-size: 0.85rem; padding: 8px 0; }
 
+    /* ── 可折叠面板（我的题库 / 练习日志 / 导出备份）── */
+    .pz-collapsible > .pz-panel-body { overflow: hidden; transition: max-height .3s ease, opacity .25s ease, padding .3s ease; max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; }
+    .pz-collapsible.open > .pz-panel-body { max-height: 2000px; opacity: 1; padding: 16px; }
+    .pz-collapsible .pz-toggle { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; padding: 12px 16px; margin: 0; border: 1px solid #e5e7eb; border-radius: 18px; background: #fff; font-size: 1.05rem; color: #312e81; font-weight: 600; transition: background .15s; }
+    .pz-collapsible .pz-toggle:hover { background: #f9fafb; }
+    .pz-collapsible .pz-toggle .pz-arrow { display: inline-block; transition: transform .25s ease; font-size: .75rem; color: #9ca3af; }
+    .pz-collapsible.open .pz-toggle .pz-arrow { transform: rotate(90deg); }
+    .pz-collapsible .pz-toggle .pz-badge { margin-left: auto; font-size: .72rem; font-weight: 400; color: #9ca3af; background: #f3f4f6; padding: 2px 8px; border-radius: 999px; }
+
     /* 自定义题库：单题录入 + 批量粘贴 */
     .pz-addrow { display: flex; gap: 8px; margin-bottom: 10px; }
     .pz-addrow input[type=text] {
@@ -175,10 +184,11 @@
       <p class="done-tip" id="done-tip">本次录音已记入「练习日志」，可回放、打分、导出。点再练一次开始新一题。</p>
     </section>
 
-    <!-- 自定义题库 -->
-    <section class="pz-panel" id="customPanel">
-      <h2>📥 我的题库（自定义）</h2>
-      <p class="pz-sub">支持单题录入、批量粘贴（CSV / Excel 另存为 CSV），或上传 CSV 文件。数据只存在本机。</p>
+    <!-- 自定义题库（可折叠） -->
+    <div class="pz-collapsible open" id="customPanelWrap">
+      <div class="pz-toggle" onclick="this.parentElement.classList.toggle('open')"><span class="pz-arrow">▶</span>📥 我的题库（自定义）<span class="pz-badge" id="customCountBadge">0 题</span></div>
+      <div class="pz-panel-body">
+      <p class="pz-sub" style="margin-top:0">支持单题录入、批量粘贴（CSV / Excel 另存为 CSV），或上传 CSV 文件。数据只存在本机。</p>
       <div class="pz-addrow">
         <input type="text" id="customOne" placeholder="输入一道题，回车或点添加…" />
         <button id="customAdd">添加</button>
@@ -193,20 +203,24 @@
       </div>
       <p class="pz-hint">CSV 格式：每行一道题；若用 Excel / WPS / Numbers，请「另存为 CSV」后粘贴或上传。也可在「全部 / 📥」里抽到这些题。</p>
       <ul class="pz-custom-list" id="customList"></ul>
-    </section>
+      </div>
+    </div>
 
-    <!-- 练习日志 -->
-    <section class="pz-panel" id="logPanel">
-      <h2>🗂 练习日志（本机留存）</h2>
-      <p class="pz-sub">每完成一次练习，录音与题目会被记到这里。可回放、给星评分、写备注，也能一键导出备份。</p>
+    <!-- 练习日志（可折叠，默认收起） -->
+    <div class="pz-collapsible" id="logPanelWrap">
+      <div class="pz-toggle" onclick="this.parentElement.classList.toggle('open')"><span class="pz-arrow">▶</span>🗂 练习日志（本机留存）<span class="pz-badge" id="logCountBadge"></span></div>
+      <div class="pz-panel-body">
+      <p class="pz-sub" style="margin-top:0">每完成一次练习，录音与题目会被记到这里。可回放、给星评分、写备注，也能一键导出备份。</p>
       <div class="pz-log" id="logList"></div>
       <p class="pz-empty" id="logEmpty">还没有完成的练习。录完点 ✓ 完成，会被记到这里。</p>
-    </section>
+      </div>
+    </div>
 
-    <!-- 导出与备份 -->
-    <section class="pz-panel" id="exportPanel">
-      <h2>⬇️ 导出与备份</h2>
-      <p class="pz-sub">把练习日志和我的题库导出到本机文件，清理缓存前务必备份。</p>
+    <!-- 导出与备份（可折叠，默认收起） -->
+    <div class="pz-collapsible" id="exportPanelWrap">
+      <div class="pz-toggle" onclick="this.parentElement.classList.toggle('open')"><span class="pz-arrow">▶</span>⬇️ 导出与备份</div>
+      <div class="pz-panel-body">
+      <p class="pz-sub" style="margin-top:0">把练习日志和我的题库导出到本机文件，清理缓存前务必备份。</p>
       <div class="pz-export-grid">
         <div class="pz-export-group">
           <h3>练习日志</h3>
@@ -227,7 +241,8 @@
       <label class="pz-export-opt">
         <input type="checkbox" id="expAudio" /> 导出练习日志时包含录音音频（文件会明显变大）
       </label>
-    </section>
+      </div>
+    </div>
 
     <p id="status" class="muted" style="min-height:20px;margin-top:14px"></p>
 
@@ -495,7 +510,9 @@
           RCJWave.fitCanvas(ftWaveEl, 60);
           ftWaveStop = RCJWave.mountLiveBars(ftWaveEl, ftAnalyser, {
             colorFn: function (v) { return RCJWave.lerpHex('#6f9b8a', '#e3a857', Math.min(1, v * 1.5)); },
-            pulse: 0.22
+            pulse: 0.22,
+            mirror: true,
+            centerGlow: '#e3a85744'
           });
         }
       } catch (e) { ftWaveStop = null; }
@@ -716,25 +733,37 @@
         });
         list.appendChild(el);
       });
+      var lb = document.getElementById('logCountBadge');
+      if (lb) lb.textContent = rows.length ? rows.length + ' 条' : '';
     }
 
     // ================= 自定义题库 =================
     async function refreshCustom() {
       customTopics = await Store.getCustomTopics();
       $('customCount').textContent = customTopics.length + ' 题';
+      var cb = document.getElementById('customCountBadge');
+      if (cb) cb.textContent = customTopics.length + ' 题';
       var ul = $('customList');
       ul.innerHTML = '';
-      customTopics.slice(0, 30).forEach(function (t, i) {
-        var li = document.createElement('li');
-        li.innerHTML = '<span class="pc-idx">' + (i + 1) + '</span><span>' + esc(t.q) + '</span>';
-        ul.appendChild(li);
-      });
-      if (customTopics.length > 30) {
-        var more = document.createElement('li');
-        more.style.color = '#9ca3af';
-        more.textContent = '… 共 ' + customTopics.length + ' 题';
-        ul.appendChild(more);
+      if (!customTopics.length) {
+        var empty = document.createElement('li');
+        empty.style.color = '#9ca3af'; empty.style.padding = '8px 0'; empty.textContent = '该分类暂无题目，去上方输入或粘贴加点题';
+        ul.appendChild(empty);
+      } else {
+        customTopics.slice(0, 30).forEach(function (t, i) {
+          var li = document.createElement('li');
+          li.innerHTML = '<span class="pc-idx">' + (i + 1) + '</span><span>' + esc(t.q) + '</span>';
+          ul.appendChild(li);
+        });
+        if (customTopics.length > 30) {
+          var more = document.createElement('li');
+          more.style.color = '#9ca3af';
+          more.textContent = '… 共 ' + customTopics.length + ' 题';
+          ul.appendChild(more);
+        }
       }
+      // 刷新当前分类的抽题显示（修复：加完题后仍显示"暂无题目"）
+      pickTopic();
     }
     function parseLines(txt) {
       return txt.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(function (l) { return l.length > 0; });
