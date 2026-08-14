@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260814b" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260814c" />
 </head>
 <body>
   <header class="topbar">
@@ -54,28 +54,19 @@
       </div>
     </section>
 
-    <!-- 面试前声纹热身：暖场用，默认折叠降低首屏密度；点标题展开 -->
+    <!-- 面试前声纹暖场：极简，只留 🎤 + 文字随音量抖动；默认折叠 -->
     <details class="vwarm-details" id="vwarmDetails">
       <summary class="vwarm-sum">
-        <span class="vwarm-emoji">🪀</span>
-        <span class="vwarm-sum-ttl">先松松手 · 面试前声纹暖场</span>
+        <span class="vwarm-emoji">🎤</span>
+        <span class="vwarm-sum-ttl">声纹暖场</span>
         <span class="vwarm-caret" aria-hidden="true">▾</span>
       </summary>
       <section class="vwarm" id="vwarm">
-        <p class="vwarm-eyebrow">暖场 · 面试前松一松</p>
-        <div class="vwarm-head">
-          <span class="vwarm-emoji">🪀</span>
-          <h2 class="vwarm-title">先松松手 · 对着声纹吐个槽</h2>
-        </div>
-        <p class="vwarm-sub" id="vwarm-sub">对着麦克风随便说几句 —— 看表情跟着声纹蹦，把紧张先抖出去，再开始 60 秒试音。</p>
         <div class="vwarm-stage" id="vwarm-stage">
-          <span class="vw-face" data-face>😀</span>
-          <span class="vw-face" data-face>😮</span>
-          <span class="vw-face" data-face>😎</span>
-          <span class="vw-face" data-face>🤩</span>
-          <span class="vw-face" data-face>😺</span>
+          <span class="vw-mic" data-mic>🎤</span>
         </div>
-        <button class="vwarm-btn" id="vwarm-btn" type="button">🎤 开始声纹热身</button>
+        <p class="vwarm-sub" id="vwarm-sub">说点什么，文字会跟着你的声音抖一抖</p>
+        <button class="vwarm-btn" id="vwarm-btn" type="button">开始暖场</button>
       </section>
     </details>
 
@@ -329,13 +320,14 @@
     })();
   </script>
   <script>
-    // FaceTalk 声纹热身：getUserMedia → AnalyserNode(RMS) 驱动表情随声纹跳动，纯暖场用
+    // FaceTalk 声纹暖场（极简版）：getUserMedia → AnalyserNode(RMS) 驱动 🎤 与文字随音量抖动
     (function(){
       var stage = document.getElementById('vwarm-stage');
       if (!stage) return;
-      var faces = stage.querySelectorAll('[data-face]');
+      var mic = stage.querySelector('[data-mic]');
       var btn = document.getElementById('vwarm-btn');
       var sub = document.getElementById('vwarm-sub');
+      var subDefault = sub ? sub.textContent : '';
       var audioCtx, analyser, data, stream, raf, running = false;
 
       function rms(){
@@ -346,24 +338,29 @@
         return Math.sqrt(sum / data.length);
       }
 
+      function jitter(amp){ return (Math.random() - 0.5) * amp; }
+
       function loop(){
         var norm = Math.min(1, rms() * 3.4);
-        var t = performance.now();
-        faces.forEach(function(f, i){
-          var phase = i * 0.55;
-          var wob = Math.sin(t / 220 + phase);
-          var dy = -norm * (24 + i * 3) * (0.6 + 0.4 * Math.abs(wob));
-          var sc = 1 + norm * 0.45;
-          var rot = norm * 14 * wob + (i % 2 ? 1 : -1) * norm * 7;
-          f.style.transform = 'translateY(' + dy.toFixed(1) + 'px) scale(' + sc.toFixed(2) + ') rotate(' + rot.toFixed(1) + 'deg)';
-        });
+        if (mic) {
+          var sc = 1 + norm * 0.55;
+          var jx = jitter(norm * 14);
+          var jy = jitter(norm * 14);
+          var rot = jitter(norm * 16);
+          mic.style.transform = 'translate(' + jx.toFixed(1) + 'px,' + jy.toFixed(1) + 'px) scale(' + sc.toFixed(2) + ') rotate(' + rot.toFixed(1) + 'deg)';
+        }
+        if (sub) {
+          var sx = jitter(norm * 6);
+          var sy = jitter(norm * 4);
+          sub.style.transform = 'translate(' + sx.toFixed(1) + 'px,' + sy.toFixed(1) + 'px)';
+        }
         raf = requestAnimationFrame(loop);
       }
 
       function start(){
         if (running) return;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          sub.textContent = '当前浏览器不支持麦克风采集，用手机打开体验更佳 📱';
+          if (sub) sub.textContent = '当前浏览器不支持麦克风，用手机打开体验更佳';
           return;
         }
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s){
@@ -378,10 +375,10 @@
           running = true;
           btn.textContent = '🛑 停止';
           btn.classList.add('on');
-          sub.textContent = '对着麦克风随便说几句，看表情跟着你的声纹蹦 🤸';
+          if (sub) sub.textContent = '说吧，文字在跟着你抖';
           loop();
         }).catch(function(){
-          sub.textContent = '麦克风权限被拒了，点「开始」再授权一次 🎤';
+          if (sub) sub.textContent = '麦克风权限被拒，点「开始暖场」再授权一次';
         });
       }
 
@@ -391,10 +388,10 @@
         if (stream) stream.getTracks().forEach(function(t){ t.stop(); });
         if (audioCtx) audioCtx.close().catch(function(){});
         stream = audioCtx = analyser = data = null;
-        faces.forEach(function(f){ f.style.transform = ''; });
-        btn.textContent = '🎤 开始声纹热身';
+        if (mic) mic.style.transform = '';
+        if (sub) { sub.style.transform = ''; sub.textContent = subDefault; }
+        btn.textContent = '开始暖场';
         btn.classList.remove('on');
-        sub.textContent = '对着麦克风随便说几句 —— 看表情跟着声纹蹦，把紧张先抖出去，再开始 60 秒试音。';
       }
 
       if (btn) btn.addEventListener('click', function(){ running ? stop() : start(); });
