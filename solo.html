@@ -786,12 +786,28 @@
       return txt.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(function (l) { return l.length > 0; });
     }
     $('customAdd').addEventListener('click', async function () {
-      var v = $('customOne').value.trim();
-      if (!v) return;
-      await Store.addCustomTopics([v]);
-      $('customOne').value = '';
-      await refreshCustom();
-      setStatus('已添加 1 题到我的题库 ✅');
+      var single = $('customOne').value.trim();
+      var bulk = parseLines($('customBulk').value);
+      if (!single && !bulk.length) {
+        setStatus('请输入题目：上方单行框输入一题点「添加」，或多行粘贴到下方文本框点「导入粘贴内容」', true);
+        return;
+      }
+      try {
+        if (single) {
+          await Store.addCustomTopics([single]);
+          $('customOne').value = '';
+          await refreshCustom();
+          setStatus('已添加 1 题到我的题库 ✅');
+        } else {
+          // 用户把内容粘到下方文本框却点了「添加」：自动走批量导入，避免静默失败
+          var n = await Store.addCustomTopics(bulk, { skipDup: true });
+          $('customBulk').value = '';
+          await refreshCustom();
+          setStatus('已导入 ' + n + ' 题到我的题库 ✅（多行内容已按批量导入）');
+        }
+      } catch (e) {
+        setStatus('添加失败：' + (e && e.message ? e.message : e), true);
+      }
     });
     $('customOne').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('customAdd').click(); });
     $('customImport').addEventListener('click', async function () {
