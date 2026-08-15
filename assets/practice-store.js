@@ -73,15 +73,39 @@
   }
 
   // ── 自定义题库 ──
-  function addCustomTopics(list) {
-    var rows = (list || []).map(function (q) { return { id: uid(), q: q, createdAt: Date.now() }; });
-    return Promise.all(rows.map(function (r) {
-      return tx(STORE_TOPICS, 'readwrite', function (os) { return os.put(r); });
-    })).then(function () { return rows.length; });
+  // opts.skipDup=true 时跳过与已有题目完全重复（去首尾空白 + 忽略大小写）的项，避免重复导入翻倍
+  function addCustomTopics(list, opts) {
+    opts = opts || {};
+    var skipDup = !!opts.skipDup;
+    return getCustomTopics().then(function (existing) {
+      var have = {};
+      existing.forEach(function (t) { have[String(t.q == null ? '' : t.q).trim().toLowerCase()] = true; });
+      var now = Date.now();
+      var rows = [];
+      (list || []).forEach(function (q, i) {
+        q = String(q == null ? '' : q).replace(/^﻿/, '').trim(); // 去 BOM + 首尾空白
+        if (!q) return;
+        if (skipDup && have[String(q).toLowerCase()]) return; // 与已有完全重复则跳过
+        rows.push({ id: uid(), q: q, createdAt: now + i }); // 批内 createdAt 递增，保留粘贴/导入顺序
+      });
+      if (!rows.length) return 0;
+      return Promise.all(rows.map(function (r) {
+        return tx(STORE_TOPICS, 'readwrite', function (os) { return os.put(r); });
+      })).then(function () { return rows.length; });
+    });
   }
   function getCustomTopics() {
     return tx(STORE_TOPICS, 'readonly', function (os) { return os.getAll(); })
-      .then(function (r) { return r || []; });
+      .then(function (r) {
+        r = r || [];
+        // 按 createdAt 升序，保证列表与抽题顺序 = 用户添加顺序（修复：此前按 UUID key 乱序）
+        r.sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+        return r;
+      });
+  }
+  function deleteCustomTopic(id) {
+    if (id == null) return Promise.resolve(false);
+    return tx(STORE_TOPICS, 'readwrite', function (os) { return os.delete(id); }).then(function () { return true; });
   }
   function clearCustomTopics() {
     return open().then(function (db) {
@@ -101,6 +125,7 @@
     deleteSession: deleteSession,
     addCustomTopics: addCustomTopics,
     getCustomTopics: getCustomTopics,
+    deleteCustomTopic: deleteCustomTopic,
     clearCustomTopics: clearCustomTopics
   };
 })(window);

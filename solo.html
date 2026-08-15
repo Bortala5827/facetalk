@@ -61,6 +61,9 @@
       display: flex; gap: 8px;
     }
     .pz-custom-list li .pc-idx { color: #a5b4fc; font-weight: 700; min-width: 20px; }
+    .pz-custom-list li .pc-txt { flex: 1; min-width: 0; word-break: break-word; }
+    .pz-custom-list li .pc-del { margin-left: auto; flex: 0 0 auto; border: none; background: none; color: #cbd5e1; cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0 2px; transition: color .15s; }
+    .pz-custom-list li .pc-del:hover { color: #dc2626; }
 
     /* 练习日志 */
     .pz-log { display: flex; flex-direction: column; gap: 12px; }
@@ -752,8 +755,21 @@
       } else {
         customTopics.slice(0, 30).forEach(function (t, i) {
           var li = document.createElement('li');
-          li.innerHTML = '<span class="pc-idx">' + (i + 1) + '</span><span>' + esc(t.q) + '</span>';
+          li.innerHTML = '<span class="pc-idx">' + (i + 1) + '</span>' +
+            '<span class="pc-txt">' + esc(t.q) + '</span>' +
+            '<button class="pc-del" type="button" data-del="' + esc(t.id) + '" title="删除这道题" aria-label="删除这道题">✕</button>';
           ul.appendChild(li);
+        });
+        // 单题删除：加错/重复可单独移除，不必清空整个题库
+        ul.querySelectorAll('[data-del]').forEach(function (btn) {
+          btn.addEventListener('click', async function () {
+            var id = btn.getAttribute('data-del');
+            if (!id) return;
+            if (!confirm('删除这道题？此操作不可恢复。')) return;
+            await Store.deleteCustomTopic(id);
+            await refreshCustom();
+            setStatus('已删除 1 题');
+          });
         });
         if (customTopics.length > 30) {
           var more = document.createElement('li');
@@ -766,6 +782,7 @@
       pickTopic();
     }
     function parseLines(txt) {
+      txt = String(txt == null ? '' : txt).replace(/^﻿/, ''); // 去 Excel/WPS CSV 的 BOM
       return txt.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(function (l) { return l.length > 0; });
     }
     $('customAdd').addEventListener('click', async function () {
@@ -780,7 +797,7 @@
     $('customImport').addEventListener('click', async function () {
       var lines = parseLines($('customBulk').value);
       if (!lines.length) { setStatus('没有可导入的内容', true); return; }
-      var n = await Store.addCustomTopics(lines);
+      var n = await Store.addCustomTopics(lines, { skipDup: true });
       $('customBulk').value = '';
       await refreshCustom();
       setStatus('已导入 ' + n + ' 题到我的题库 ✅');
@@ -793,7 +810,7 @@
         var txt = await f.text();
         var lines = parseLines(txt);
         if (!lines.length) { setStatus('CSV 里没有可识别的题目', true); return; }
-        var n = await Store.addCustomTopics(lines);
+        var n = await Store.addCustomTopics(lines, { skipDup: true });
         await refreshCustom();
         setStatus('已从文件导入 ' + n + ' 题 ✅');
       } catch (e) { setStatus('读取文件失败', true); }
