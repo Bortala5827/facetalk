@@ -42,7 +42,7 @@
         var os = t.objectStore(store);
         var result;
         var req = fn(os);
-        if (req && typeof req.onsuccess === 'function') req.onsuccess = function () { result = req.result; };
+        if (req) req.onsuccess = function () { result = req.result; };
         t.oncomplete = function () { resolve(result); };
         t.onerror = function () { reject(t.error); };
       });
