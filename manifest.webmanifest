@@ -1,7 +1,7 @@
 {
-  "name": "FaceTalk · 面试搭子",
+  "name": "FaceTalk · 面试筛选器",
   "short_name": "FaceTalk",
-  "description": "发布腾讯会议室或留言，按岗位/城市匹配面试搭子，一键跳腾讯会议连麦互练。免费、免登录。",
+  "description": "FaceTalk 面试筛选器：60 秒试音，双向选择，合适了再去腾讯会议深聊。免费、匿名、免登录。",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",

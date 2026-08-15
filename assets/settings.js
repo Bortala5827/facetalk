@@ -175,7 +175,7 @@
               '<li>⚡ <b>更低匹配成本</b>：文字尬聊半小时才发现一个考消防一个考教师；60 秒试音直接筛人。</li>' +
             '</ul>' +
             '<p class="set-about-safe">🔒 双方提交才能互听 · 🕓 录音阅后即焚 · 🚫 严禁留微信 / 手机号，防骗是底线。</p>' +
-            '<p class="set-about-safe">从「不敢说」到「会表达」，一条线：<b>SoloSpeak</b>（录音练习）→ <b>FaceTalk</b>（真人搭子）→ <b>RCJ Exam Hub</b>（真题刷题 + AI 点评）。</p>' +
+            '<p class="set-about-safe">从「不敢说」到「会表达」，一条线：<b>SoloSpeak</b>（录音练习）→ <b>FaceTalk</b>（真人筛选）→ <b>RCJ Exam Hub</b>（真题刷题 + AI 点评）。</p>' +
           '</div>' +
         '</div>' +
       '</div>';

@@ -148,11 +148,11 @@
     };
     var r = await api('POST', '/api/intents', body);
     if (r.status === 200 && r.data.ok) {
-      toast('意图已发布，等搭子来申请');
+      toast('意图已发布，等对方来申请');
       $('i-city').value = ''; $('i-note').value = '';
       renderMineOptimistic({ id: r.data.id, role: body.role, city: body.city, mode: body.mode, note: body.note });
       loadBrowse(); loadInbox(); loadMine();
-      // 发布成功后自动折叠表单区，让首屏聚焦「找搭子」
+      // 发布成功后自动折叠表单区，让首屏聚焦「找人筛选」
       var pd = document.getElementById('pair-details');
       if (pd) pd.removeAttribute('open');
     } else {
@@ -426,7 +426,7 @@
           (it.city ? ' <span class="tag tag-city">' + esc(it.city) + '</span>' : '') +
           ' <span class="mode">' + modeLabel(it.mode) + '</span></div>' +
           (it.note ? '<p class="li-note">' + esc(it.note) + '</p>' : '') +
-          '<div class="li-foot"><span class="muted">⏳ 等待搭子申请 · 已有 <b>' + n + '</b> 人申请</span>' +
+          '<div class="li-foot"><span class="muted">⏳ 等待对方申请 · 已有 <b>' + n + '</b> 人申请</span>' +
           '<button class="btn-mini grey" data-cancel-intent="' + esc(it.id) + '">撤回</button></div>';
         box.appendChild(div);
       });
@@ -451,7 +451,7 @@
       (it.city ? ' <span class="tag tag-city">' + esc(it.city) + '</span>' : '') +
       ' <span class="mode">' + modeLabel(it.mode) + '</span></div>' +
       (it.note ? '<p class="li-note">' + esc(it.note) + '</p>' : '') +
-      '<div class="li-foot"><span class="muted">⏳ 发布成功，等待搭子申请…</span></div>';
+      '<div class="li-foot"><span class="muted">⏳ 发布成功，等待对方申请…</span></div>';
     box.appendChild(div);
   }
 

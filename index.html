@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FaceTalk · 面试群里的智能连接工具</title>
+  <title>FaceTalk · 面试筛选器</title>
   <meta name="description" content="FaceTalk 不是找人聊天的平台，而是面试群里的智能连接工具：用 60 秒试音，在面试圈找到真正适合一起练的人。" />
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%46%54%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="/assets/icon-192.png" />
   <link rel="stylesheet" href="/assets/style.css?v=20260814c" />
 </head>
@@ -15,7 +15,7 @@
   <header class="topbar">
     <div class="container bar-inner">
       <a class="brand" href="/">
-        <span class="brand-mark">搭</span>
+        <span class="brand-mark">FT</span>
         <span class="brand-text">FaceTalk</span>
         <span class="v-badge v-badge-base">v2.9</span>
       </a>
@@ -33,15 +33,15 @@
     <div class="group-banner" id="group-banner" hidden></div>
     <!-- Hero：品牌标题 + 一句话 + 入口卡 -->
     <section class="hero" id="ft-hero">
-      <p class="hero-eyebrow">面试搭子匹配筛选助手</p>
-      <h1 class="hero-title" id="hero-title">用 60 秒试音<br>找到合拍的面试搭子</h1>
-      <p class="hero-kicker">面试群里已有一群想练的人 —— 双方都愿意，才正式组队</p>
+      <p class="hero-eyebrow">面试筛选器 · 60秒双向选择</p>
+      <h1 class="hero-title" id="hero-title">FaceTalk · 60秒决定要不要聊下去</h1>
+      <p class="hero-kicker">投入正式对练前，先用 60 秒判断对方值不值得聊</p>
 
       <div class="entry-grid">
         <a class="entry-card pair" href="#pair-details">
           <span class="ec-emoji">🎧</span>
-          <span class="ec-title">开始 60 秒试音</span>
-          <span class="ec-desc">从考试群来 → <b>60 秒试音</b> → 双方听声筛选 → 合得来再组队</span>
+          <span class="ec-title">开始筛选</span>
+          <span class="ec-desc">60 秒试音 → 双向选择 → 合适了再组队深聊</span>
           <span class="ec-go">去试音 →</span>
         </a>
       </div>
@@ -98,7 +98,7 @@
         <span class="fs-caret" aria-hidden="true">▾</span>
       </summary>
       <div class="fs-inner">
-      <p class="muted">同岗搭子来和你组队，双方都愿意再进房间；录音仅用于本次互评，结束后自动删除。</p>
+      <p class="muted">同岗伙伴来和你筛选，双方都愿意再进房间；录音仅用于本次互评，结束后自动删除。</p>
       <form id="intent-form" autocomplete="off">
         <div class="field-row">
           <label class="field">
@@ -143,7 +143,7 @@
         <h2 class="sec-title">🔍 公开大厅（没有群也能找）</h2>
         <button class="btn-mini" id="browse-refresh">刷新</button>
       </div>
-      <p class="board-note">群里没找到合适的？也能在这里浏览同岗搭子的开放意图。</p>
+      <p class="board-note">群里没找到合适的？也能在这里浏览同岗伙伴的开放意图。</p>
       <div id="browse-list" class="list"></div>
       <p class="list-empty" id="browse-empty">加载中…</p>
       <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px">你已发布意图，这里只看别人的。刷新可见新上线的搭子。</p>
@@ -152,7 +152,7 @@
     <!-- 我的搭子状态：默认展开（双向匹配需看到「收到的申请」并同意，不能藏起来）；可手动收起，有未处理申请时折叠标题显示红点提醒 -->
     <details class="b-collapse" id="my-status" open>
       <summary class="b-sum">
-        <span class="b-ttl">📊 我的搭子状态</span>
+        <span class="b-ttl">📊 我的筛选状态</span>
         <span class="b-dot" id="statusDot" hidden></span>
         <span class="b-caret" aria-hidden="true">▾</span>
       </summary>
@@ -191,9 +191,9 @@
 
     <!-- 搭子房间 -->
     <section class="card" id="room-card" hidden>
-      <h2 class="sec-title">🤝 搭子已匹配！</h2>
-      <p class="muted">匹配成功，进入 1:1 房间开始互练。</p>
-      <a class="btn-primary" id="room-enter" href="#">进入搭子房间 →</a>
+      <h2 class="sec-title">✅ FaceTalk 筛选完成！</h2>
+      <p class="muted">双方都想继续聊，进入 1:1 房间开始互练。</p>
+      <a class="btn-primary" id="room-enter" href="#">进入面试间 →</a>
     </section>
 
     <!-- 互评 -->
@@ -202,7 +202,7 @@
       <p class="muted">互评完成、双方都愿意，才能再约一次。</p>
       <form id="rate-form" autocomplete="off">
         <label class="field">
-          <span class="field-label">给搭子打分 <em>*</em></span>
+          <span class="field-label">给对方打分 <em>*</em></span>
           <select id="r-score">
             <option value="5">5 · 很赞，守时专业</option>
             <option value="4">4 · 不错</option>
@@ -230,7 +230,7 @@
     <summary class="wall-head">
       <div class="wall-ttl">
         <span class="wall-emoji">💬</span>
-        <h2>搭子留言墙</h2>
+        <h2>留言墙</h2>
         <span class="wall-badge">7 天自动清理</span>
       </div>
       <div class="wall-head-right">
@@ -247,10 +247,10 @@
         </ul>
       </div>
 
-      <p class="wall-sub">文明留言，禁止广告与不良信息。为彼此安全，<b>勿留手机号、微信等联系方式</b>，防骗；本站仅做陌生人面试搭子练习。</p>
+      <p class="wall-sub">文明留言，禁止广告与不良信息。为彼此安全，<b>勿留手机号、微信等联系方式</b>，防骗；FaceTalk 仅用于面试筛选，录音阅后即焚。</p>
       <div class="wall-form">
         <div class="wall-form-row">
-          <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名搭子」）" maxlength="20">
+          <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名用户」）" maxlength="20">
           <button class="wall-post" id="wallPost">✨ 发布留言</button>
         </div>
         <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300"></textarea>
@@ -431,7 +431,7 @@
             var b = document.createElement('b');
             b.textContent = dec;
             el.appendChild(b);
-            el.appendChild(document.createTextNode(' 找面试搭子 · 60 秒试音，找到合适的人'));
+            el.appendChild(document.createTextNode(' FaceTalk 面试筛选 · 60 秒试音，找到合适的人'));
             el.hidden = false;
           }
         }

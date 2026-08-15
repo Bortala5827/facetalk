@@ -64,11 +64,11 @@
       var recent = items.slice(0, SHOW_RECENT);
       var older = items.slice(SHOW_RECENT);
       function renderItem(it) {
-        var av = avatarFor(it.name || '匿名搭子');
+        var av = avatarFor(it.name || '匿名用户');
         return '<div class="wall-item" data-id="' + esc(it.id) + '">' +
           '<div class="wi-avatar" style="background:' + av.bg + '">' + esc(av.ch) + '</div>' +
           '<div class="wi-body">' +
-            '<div class="wi-top"><span class="wi-name">' + esc(it.name || '匿名搭子') + '</span>' +
+            '<div class="wi-top"><span class="wi-name">' + esc(it.name || '匿名用户') + '</span>' +
             '<span class="wi-time">' + timeAgo(it.createdAt) + '</span></div>' +
             '<div class="wi-text">' + esc(it.text) + '</div>' +
           '</div>' +

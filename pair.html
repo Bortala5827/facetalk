@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FaceTalk · 搭子房间</title>
+  <title>FaceTalk · 面试间</title>
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%E6%90%AD%3C/text%3E%3C/svg%3E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%46%54%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="/assets/style.css?v=20260811a" />
 </head>
 <body>
@@ -17,7 +17,7 @@
   </div>
   <header class="topbar">
     <div class="container bar-inner">
-      <a class="brand" href="/"><span class="brand-mark">搭</span><span class="brand-text">FaceTalk</span></a>
+      <a class="brand" href="/"><span class="brand-mark">FT</span><span class="brand-text">FaceTalk</span></a>
       <span class="brand-tag">搭子房间 · 1:1</span>
     </div>
   </header>
@@ -240,7 +240,7 @@
       <p class="muted">互评完成、且双方都愿意，才能解锁「再约一次」。</p>
       <form id="rate-form" autocomplete="off">
         <label class="field">
-          <span class="field-label">给搭子打分 <em>*</em></span>
+          <span class="field-label">给对方打分 <em>*</em></span>
           <select id="r-score">
             <option value="5">5 · 很赞，守时专业</option>
             <option value="4">4 · 不错</option>
@@ -254,7 +254,7 @@
           <input id="r-tags" type="text" placeholder="如：守时,点评到位,声音清晰" />
         </label>
         <label class="field check"><input id="r-next" type="checkbox" /> <span>愿意再约一次</span></label>
-        <label class="field check block-next"><input id="r-block" type="checkbox" /> <span>🚫 不再匹配此搭子</span></label>
+        <label class="field check block-next"><input id="r-block" type="checkbox" /> <span>🚫 不再匹配此人</span></label>
         <p class="field-hint">勾选后，对方不会再出现在你的看板和收件箱。</p>
         <button type="submit" class="btn-primary">提交评价 →</button>
         <p class="form-msg" id="r-msg" hidden></p>
@@ -635,10 +635,10 @@
     });
 
     document.getElementById('leave-btn').addEventListener('click', async function(){
-      if(!confirm('退出后本组队结束，可去首页找新搭子。确定退出？')) return;
+      if(!confirm('退出后本组队结束，可去首页找新伙伴。确定退出？')) return;
       var r = await apiA('POST',{action:'leave',pairId:pairId});
       if(r.status===200 && r.data.ok){
-        toast('已退出组队，去首页找新搭子 👋');
+        toast('已退出组队，去首页找新伙伴 👋');
         setTimeout(function(){ location.href = '/'; }, 800);
       }
       else if (r.data && r.data.error === 'rate_limited') toast('操作太频繁，稍后再试', true);
@@ -989,7 +989,7 @@
       e.preventDefault();
       var w = document.querySelector('input[name="v-willing"]:checked');
       var willing = !!(w && w.value === '1');
-      if (!willing && !confirm('婉拒后房间会自动关闭，双方各自去找新搭子。确定吗？')) return;
+      if (!willing && !confirm('婉拒后房间会自动关闭，双方各自去找新伙伴。确定吗？')) return;
       var btn = document.getElementById('v-submit'); btn.disabled = true;
       var d = await vPost({
         action: 'review',
@@ -1026,7 +1026,7 @@
           toast('✅ 评价已提交，等待对方完成...');
         } else {
           toast('评价已提交 ⭐');
-          if (r.data.blocked) toast('（已屏蔽此搭子）');
+          if (r.data.blocked) toast('（已屏蔽此人）');
           document.getElementById('rate-card').hidden=true;
         }
       }

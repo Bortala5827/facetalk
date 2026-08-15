@@ -118,7 +118,7 @@ export async function onRequestPost(context) {
     }
   } catch (e) { /* 计数失败不阻断发帖 */ }
 
-  const name = sanitize(body.name, 20) || "匿名搭子";
+  const name = sanitize(body.name, 20) || "匿名用户";
   const text = sanitize(body.text, 300);
   if (!text) return json({ ok: false, error: "EMPTY_TEXT" }, 400);
   const hit = hasSensitive(text) || hasSensitive(name);
