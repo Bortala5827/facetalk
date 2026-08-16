@@ -91,7 +91,7 @@
           <span class="v-time" id="v-time">00:00</span>
         </div>
         <div class="v-bar"><i id="v-fill"></i></div>
-        <div id="ftWave" class="ft-wave"></div>
+        <canvas id="ftWave" class="ft-wave"></canvas>
         <p class="field-hint" id="v-hint">⏱ 至少录 <strong>30 秒</strong>（最多 90 秒，约满自动停止）。录音只在互评期间临时存在，<strong>双方都评完后立即销毁</strong>，手机和电脑本地都不保存。</p>
       </div>
 
@@ -798,7 +798,6 @@
     }
     // ── 录音 ──
     var ftAudioCtx = null, ftAnalyser = null, ftWaveStop = null;
-    var ftWs = null, ftRecord = null, ftMicStream = null;
     function vMimeType() {
       var c = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
       for (var i = 0; i < c.length; i++) { try { if (window.MediaRecorder && MediaRecorder.isTypeSupported(c[i])) return c[i]; } catch (e) {} }
@@ -810,25 +809,24 @@
       try {
         vStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
       } catch (e) { toast('没拿到麦克风权限，请在浏览器里允许后重试', true); return; }
-      // 实时滚动波形：用 wavesurfer Record plugin 的 renderMicStream，只可视化不录音
+      // 实时频谱柱状图：自研 RCJWave 替代 wavesurfer 滚动波形，避免直线/工业垃圾
       try {
         var ftWaveEl = document.getElementById('ftWave');
-        if (ftWaveEl && window.WaveSurfer && window.WaveSurfer.Record) {
-          ftWs = WaveSurfer.create({
-            container: ftWaveEl,
-            waveColor: '#6f9b8a',
-            progressColor: '#6f9b8a',
-            height: 56,
-            interact: false,
-            cursorWidth: 0,
+        if (ftWaveEl && window.RCJWave) {
+          var AC = window.AudioContext || window.webkitAudioContext;
+          ftAudioCtx = new AC();
+          if (ftAudioCtx.state === 'suspended') { try { await ftAudioCtx.resume(); } catch (e) {} }
+          var src = ftAudioCtx.createMediaStreamSource(vStream);
+          ftAnalyser = ftAudioCtx.createAnalyser();
+          ftAnalyser.fftSize = 2048;
+          src.connect(ftAnalyser);
+          window.RCJWave.fitCanvas(ftWaveEl, 56);
+          ftWaveStop = window.RCJWave.mountLiveBars(ftWaveEl, ftAnalyser, {
+            color: '#6f9b8a',
+            bars: 48,
           });
-          ftRecord = ftWs.registerPlugin(WaveSurfer.Record.create({
-            scrollingWaveform: true,
-            renderRecordedAudio: false,
-          }));
-          ftMicStream = ftRecord.renderMicStream(vStream);
         }
-      } catch (e) { ftMicStream = null; }
+      } catch (e) { ftWaveStop = null; }
       var mt = vMimeType();
       try { vRec = new MediaRecorder(vStream, mt ? { mimeType: mt, audioBitsPerSecond: 24000 } : { audioBitsPerSecond: 24000 }); }
       catch (e) { try { vRec = new MediaRecorder(vStream); } catch (e2) { toast('录音初始化失败', true); return; } }
@@ -852,11 +850,9 @@
       if (s >= MAX_SEC) vStopRec();
     }
     function vStopRec() {
-      if (ftMicStream) { try { ftMicStream.onDestroy(); } catch (e) {} ftMicStream = null; }
-      if (ftRecord) { try { ftRecord.stopMic(); } catch (e) {} ftRecord = null; }
-      if (ftWs) { try { ftWs.destroy(); } catch (e) {} ftWs = null; }
-      var ftWaveEl = document.getElementById('ftWave');
-      if (ftWaveEl) { ftWaveEl.innerHTML = ''; }
+      if (ftWaveStop) { try { ftWaveStop(); } catch (e) {} ftWaveStop = null; }
+      if (ftAnalyser) { try { ftAnalyser.disconnect(); } catch (e) {} ftAnalyser = null; }
+      if (ftAudioCtx) { try { ftAudioCtx.close(); } catch (e) {} ftAudioCtx = null; }
       if (vTimer) { clearInterval(vTimer); vTimer = null; }
       try { if (vRec && vRec.state !== 'inactive') vRec.stop(); } catch (e) {}
     }
@@ -1069,8 +1065,7 @@
   </script>
     <script src="/assets/ft-util.js?v=20260806p"></script>
     <script src="/assets/settings.js?v=20260810b"></script>
-    <script src="/assets/vendor/wavesurfer/wavesurfer.min.js?v=20260815w"></script>
-    <script src="/assets/vendor/wavesurfer/record.min.js?v=20260815w"></script>
+    <script src="/assets/ftwave.js?v=20260816a"></script>
     <script src="/assets/glare.js?v=20260807a"></script>
   <script src="/assets/interview.js?v=20260810b"></script>
   <footer class="site-footer">
