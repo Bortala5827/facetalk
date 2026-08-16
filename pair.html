@@ -91,7 +91,10 @@
           <span class="v-time" id="v-time">00:00</span>
         </div>
         <div class="v-bar"><i id="v-fill"></i></div>
-        <canvas id="ftWave" class="ft-wave"></canvas>
+        <div class="ft-wave-row">
+          <canvas id="ftWaveLine" class="ft-wave"></canvas>
+          <canvas id="ftWave" class="ft-wave"></canvas>
+        </div>
         <p class="field-hint" id="v-hint">⏱ 至少录 <strong>30 秒</strong>（最多 90 秒，约满自动停止）。录音只在互评期间临时存在，<strong>双方都评完后立即销毁</strong>，手机和电脑本地都不保存。</p>
       </div>
 
@@ -797,7 +800,7 @@
         '<p class="v-will">' + (r.willing ? '👍 愿意组队' : '🙅 婉拒') + '</p></div>';
     }
     // ── 录音 ──
-    var ftAudioCtx = null, ftAnalyser = null, ftWaveStop = null;
+    var ftAudioCtx = null, ftAnalyser = null, ftWaveStop = null, ftWaveLineStop = null;
     function vMimeType() {
       var c = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
       for (var i = 0; i < c.length; i++) { try { if (window.MediaRecorder && MediaRecorder.isTypeSupported(c[i])) return c[i]; } catch (e) {} }
@@ -825,6 +828,12 @@
             color: '#6f9b8a',
             bars: 48,
           });
+          // 左侧实时波形线（声纹波动）——与右侧频率柱共享同一 analyser
+          var ftWaveLineEl = document.getElementById('ftWaveLine');
+          if (ftWaveLineEl && window.RCJWave.mountLiveWave) {
+            window.RCJWave.fitCanvas(ftWaveLineEl, 56);
+            ftWaveLineStop = window.RCJWave.mountLiveWave(ftWaveLineEl, ftAnalyser, { color: '#6f9b8a' });
+          }
         }
       } catch (e) { ftWaveStop = null; }
       var mt = vMimeType();
@@ -851,6 +860,7 @@
     }
     function vStopRec() {
       if (ftWaveStop) { try { ftWaveStop(); } catch (e) {} ftWaveStop = null; }
+      if (ftWaveLineStop) { try { ftWaveLineStop(); } catch (e) {} ftWaveLineStop = null; }
       if (ftAnalyser) { try { ftAnalyser.disconnect(); } catch (e) {} ftAnalyser = null; }
       if (ftAudioCtx) { try { ftAudioCtx.close(); } catch (e) {} ftAudioCtx = null; }
       if (vTimer) { clearInterval(vTimer); vTimer = null; }
@@ -1065,7 +1075,7 @@
   </script>
     <script src="/assets/ft-util.js?v=20260806p"></script>
     <script src="/assets/settings.js?v=20260810b"></script>
-    <script src="/assets/ftwave.js?v=20260816a"></script>
+    <script src="/assets/ftwave.js?v=20260816b"></script>
     <script src="/assets/glare.js?v=20260807a"></script>
   <script src="/assets/interview.js?v=20260810b"></script>
   <footer class="site-footer">

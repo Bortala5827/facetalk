@@ -296,5 +296,34 @@
     return function () { cancelAnimationFrame(raf); };
   }
 
-  global.RCJWave = { mountLiveBars: mountLiveBars, fitCanvas: fitCanvas, lerpHex: lerpHex };
+  // ── 实时波形线（经典示波器 / 声纹波动）── 左侧声纹用
+  function mountLiveWave(canvas, analyser, opts) {
+    opts = opts || {};
+    var color = opts.color || '#6f7d5a';
+    var lineWidth = opts.lineWidth != null ? opts.lineWidth : 1.5;
+    var ctx = canvas.getContext('2d');
+    var data = new Uint8Array(analyser.frequencyBinCount);
+    var raf;
+    function draw() {
+      analyser.getByteTimeDomainData(data);
+      var w = canvas.width, h = canvas.height, mid = h / 2;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      var slice = w / data.length;
+      for (var i = 0; i < data.length; i++) {
+        var v = data[i] / 128 - 1;
+        var y = mid + v * mid * 0.9;
+        var x = i * slice;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      raf = requestAnimationFrame(draw);
+    }
+    raf = requestAnimationFrame(draw);
+    return function () { cancelAnimationFrame(raf); };
+  }
+
+  global.RCJWave = { mountLiveBars: mountLiveBars, mountLiveWave: mountLiveWave, fitCanvas: fitCanvas, lerpHex: lerpHex };
 })(window);

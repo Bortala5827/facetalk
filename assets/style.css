@@ -1075,6 +1075,9 @@ a { color: inherit; text-decoration: none; }
   background: linear-gradient(180deg, #f3f6fd 0%, #eef2fb 100%);
   border: 1px solid var(--line);
 }
+/* 声纹双轨：左=实时波形线，右=频率柱（共享 analyser） */
+.ft-wave-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0 4px; }
+.ft-wave-row .ft-wave { margin: 0; }
 
 /* ===== 新定位：面试群里的智能连接工具（v2.6 改版） ===== */
 .group-banner {
