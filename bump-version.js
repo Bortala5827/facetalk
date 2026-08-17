@@ -28,7 +28,7 @@ var TARGETS = [
     refs: [
       { file: 'index.html',  re: /\/assets\/style\.css\?v=([a-z0-9]+)/ },
       { file: 'pair.html',   re: /\/assets\/style\.css\?v=([a-z0-9]+)/ },
-      { file: 'solo.html',   re: /\/assets\/style\.css\?v=([a-z0-9]+)/ },
+      // solo.html 已合并至 exam 站 structured.html，不再单独管理
     ]
   },
   {
@@ -51,7 +51,7 @@ var TARGETS = [
     refs: [
       { file: 'index.html',  re: /\/assets\/ft-util\.js\?v=([a-z0-9]+)/ },
       { file: 'pair.html',   re: /\/assets\/ft-util\.js\?v=([a-z0-9]+)/ },
-      { file: 'solo.html',   re: /\/assets\/ft-util\.js\?v=([a-z0-9]+)/ },
+      // solo.html 已合并至 exam 站 structured.html，不再单独管理
     ]
   },
   {
@@ -59,7 +59,7 @@ var TARGETS = [
     label: 'settings.js',
     refs: [
       { file: 'pair.html',   re: /\/assets\/settings\.js\?v=([a-z0-9]+)/ },
-      { file: 'solo.html',   re: /\/assets\/settings\.js\?v=([a-z0-9]+)/ },
+      // solo.html 已合并至 exam 站 structured.html，不再单独管理,
     ]
   },
   {
