@@ -19,4 +19,4 @@ CF 建 D1 库，Console 执行 `schema.sql` 建表 → 绑定到 Pages 项目（
 
 ---
 
-RCJ Speak Series 之一 · 总站 [RCJ Hub](https://955827.xyz)
+RCJ 产品生态之一 · 总站 [RCJ Hub](https://955827.xyz)
