@@ -58,6 +58,19 @@
       .vw-mic { font-size: 50px; }
       .vwarm-dialog { padding: 22px 18px; }
     }
+
+    /* 呼吸声纹球：Hero 锚点（与主站共用品牌母题） */
+    .ft-orb {
+      width: 46px; height: 46px; border-radius: 50%; margin: 0 auto 16px;
+      background: radial-gradient(circle at 50% 36%, #a5b4fc, #6366f1 58%, #4f46e5);
+      box-shadow: 0 0 0 0 rgba(99,102,241,.4), 0 8px 26px rgba(79,70,229,.3);
+      animation: ft-breathe 4.2s ease-in-out infinite; will-change: transform, box-shadow;
+    }
+    @keyframes ft-breathe {
+      0%,100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(99,102,241,.4), 0 8px 26px rgba(79,70,229,.3); }
+      50%     { transform: scale(1.10); box-shadow: 0 0 0 12px rgba(99,102,241,0), 0 10px 40px rgba(79,70,229,.45); }
+    }
+    @media (prefers-reduced-motion: reduce) { .ft-orb { animation: none; } }
   </style>
 </head>
 <body>
@@ -89,6 +102,7 @@
     <div class="group-banner" id="group-banner" hidden></div>
     <!-- Hero：品牌标题 + 一句话 + 入口卡 -->
     <section class="hero" id="ft-hero">
+      <div class="ft-orb" aria-hidden="true"></div>
       <p class="hero-eyebrow">面试筛选器</p>
       <h1 class="hero-title" id="hero-title">60 秒，决定要不要聊下去</h1>
       <p class="hero-kicker">投正式对练前，先听一段短音，判断对方值不值得组队</p>
