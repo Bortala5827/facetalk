@@ -938,15 +938,8 @@ a { color: inherit; text-decoration: none; }
   .hero h1 { font-size: 36px; line-height: 1.15; }
   .hero-steps li { font-size: 15px; padding: 9px 0 9px 38px; }
 
-  /* 空 list 加 icon 引导，避免 920px 宽下空卡像 PPT 占位 */
+  /* 空 list 留白即可，不再加 emoji 引导（用户反馈 2026-08-19：图标无价值） */
   .list-empty { padding: 30px 16px; font-size: 13.5px; }
-  .list-empty::before {
-    content: "👋";
-    display: block;
-    font-size: 28px;
-    margin-bottom: 8px;
-    filter: grayscale(.4);
-  }
 }
 
 /* ===== 自我练习（solo.html） ===== */

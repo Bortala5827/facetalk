@@ -55,7 +55,7 @@
       var d = await r.json();
       if (!d.ok) { list.innerHTML = '<div class="wall-empty">留言墙暂不可用</div>'; return; }
       var items = d.items || [];
-      if (!items.length) { list.innerHTML = '<div class="wall-empty">还没有留言，来抢沙发吧～</div>'; return; }
+      if (!items.length) { list.innerHTML = '<div class="wall-empty">还没人留言，做第一个说话的人。</div>'; return; }
       var sig = items.map(function (it) { return it.id; }).join('|');
       if (sig === prevSig) return; // 列表无变化，跳过重绘（轮询去抖）
       prevSig = sig;
