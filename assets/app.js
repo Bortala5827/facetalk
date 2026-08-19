@@ -327,7 +327,7 @@
         b.addEventListener('click', enterRoom);
       });
     } else if (r.status === 200) {
-      empty.hidden = false; empty.textContent = '还没人申请你。发个群看看？';
+      empty.hidden = false; empty.textContent = '还没人申请你——好搭子，值得等。';
     } else {
       empty.hidden = false; empty.textContent = '加载失败，点刷新重试';
     }
@@ -399,7 +399,7 @@
         b.addEventListener('click', enterRoom);
       });
     } else if (r.status === 200) {
-      empty.hidden = false; empty.textContent = '你还没主动找过搭子，公开大厅有同岗的。';
+      empty.hidden = false; empty.textContent = '你还没主动找过谁——敢开口的人，先被听见。';
     } else {
       empty.hidden = false; empty.textContent = '加载失败，点刷新重试';
     }
