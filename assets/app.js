@@ -169,7 +169,7 @@
     }
     var box = $('browse-list'); var empty = $('browse-empty'); box.innerHTML = '';
     if (r.status !== 200 || !r.data.list || !r.data.list.length) {
-      empty.hidden = false; empty.textContent = r.status === 200 ? '还没有人发布意图，去发一个？' : '加载失败，点刷新重试';
+      empty.hidden = false; empty.textContent = r.status === 200 ? '还没人发，那你就敢为人先，做第一个吃螃蟹的人。' : '加载失败，点刷新重试';
       return;
     }
     empty.hidden = true;
