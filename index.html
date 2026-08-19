@@ -58,6 +58,22 @@
       .vw-mic { font-size: 50px; }
       .vwarm-dialog { padding: 22px 18px; }
     }
+
+    /* ── Bombon 设计语言试点（2026-08-19 · 一区一色 + 完成章） ── */
+    /* 一区一色：三大状态区各一识别色，一眼可辨（借鉴 Bombon 每王国一主题色） */
+    .board[data-zone="mine"] .sec-title { border-left-color: var(--accent, #4f46e5); }
+    .board[data-zone="inbox"] .sec-title { border-left-color: #d97706; color: #b45309; }
+    .board[data-zone="out"] .sec-title { border-left-color: #94a3b8; color: #64748b; }
+    /* 筛选完成：标题盖章式落定（一次性，真实事件才触发；reduced-motion 关闭） */
+    #room-card .sec-title { animation: ftStampIn .55s cubic-bezier(.22,.61,.36,1) both; transform-origin: left center; }
+    @keyframes ftStampIn {
+      0%   { opacity: 0; transform: scale(.82) rotate(-2deg); }
+      60%  { opacity: 1; transform: scale(1.06) rotate(.6deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #room-card .sec-title { animation: none; }
+    }
   </style>
 </head>
 <body>
@@ -209,7 +225,7 @@
       <div class="b-inner">
 
       <!-- 我发布的需求 -->
-      <section class="board" id="mine-board">
+      <section class="board" id="mine-board" data-zone="mine">
         <div class="board-head">
           <h2 class="sec-title">📋 我发布的需求</h2>
           <span class="muted" id="mine-hint"></span>
@@ -219,7 +235,7 @@
       </section>
 
       <!-- 我的邀约：收到 -->
-      <section class="board">
+      <section class="board" data-zone="inbox">
         <div class="board-head">
           <h2 class="sec-title">📨 收到的申请</h2>
         </div>
@@ -228,7 +244,7 @@
       </section>
 
       <!-- 我的邀约：发出 -->
-      <section class="board">
+      <section class="board" data-zone="out">
         <div class="board-head">
           <h2 class="sec-title">📤 我发出的申请</h2>
         </div>
