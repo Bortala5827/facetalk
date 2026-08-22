@@ -74,11 +74,16 @@ export async function onRequestGet(context) {
   const db = getDB(context.env);
   if (!db) return json({ ok: false, error: "DB_NOT_BOUND", items: [] }, 503);
   try {
-    const { results } = await db.prepare(
-      "SELECT id,name,text,created_at FROM wall ORDER BY created_at DESC LIMIT ?"
-    ).bind(MAX_ITEMS).all();
+    // 兼容旧表（无 ip 列）：用 PRAGMA 探测，缺列时降级只取基础字段
+    let cols = [];
+    try { const info = await db.prepare("PRAGMA table_info(wall)").all(); cols = (info.results || []).map(r => r.name); } catch (e) {}
+    const hasIp = cols.includes("ip");
+    const sql = hasIp
+      ? "SELECT id,name,text,created_at,ip FROM wall ORDER BY created_at DESC LIMIT ?"
+      : "SELECT id,name,text,created_at FROM wall ORDER BY created_at DESC LIMIT ?";
+    const { results } = await db.prepare(sql).bind(MAX_ITEMS).all();
     const items = (results || []).map(function (r) {
-      return { id: r.id, name: r.name, text: r.text, createdAt: r.created_at };
+      return { id: r.id, name: r.name, text: r.text, createdAt: r.created_at, ip: r.ip || "" };
     });
     return json({ ok: true, items: items });
   } catch (e) {
@@ -139,7 +144,9 @@ export async function onRequestPost(context) {
 
   const id = now.toString(36) + Math.random().toString(36).slice(2, 6);
   try {
-    await db.prepare("INSERT INTO wall (id,name,text,created_at) VALUES (?,?,?,?)").bind(id, name, text, now).run();
+    // 兼容旧表：首次写入时幂等补加 ip 列（记录来源 IP，便于后台区分谁发的）
+    try { await db.prepare("ALTER TABLE wall ADD COLUMN ip TEXT").run(); } catch (e) { /* 列已存在则忽略 */ }
+    await db.prepare("INSERT INTO wall (id,name,text,created_at,ip) VALUES (?,?,?,?,?)").bind(id, name, text, now, ip).run();
     await db.prepare("INSERT INTO wall_day (ip,day,n) VALUES (?,?,1) ON CONFLICT(ip,day) DO UPDATE SET n = n + 1").bind(ip, today).run();
   } catch (e) {
     return json({ ok: false, error: "WRITE_FAIL" }, 500);
