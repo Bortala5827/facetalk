@@ -4,11 +4,12 @@
 // /api/* 永远走网络（D1 数据）。
 const CACHE_VERSION = 'v20260814';
 const CACHE = 'facetalk-static-' + CACHE_VERSION;
-// 仅预缓存图标等纯静态资产；HTML/JS 不进 SHELL
+// 仅预缓存图标等纯静态资产；另加 /index.html 壳（离线导航兜底用，见下方 fetch navigate 分支）
 const SHELL = [
   '/assets/icon-192.png',
   '/assets/icon-512.png',
   '/manifest.webmanifest',
+  '/index.html',
 ];
 
 self.addEventListener('install', (e) => {
