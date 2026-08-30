@@ -1,0 +1,26 @@
+# FaceTalk / 面试搭子 · Cloudflare Pages 配置
+# 作用：把此前在 Cloudflare 后台手动做的 D1 绑定、环境变量、兼容标志收进代码，
+#       实现「可复现部署」：wrangler pages deploy 即可，不再依赖 Dashboard 手工操作。
+# 参考：cf-manual-steps.html（手动 SQL 步骤，保留作兜底说明）
+
+name = "mianshi-dazi"
+pages_build_output_dir = "."
+compatibility_flags = ["nodejs_compat"]
+account_id = "725b9540433aa3356e5538662d7b9b32"
+
+# D1 数据库绑定（functions/_shared.js 里用 env.DB 读取）
+# ⚠️ database_id 必须填真实值，二选一获取：
+#   1) Cloudflare 后台 → D1 → mianshi-dazi-d1 → 复制数据库 ID
+#   2) 命令行：wrangler d1 list   （需已配置 CF_API_TOKEN / wrangler login）
+# 之前该绑定靠 Dashboard 手动配，现补回此处。
+[[d1_databases]]
+binding = "DB"
+database_name = "mianshi-dazi-d1"
+database_id = "REPLACE_WITH_MIANSHI_DAZI_D1_ID"
+migrations_dir = "migrations"
+
+# 管理员密码（超频解锁用，见 functions/_shared.js isAdmin）
+# 生产环境务必改用 secret 注入，勿明文提交：
+#   wrangler pages secret put MS_ADMIN_KEY --project-name mianshi-dazi
+# [vars]
+# MS_ADMIN_KEY = "rcj9527admin"

@@ -6,3 +6,5 @@ package.json
 ms_curl_err.txt
 turn_check.json
 turnt_err.txt
+# wrangler 本地缓存
+.wrangler/
