@@ -3,10 +3,10 @@
 #       实现「可复现部署」：wrangler pages deploy 即可，不再依赖 Dashboard 手工操作。
 # 参考：cf-manual-steps.html（手动 SQL 步骤，保留作兜底说明）
 
-name = "mianshi-dazi"
+name = "facetalk"
 pages_build_output_dir = "."
+compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
-account_id = "725b9540433aa3356e5538662d7b9b32"
 
 # D1 数据库绑定（functions/_shared.js 里用 env.DB 读取）
 # ⚠️ database_id 必须填真实值，二选一获取：
@@ -16,7 +16,7 @@ account_id = "725b9540433aa3356e5538662d7b9b32"
 [[d1_databases]]
 binding = "DB"
 database_name = "mianshi-dazi-d1"
-database_id = "REPLACE_WITH_MIANSHI_DAZI_D1_ID"
+database_id = "f93a89d7-ef5f-49c5-863d-5f1611e1a7f4"
 migrations_dir = "migrations"
 
 # 管理员密码（超频解锁用，见 functions/_shared.js isAdmin）
