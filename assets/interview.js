@@ -10,6 +10,7 @@
   if (!window.FT || !window.FT.me || !window.FT.pairId) return;
   var me = window.FT.me, pairId = window.FT.pairId;
   var esc = window.FT.esc, toast = window.FT.toast;
+  var t = function (k, a) { return window.FTI18N ? window.FTI18N.t(k, a) : k; };
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -59,10 +60,10 @@
   // 归零时跑 AI 评价（一次性，evalRequested 防重入）
   function onRemainZero() {
     if (evalRequested) return; evalRequested = true;
-    toast('⏰ 时间到');
+    toast(t('ivTimeUp'));
     stopStt();
     if (window.FTSettings && window.FTSettings.hasLLM()) runEval();
-    else { toast('时间到 — 点「结束并 AI 评价」可在配置模型后生成点评'); }
+    else { toast(t('ivTimeUpEval')); }
   }
   // v2.3：onUnlock 时调，订阅搭子房间倒计时（pair.html 每秒 tick 会 fire 一次）
   var unsubRemain = null;
@@ -93,7 +94,7 @@
       if (!d || !d.ok) return;
       // 转录行（来自后端，id 是 il_xxx，1.5s 周期拉；own 发送的乐观行通过 known[] 去重，不会重复）
       (d.lines || []).forEach(function (ln) {
-        appendLine(ln.mine ? '我' : '对方', ln.text, ln.id, { created: ln.created });
+        appendLine(ln.mine, ln.text, ln.id, { created: ln.created });
       });
       // 备选会议号（双方的另一面，回执时不是自己的）
       if (d.fallback) applyFallback(d.fallback);
@@ -114,21 +115,22 @@
       // 之前 .catch(function(){}) 静默吞所有 GET 错误：后端拉失败时用户毫无感知，
       // 误以为"消息没发出去"。改成连续 3 次失败（约 4.5 秒）才报警，避免网络抖动假阳性
       pollFailCount++;
-      if (pollFailCount === 3) toast('对话稿轮询中断，对方消息可能拉不到了（看 F12 Console）', true);
+      if (pollFailCount === 3) toast(t('ivPollBroken'), true);
     });
   }
   // 渲染一条对话行。key=唯一键（后端 il_xxx / 临时 tmp_xxx），传了同 key 会直接 return。
   // opts.created：秒级时间戳，缺省用本地时间
   // opts.pending：乐观 UI 的「发送中」状态（小圆点呼吸，浅色气泡）
   // opts.failed：发送失败状态（红底气泡 + ⚠ 角标）
-  function appendLine(who, text, key, opts) {
+  function appendLine(isMine, text, key, opts) {
     if (!text) return;
     opts = opts || {};
     if (key && known[key]) return;
     if (key) known[key] = 1;
+    var who = isMine ? t('msgMine') : t('msgPeer');
     var empty = transcript.querySelector('p.muted'); if (empty) empty.remove();
     var div = document.createElement('div');
-    div.className = 'iv-msg ' + (who === '我' ? 'iv-mine' : 'iv-peer')
+    div.className = 'iv-msg ' + (isMine ? 'iv-mine' : 'iv-peer')
       + (opts.pending ? ' iv-pending' : '')
       + (opts.failed ? ' iv-fail' : '');
     if (key) div.setAttribute('data-ivkey', key);
@@ -136,7 +138,7 @@
     var t = new Date(1000 * ts);
     var hh = ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2);
     var pendingHtml = opts.pending ? ' <span class="iv-pending-dot">…</span>' : '';
-    var failedHtml = opts.failed ? ' <span class="iv-fail-tag">⚠ 发送失败</span>' : '';
+    var failedHtml = opts.failed ? ' <span class="iv-fail-tag">⚠ ' + t('ivSendFailShort') + '</span>' : '';
     div.innerHTML =
       '<div class="iv-bubble-wrap">' +
         '<div class="iv-bubble">' + esc(text) + pendingHtml + '</div>' +
@@ -172,10 +174,10 @@
     var peerT = fbLast.tencent.trim(), peerF = fbLast.feishu.trim();
     var peerHas = !!(peerT || peerF);
     // 摘要条文案
-    if (!mineHas && !peerHas) { fbStatus.textContent = '未填'; fbStatus.className = 'iv-fb-status none'; }
-    else if (mineHas && !peerHas) { fbStatus.textContent = '你已填 · 等对方'; fbStatus.className = 'iv-fb-status wait'; }
-    else if (!mineHas && peerHas) { fbStatus.textContent = '对方已填 · 你未填'; fbStatus.className = 'iv-fb-status wait'; }
-    else { fbStatus.textContent = '双方都填好了 ✅'; fbStatus.className = 'iv-fb-status ok'; }
+    if (!mineHas && !peerHas) { fbStatus.textContent = t('ivFbStatusNone'); fbStatus.className = 'iv-fb-status none'; }
+    else if (mineHas && !peerHas) { fbStatus.textContent = t('ivFbStatusMine'); fbStatus.className = 'iv-fb-status wait'; }
+    else if (!mineHas && peerHas) { fbStatus.textContent = t('ivFbStatusPeer'); fbStatus.className = 'iv-fb-status wait'; }
+    else { fbStatus.textContent = t('ivFbStatusBoth'); fbStatus.className = 'iv-fb-status ok'; }
     fbChev.textContent = fbExpanded ? '▾' : '▸';
     fbToggle.setAttribute('aria-expanded', fbExpanded ? 'true' : 'false');
     fbBody.hidden = !fbExpanded;
@@ -183,8 +185,8 @@
     var showPeer = peerHas && fbExpanded;
     fbPeer.hidden = !showPeer;
     if (showPeer) {
-      fbPeerTen.textContent = peerT ? ('📞 腾讯会议：' + peerT) : '📞 腾讯会议：（未填）';
-      fbPeerFei.textContent = peerF ? ('📞 飞书会议：' + peerF) : '📞 飞书会议：（未填）';
+      fbPeerTen.textContent = peerT ? (t('ivFbTencentLabel') + peerT) : t('ivFbTencentEmpty');
+      fbPeerFei.textContent = peerF ? (t('ivFbFeishuLabel') + peerF) : t('ivFbFeishuEmpty');
       fbPeerTen.className = peerT ? '' : 'muted';
       fbPeerFei.className = peerF ? '' : 'muted';
     }
@@ -252,7 +254,7 @@
       fbSave.addEventListener('click', function () {
         var t = (fbTen && fbTen.value || '').replace(/\s+/g, ' ').trim();
         var f = (fbFei && fbFei.value || '').replace(/\s+/g, ' ').trim();
-        if (!t && !f) { fbToast.textContent = '至少填一项'; setTimeout(function () { fbToast.textContent = ''; }, 1500); return; }
+        if (!t && !f) { fbToast.textContent = t('ivFbAtLeastOne'); setTimeout(function () { fbToast.textContent = ''; }, 1500); return; }
         fbSave.disabled = true;
         fetch('/api/interview', {
           method: 'POST', headers: { 'content-type': 'application/json' },
@@ -261,14 +263,14 @@
           .then(function (d) {
             fbSave.disabled = false;
             if (d && d.ok) {
-              fbToast.textContent = '已保存';
+              fbToast.textContent = t('ivFbSaved');
               setTimeout(function () { fbToast.textContent = ''; }, 1500);
               renderFallbackStatus();
             } else {
-              fbToast.textContent = '保存失败：' + (d.error || '未知');
+              fbToast.textContent = t('ivFbSaveFail') + (d.error || t('ivUnknown'));
             }
           })
-          .catch(function () { fbSave.disabled = false; fbToast.textContent = '保存失败'; });
+          .catch(function () { fbSave.disabled = false; fbToast.textContent = t('ivFbSaveFail'); });
       });
     }
   }
@@ -291,12 +293,12 @@
     if (meta && !meta.querySelector('.iv-fail-tag')) {
       var tag = document.createElement('span');
       tag.className = 'iv-fail-tag';
-      tag.textContent = '⚠ 发送失败';
+      tag.textContent = '⚠ ' + t('ivSendFailShort');
       meta.appendChild(tag);
       var btn = document.createElement('button');
       btn.className = 'iv-retry';
       btn.type = 'button';
-      btn.textContent = '🔄 重发';
+      btn.textContent = '🔄 ' + t('ivRetry');
       btn.addEventListener('click', function () {
         var text = el.querySelector('.iv-bubble').textContent.replace(/…/g, '').trim();
         el.remove();
@@ -306,14 +308,14 @@
       });
       meta.appendChild(btn);
     }
-    toast(reason || '发送失败', true);
+    toast(reason || t('ivSendFailShort'), true);
   }
   function sendNote() {
     var v = noteInput.value.replace(/\s+/g, ' ').trim();
     if (!v) return;
     noteInput.value = '';
     var tmpKey = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-    appendLine('我', v, tmpKey, { pending: true, created: Math.floor(Date.now() / 1000) });
+    appendLine(true, v, tmpKey, { pending: true, created: Math.floor(Date.now() / 1000) });
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 10000) : null;   // 10s 超时
     fetch('/api/interview', {
@@ -329,12 +331,12 @@
         if (d.id) known[d.id] = 1;     // 防止 1.5s 后 polling 把同一条再画一次
         if (el) { clearPending(el); el.setAttribute('data-ivkey', d.id || tmpKey); }
       } else {
-        markFailed(el, '发送失败：' + (d && d.error || '未知'));
+        markFailed(el, t('ivSendFailReason') + (d && d.error || t('ivUnknown')));
       }
     }).catch(function (e) {
       if (timer) clearTimeout(timer);
       var el = transcript.querySelector('[data-ivkey="' + tmpKey + '"]');
-      markFailed(el, e && e.name === 'AbortError' ? '10 秒没回应，可能网络不通' : '网络出错，消息未送达');
+      markFailed(el, e && e.name === 'AbortError' ? t('ivSendTimeout') : t('ivSendNetErr'));
     });
   }
   noteSend.addEventListener('click', sendNote);
@@ -353,7 +355,7 @@
   function toggleStt() {
     if (sttOn || sttBrowserOn) { stopStt(); return; }
     if (!window.FTSettings || !window.FTSettings.sttOn()) {
-      toast('请先点右上角 ⚙ 开启录音转文字', true);
+      toast(t('ivSttNeedSetup'), true);
       if (window.FTSettings) window.FTSettings.open();
       return;
     }
@@ -363,34 +365,34 @@
   }
   function startSttApi() {
     if (!window.FTSettings || !window.FTSettings.hasSTT()) {
-      toast('请先点右上角 ⚙ 配置 Whisper 兼容接口', true);
+      toast(t('ivNeedCfg'), true);
       if (window.FTSettings) window.FTSettings.open();
       return;
     }
     if (!navigator.mediaDevices || !window.MediaRecorder) {
-      toast('当前浏览器不支持 MediaRecorder，请改用「浏览器自带」模式', true); return;
+      toast(t('ivNoMediaRec'), true); return;
     }
     navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } })
       .then(function (s) {
         sttStream = s; sttErrShown = false;
         var mt = pickMime();
         try { sttRec = new MediaRecorder(s, mt ? { mimeType: mt, audioBitsPerSecond: 24000 } : { audioBitsPerSecond: 24000 }); }
-        catch (e) { try { sttRec = new MediaRecorder(s); } catch (e2) { toast('录音初始化失败', true); return; } }
+        catch (e) { try { sttRec = new MediaRecorder(s); } catch (e2) { toast(t('ivRecFail'), true); return; } }
         sttRec.ondataavailable = function (e) { if (e.data && e.data.size) sttSend(e.data); };
         sttRec.start(20000);   // 每 20 秒产出一段，增量转写
         sttOn = true; updateSttBtn();
-        toast('🎙 已开启录音转文字（API）');
+        toast(t('ivSttOnApi'));
       })
-      .catch(function () { toast('没拿到麦克风权限，请在浏览器允许', true); });
+      .catch(function () { toast(t('ivMicDenied'), true); });
   }
   function startSttBrowser() {
     // 浏览器原生 STT：必须先拿麦克风（Chrome 强制要求），再启 SpeechRecognition
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast('当前浏览器拿不到麦克风，无法启用浏览器自带转录', true); return;
+      toast(t('ivNoMic'), true); return;
     }
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      toast('当前浏览器不支持 SpeechRecognition，请改 Chrome / Edge 或用 API 模式', true); return;
+      toast(t('ivNoSR'), true); return;
     }
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
       // 立刻停掉流：SpeechRecognition 自管麦克风，长期占着会让用户以为录音灯常亮
@@ -422,7 +424,7 @@
         }).catch(function () {});
       };
       sttBrowser.onerror = function (e) {
-        if (!sttErrShown) { sttErrShown = true; toast('浏览器语音识别出错：' + (e.error || '未知') + '（检查麦克风权限）', true); }
+        if (!sttErrShown) { sttErrShown = true; toast(t('ivSttErr') + (e.error || t('ivUnknown')) + t('ivSttErrCheck'), true); }
       };
       sttBrowser.onend = function () {
         // 用户停掉、Chrome 长时间没声音会自动 end；这时只有"开着"才续
@@ -434,9 +436,9 @@
         sttBrowser.start();
         sttBrowserOn = true; sttOn = true; sttErrShown = false;
         updateSttBtn();
-        toast('🎙 已开启浏览器自带转文字（Chrome / Edge）');
-      } catch (e) { toast('浏览器语音识别启动失败', true); }
-    }).catch(function () { toast('没拿到麦克风权限，请在浏览器允许', true); });
+        toast(t('ivSttOnBrowser'));
+      } catch (e) { toast(t('ivSttStartFail'), true); }
+    }).catch(function () { toast(t('ivMicDenied'), true); });
   }
   function stopStt() {
     if (sttRec) { try { if (sttRec.state !== 'inactive') sttRec.stop(); } catch (e) {} sttRec = null; }
@@ -446,7 +448,7 @@
   }
   function updateSttBtn() {
     var on = sttOn || sttBrowserOn;
-    sttBtn.textContent = on ? '🎙 录音转文字：开' : '🎙 录音转文字：关';
+    sttBtn.textContent = on ? t('ivSttOn') : t('ivSttOff');
     sttBtn.classList.toggle('on', !!on);
   }
   function sttSend(blob) {
@@ -469,10 +471,10 @@
           }).catch(function () {});
         } else if (!sttErrShown) {
           sttErrShown = true;
-          toast('转写失败：' + (d.error || d.status || '未知') + '（检查接口/配额）', true);
+          toast(t('ivTransFail') + (d.error || d.status || t('ivUnknown')) + t('ivTransFailCheck'), true);
         }
       })
-      .catch(function (e) { if (!sttErrShown) { sttErrShown = true; toast('转写请求出错', true); } });
+      .catch(function (e) { if (!sttErrShown) { sttErrShown = true; toast(t('ivTransReqErr'), true); } });
   }
   sttBtn.addEventListener('click', toggleStt);
 
@@ -526,16 +528,16 @@
     p.onconnectionstatechange = function () {
       if (p.connectionState === 'connected') {
         if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
-        callBtn.textContent = '🔊 实时语音：已连通'; callTip.hidden = true;
+        callBtn.textContent = t('ivConnected'); callTip.hidden = true;
         clearFbEscalation();       // 连通了就取消 30s 跳转与提醒
         fbAutoCollapseIfAuto();   // 连通后如果之前是自动展开的，就自动收回（用户主动展开过的不会被收回）
       } else if (p.connectionState === 'failed' || p.connectionState === 'disconnected') {
         if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
         onFail(turnOn
-          ? '语音断开了，多半是网络波动 —— 再点一次可重连'
+          ? t('ivDisconnected')
           : (gotSrflx
-            ? '直连没打通（双方网络限制较严）—— 一方切 4G/5G 重试多半能成；不想折腾就往下滑到「📡 备选会议号」交换腾讯会议号，转录和 AI 点评照常可用'
-            : '当前网络拿不到公网地址（校园网 / 公司内网常见），直连打不通 —— 一方切 4G/5G 重试，或往下滑到「📡 备选会议号」交换腾讯会议号，转录和 AI 点评照常可用'));
+            ? t('ivNoDirect')
+            : t('ivNoPublic')));
         // 直连失败时立刻展开 fallback，应急换走腾讯会议
         fbAutoExpand();
       }
@@ -555,19 +557,19 @@
   function ensureLocalStream(cb) {
     if (callStream) return cb(callStream);
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      failCall('当前浏览器拿不到麦克风 —— 微信/QQ 内置浏览器常被限制，请用手机自带浏览器或 Chrome 打开本页');
+      failCall(t('ivNoMic2'));
       return;
     }
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) { callStream = s; cb(s); })
       .catch(function (err) {
         var denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
         failCall(denied
-          ? '麦克风权限被拒绝 —— 请在浏览器地址栏左侧允许麦克风后重试'
-          : '拿不到麦克风（微信内置浏览器常被限制），请换手机自带浏览器，或改用腾讯会议链接');
+          ? t('ivMicDenied2')
+          : t('ivNoMic3'));
       });
   }
   function startCall() {
-    callStarted = true; callBtn.textContent = '🔊 实时语音：连接中…'; callBtn.classList.add('on');
+    callStarted = true; callBtn.textContent = t('ivConnecting'); callBtn.classList.add('on');
     callTip.hidden = true;
     // 30 秒未连通 → 兜底：自动展开「备选会议号」卡，让用户把腾讯/飞书会议号填上，转走外部通话。
     // 节流设计：5~8 秒才在 UI 上出现 log（callTip 一直可见，便于看进度），到 30s 强制展开 fallback。
@@ -575,18 +577,18 @@
     if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
     callConnTimer = setTimeout(function () {
       if (pc && pc.connectionState === 'connected') return;
-      toast('⌛ 30 秒还没连上，建议填一下会议号、走腾讯会议或飞书会议继续练', true);
+      toast(t('ivCall30s'), true);
       fbEscalateAfter30s();
     }, 30000);
     // 若对方已经发过 offer，本方直接走应答路径，不要再互发 offer（会 glare 冲突）
     if (pendingOffer) { var o = pendingOffer; pendingOffer = null; handleSignal(o); return; }
     withIce(function () {
       ensureLocalStream(function (s) {
-        try { pc = newPC(failCall); } catch (e) { failCall('浏览器不支持 WebRTC'); return; }
+        try { pc = newPC(failCall); } catch (e) { failCall(t('ivWebRtcUnsupported')); return; }
         s.getTracks().forEach(function (t) { pc.addTrack(t, s); });
         pc.createOffer().then(function (o) { return pc.setLocalDescription(o); }).then(function () {
           postSignal('offer', JSON.stringify(pc.localDescription));
-        }).catch(function () { failCall('生成 offer 失败'); });
+        }).catch(function () { failCall(t('ivOfferFail')); });
       });
     });
   }
@@ -610,7 +612,7 @@
         ensureLocalStream(function (s) {
           try { pc = newPC(failCall); } catch (e) { return; }
           s.getTracks().forEach(function (t) { pc.addTrack(t, s); });
-          callStarted = true; callBtn.classList.add('on'); callBtn.textContent = '🔊 实时语音：连接中…';
+          callStarted = true; callBtn.classList.add('on'); callBtn.textContent = t('ivConnecting');
           pc.setRemoteDescription(JSON.parse(sg.data)).then(function () { return pc.createAnswer(); })
             .then(function (a) { return pc.setLocalDescription(a); }).then(function () { postSignal('answer', JSON.stringify(pc.localDescription)); })
             .catch(function () {});
@@ -628,14 +630,14 @@
   function promptIncomingCall(sg) {
     pendingOffer = sg;
     callTip.hidden = false;
-    callTip.innerHTML = '📞 对方发起了实时语音 —— 点上面的「🔊 实时语音」接听';
+    callTip.innerHTML = t('ivIncomingToast');
     callBtn.classList.add('on');
-    callBtn.textContent = '🔊 接听对方语音';
-    toast('📞 对方发起了实时语音');
+    callBtn.textContent = t('ivAnswerCall');
+    toast(t('ivCallIncoming'));
   }
   function failCall(msg) {
     callTip.hidden = false; callTip.textContent = '⚠️ ' + msg;
-    callBtn.textContent = '🔊 实时语音'; callBtn.classList.remove('on');
+    callBtn.textContent = t('ivCallBtn'); callBtn.classList.remove('on');
     callStarted = false;
     if (callConnTimer) { clearTimeout(callConnTimer); callConnTimer = null; }
     fbAutoExpand();            // 任何 fail 先把备选会议号卡展开（可见但不打断）
@@ -647,12 +649,12 @@
     clearFbEscalation();
     if (pc) { try { pc.close(); } catch (e) {} pc = null; }
     if (callStream) { callStream.getTracks().forEach(function (t) { t.stop(); }); callStream = null; }
-    callBtn.textContent = '🔊 实时语音'; callBtn.classList.remove('on');
+    callBtn.textContent = t('ivCallBtn'); callBtn.classList.remove('on');
   }
 
   // ── 结束并评价 ──
   endBtn.addEventListener('click', function () {
-    if (!confirm('结束本场面试并生成 AI 评价？结束后会停止录音。')) return;
+    if (!confirm(t('ivConfirmEnd'))) return;
     finishInterview(true);
   });
   function finishInterview(doEval) {
@@ -661,23 +663,19 @@
     if (unsubRemain) { try { unsubRemain(); } catch (_) {} unsubRemain = null; }
     stopPolling();
     if (doEval && window.FTSettings && window.FTSettings.hasLLM()) runEval();
-    else if (doEval) { toast('未配置大模型，无法生成评价；点 ⚙ 设置后可重跑', true); refreshSetupHint(); }
+    else if (doEval) { toast(t('ivNoLlm'), true); refreshSetupHint(); }
   }
 
   function runEval() {
     // 取最新完整转录
     ivGet().then(function (d) {
       var lines = (d && d.lines) || [];
-      if (!lines.length) { toast('还没有对话稿，无法评价', true); return; }
-      var conv = lines.map(function (ln) { return (ln.mine ? '我' : '对方') + '：' + ln.text; }).join('\n');
+      if (!lines.length) { toast(t('ivNoLines'), true); return; }
+      var conv = lines.map(function (ln) { return (ln.mine ? t('msgMine') : t('msgPeer')) + '：' + ln.text; }).join('\n');
       var cfg = window.FTSettings.get();
-      var sys = '你是辅警/消防/公务员/社区等招录结构化面试的资深考官。请根据下面的双人面试对话稿，从「我」（答题方）的角度给结构化点评。'
-        + '严格用 JSON 输出：{"summary":"一句话总评","scores":[{"dim":"内容切题","score":1-5,"reason":"..."},'
-        + '{"dim":"逻辑结构","score":1-5,"reason":"..."},{"dim":"语言表达","score":1-5,"reason":"..."},'
-        + '{"dim":"岗位匹配度","score":1-5,"reason":"..."},{"dim":"综合表现","score":1-5,"reason":"..."}],'
-        + '"advice":["给「我」的3条最该改进的实操建议"]}。不要输出 JSON 以外的解释文字。';
+      var sys = t('ivEvalSys');
       evalBox.hidden = false;
-      evalBox.innerHTML = '<p class="iv-eval-loading">🤖 大模型评价生成中…</p>';
+      evalBox.innerHTML = '<p class="iv-eval-loading">' + t('ivEvalLoading') + '</p>';
       evalBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
       fetch('/api/llm?type=chat', {
         method: 'POST', headers: { 'content-type': 'application/json' },
@@ -685,22 +683,22 @@
           base: cfg.llmBase, key: cfg.llmKey, model: cfg.llmModel,
           messages: [
             { role: 'system', content: sys },
-            { role: 'user', content: '面试对话稿：\n' + conv },
+            { role: 'user', content: t('ivEvalConvPrefix') + conv },
           ],
         }),
       }).then(function (r) { return r.json().catch(function () { return {}; }); })
         .then(function (r) {
-          if (!r.ok) { evalBox.innerHTML = '<p class="iv-eval-err">评价失败：' + esc(r.error || r.status || '未知') + '</p>'; return; }
+          if (!r.ok) { evalBox.innerHTML = '<p class="iv-eval-err">' + t('ivEvalErr') + esc(r.error || r.status || t('ivUnknown')) + '</p>'; return; }
           renderEval(r.content || '');
         })
-        .catch(function () { evalBox.innerHTML = '<p class="iv-eval-err">评价请求出错</p>'; });
+        .catch(function () { evalBox.innerHTML = '<p class="iv-eval-err">' + t('ivEvalReqErr') + '</p>'; });
     });
   }
   function renderEval(content) {
     var data = null;
     try { data = JSON.parse((content || '').replace(/^[\s\S]*?\{/, '{').replace(/\}[\s\S]*$/, '}')); } catch (e) {}
-    if (!data) { evalBox.innerHTML = '<div class="iv-eval-raw"><h4>🤖 AI 评价</h4><pre>' + esc(content) + '</pre></div>'; return; }
-    var html = '<h4>🤖 AI 面试评价</h4>';
+    if (!data) { evalBox.innerHTML = '<div class="iv-eval-raw"><h4>' + t('ivEvalRawTitle') + '</h4><pre>' + esc(content) + '</pre></div>'; return; }
+    var html = '<h4>' + t('ivEvalTitle') + '</h4>';
     if (data.summary) html += '<p class="iv-summary">' + esc(data.summary) + '</p>';
     if (data.scores && data.scores.length) {
       html += '<div class="iv-scores">';
@@ -713,11 +711,11 @@
       html += '</div>';
     }
     if (data.advice && data.advice.length) {
-      html += '<h5>💡 给你的改进建议</h5><ul class="iv-advice">';
+      html += '<h5>' + t('ivEvalAdvice') + '</h5><ul class="iv-advice">';
       data.advice.slice(0, 5).forEach(function (a) { html += '<li>' + esc(a) + '</li>'; });
       html += '</ul>';
     }
-    html += '<button class="btn-mini grey" id="iv-eval-again">重新评价</button>';
+    html += '<button class="btn-mini grey" id="iv-eval-again">' + t('ivEvalAgain') + '</button>';
     evalBox.innerHTML = html;
     var again = $('iv-eval-again'); if (again) again.addEventListener('click', runEval);
   }
@@ -726,11 +724,11 @@
   function refreshSetupHint() {
     if (!window.FTSettings) return;
     var need = [];
-    if (!window.FTSettings.hasLLM()) need.push('大模型');
-    if (!window.FTSettings.hasSTT()) need.push('语音转文字');
+    if (!window.FTSettings.hasLLM()) need.push(t('ivNeedLlm'));
+    if (!window.FTSettings.hasSTT()) need.push(t('ivNeedStt'));
     if (need.length) {
       needset.hidden = false;
-      needset.innerHTML = '⚙ 尚未配置：' + need.join(' / ') + '。点右上角 ⚙ 填写你自己的接口（仅存本机）。';
+      needset.innerHTML = t('ivNeedSet') + need.join(' / ') + '。';
     } else { needset.hidden = true; needset.innerHTML = ''; }
   }
   window.FT.onSettingsChange = refreshSetupHint;

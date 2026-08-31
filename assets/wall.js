@@ -1,12 +1,13 @@
 // FaceTalk 全站公开留言墙前端（自包含，配合 /api/wall）
 (function () {
+  var t = function (k, a) { return window.FTI18N ? window.FTI18N.t(k, a) : k; };
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var BASE = '';
   var prevSig = ''; // 上一次列表签名，轮询无变化时跳过重绘，避免每 30s 闪动
 
   function avatarFor(name) {
-    var s = (name || '匿').trim();
-    var ch = s ? s.charAt(0) : '匿';
+    var s = (name || t('wallAnon')).trim();
+    var ch = s ? s.charAt(0) : t('wallAnon').charAt(0);
     var grads = [
       'linear-gradient(135deg,#1e88e5,#42a5f5)',
       'linear-gradient(135deg,#06b6d4,#22d3ee)',
@@ -21,10 +22,10 @@
 
   function timeAgo(sec) {
     var d = Math.floor(Date.now() / 1000) - (sec || 0);
-    if (d < 60) return '刚刚';
-    if (d < 3600) return Math.floor(d / 60) + ' 分钟前';
-    if (d < 86400) return Math.floor(d / 3600) + ' 小时前';
-    return Math.floor(d / 86400) + ' 天前';
+    if (d < 60) return t('timeAgoNow');
+    if (d < 3600) return t('timeAgoMin', [Math.floor(d / 60)]);
+    if (d < 86400) return t('timeAgoHour', [Math.floor(d / 3600)]);
+    return t('timeAgoDay', [Math.floor(d / 86400)]);
   }
   function esc(s) {
     return (s || '').replace(/[&<>"']/g, function (c) {
@@ -53,9 +54,9 @@
     try {
       var r = await fetch(BASE + '/api/wall', { cache: 'no-store' });
       var d = await r.json();
-      if (!d.ok) { list.innerHTML = '<div class="wall-empty">留言墙暂不可用</div>'; return; }
+      if (!d.ok) { list.innerHTML = '<div class="wall-empty">' + t('wallUnavailable') + '</div>'; return; }
       var items = d.items || [];
-      if (!items.length) { list.innerHTML = '<div class="wall-empty">还没人留言，做第一个说话的人。</div>'; return; }
+      if (!items.length) { list.innerHTML = '<div class="wall-empty">' + t('wallEmpty') + '</div>'; return; }
       var sig = items.map(function (it) { return it.id; }).join('|');
       if (sig === prevSig) return; // 列表无变化，跳过重绘（轮询去抖）
       prevSig = sig;
@@ -64,25 +65,25 @@
       var recent = items.slice(0, SHOW_RECENT);
       var older = items.slice(SHOW_RECENT);
       function renderItem(it) {
-        var av = avatarFor(it.name || '匿名用户');
+        var av = avatarFor(it.name || t('wallAnon'));
         return '<div class="wall-item" data-id="' + esc(it.id) + '">' +
           '<div class="wi-avatar" style="background:' + av.bg + '">' + esc(av.ch) + '</div>' +
           '<div class="wi-body">' +
-            '<div class="wi-top"><span class="wi-name">' + esc(it.name || '匿名用户') + '</span>' +
+            '<div class="wi-top"><span class="wi-name">' + esc(it.name || t('wallAnon')) + '</span>' +
             '<span class="wi-time">' + timeAgo(it.createdAt) + '</span></div>' +
             '<div class="wi-text">' + esc(it.text) + '</div>' +
           '</div>' +
-          '<button class="wall-del" data-id="' + esc(it.id) + '" title="删除">✕</button>' +
+          '<button class="wall-del" data-id="' + esc(it.id) + '" title="' + t('wallDelTitle') + '">✕</button>' +
           '</div>';
       }
       var html = recent.map(renderItem).join('');
       if (older.length > 0) {
-        html += '<details class="wall-older"><summary class="wall-older-sum">查看更早的 ' + older.length + ' 条留言 ▾</summary>' +
+        html += '<details class="wall-older"><summary class="wall-older-sum">' + t('wallSeeOlder', [older.length]) + '</summary>' +
           older.map(renderItem).join('') + '</details>';
       }
       list.innerHTML = html;
     } catch (e) {
-      list.innerHTML = '<div class="wall-empty">网络异常，稍后重试</div>';
+      list.innerHTML = '<div class="wall-empty">' + t('wallNetworkErr') + '</div>';
     }
   }
 
@@ -90,10 +91,10 @@
     var nameEl = $('#wallName'), textEl = $('#wallText'), btn = $('#wallPost');
     if (!textEl || !btn) return;
     var text = (textEl.value || '').trim();
-    if (!text) { showErr('写点内容再发布吧'); return; }
+    if (!text) { showErr(t('wallNeedText')); return; }
     // 前期（公开留言墙）严禁留个人微信 / 手机号：先在前端拦一道，避免绕过后端
     var contactHit = /微信|vx|v信|wechat|微信号|加我|私聊|1[3-9]\d{9}/i.test((nameEl.value || '') + ' ' + text);
-    if (contactHit) { showErr('请勿在留言墙留个人微信或手机号，防骗'); return; }
+    if (contactHit) { showErr(t('wallNoContact')); return; }
     btn.disabled = true;
     try {
       var r = await fetch(BASE + '/api/wall', {
@@ -103,20 +104,20 @@
       });
       var d = await r.json();
       if (!d.ok) {
-        if (d.error === 'RATE_LIMIT') showErr('太快啦，' + (d.left || 60) + ' 秒后再发');
-        else if (d.error === 'DAILY_LIMIT') showErr('今日发帖已达上限，明天再来');
-        else if (d.error === 'BAD_WORD') showErr('含违规词「' + (d.word || '') + '」，请修改');
-        else if (d.error === 'DUP') showErr('这条好像刚发过');
-        else if (d.error === 'EMPTY_TEXT') showErr('内容不能为空');
-        else if (d.error === 'DB_NOT_BOUND') showErr('留言墙服务未就绪');
-        else showErr('发布失败，请重试');
+        if (d.error === 'RATE_LIMIT') showErr(t('wallRateLimit', [d.left || 60]));
+        else if (d.error === 'DAILY_LIMIT') showErr(t('wallDailyLimit'));
+        else if (d.error === 'BAD_WORD') showErr(t('wallBadWord', [d.word || '']));
+        else if (d.error === 'DUP') showErr(t('wallDup'));
+        else if (d.error === 'EMPTY_TEXT') showErr(t('wallEmptyText'));
+        else if (d.error === 'DB_NOT_BOUND') showErr(t('wallDbNotReady'));
+        else showErr(t('wallPostFail'));
         btn.disabled = false;
         return;
       }
       textEl.value = '';
       await loadWall();
     } catch (e) {
-      showErr('网络异常，发布失败');
+      showErr(t('wallPostNetErr'));
     }
     btn.disabled = false;
   }
@@ -142,7 +143,7 @@
       var on = manage.classList.toggle('on');
       if (wallEl) wallEl.classList.toggle('manager', on);
       if (on) {
-        var key = String(window.prompt('输入管理员密码（与管理后台 ADMIN_KEY / 限流解锁 MS_ADMIN_KEY 一致；都没设时默认 rcj9527）。\n批量管理留言建议用 /admin 后台「留言墙」标签页，更顺手。') || '').trim();
+        var key = String(window.prompt(t('wallAdminPrompt')) || '').trim();
         if (!key) { manage.classList.remove('on'); if (wallEl) wallEl.classList.remove('manager'); return; }
         window.__wallAdminKey = key;
       } else {
@@ -154,10 +155,10 @@
       var del = e.target.closest && e.target.closest('.wall-del');
       if (del && wallEl && wallEl.classList.contains('manager')) {
         var id = del.getAttribute('data-id');
-        if (!window.__wallAdminKey) { window.alert('请先点「🗑 管理」并输入口令（或去 /admin 后台「留言墙」标签页批量管理）'); return; }
-        if (window.confirm('确定删除这条留言？')) {
+        if (!window.__wallAdminKey) { window.alert(t('wallNeedAdmin')); return; }
+        if (window.confirm(t('wallDelConfirm'))) {
           deleteWall(id, window.__wallAdminKey).then(function (ok) {
-            if (ok) loadWall(); else window.alert('删除失败，口令可能不对');
+            if (ok) loadWall(); else window.alert(t('wallDelFail'));
           });
         }
       }

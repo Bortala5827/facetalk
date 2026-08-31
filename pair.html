@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FaceTalk · 面试间</title>
+  <title data-i18n="pairTitle">FaceTalk · 面试间</title>
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
+  <script src="/assets/i18n.js?v=20260831a"></script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%46%54%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="/assets/style.css?v=20260811a" />
 </head>
@@ -18,31 +19,32 @@
   <header class="topbar">
     <div class="container bar-inner">
       <a class="brand" href="/"><span class="brand-mark">FT</span><span class="brand-text">FaceTalk</span></a>
-      <span class="brand-tag">搭子房间 · 1:1</span>
+      <span class="brand-tag" data-i18n="pairTag">搭子房间 · 1:1</span>
+      <div class="bar-right" style="margin-left:auto"><div class="bar-lang" data-lang-slot></div></div>
     </div>
   </header>
 
-  <div id="wx-tip" class="wx-tip" hidden>如按钮无法跳转到腾讯会议，请点右上角 ⋯「在浏览器打开」。</div>
+  <div id="wx-tip" class="wx-tip" hidden data-i18n="wxTip">如按钮无法跳转到腾讯会议，请点右上角 ⋯「在浏览器打开」。</div>
 
   <main class="container">
     <section class="card" id="room">
       <details class="room-info-collapse">
         <summary class="room-info-sum">
-          <span class="ris-ttl">🤝 搭子房间</span>
+          <span class="ris-ttl" data-i18n="roomInfoTitle">🤝 搭子房间</span>
           <span class="ris-caret" aria-hidden="true">▾</span>
         </summary>
         <div class="ris-inner">
-      <p class="muted">双方已互选成功。语音优先、限时互练，结束互评。</p>
+      <p class="muted" data-i18n="roomInfoSub">双方已互选成功。语音优先、限时互练，结束互评。</p>
 
-      <p class="privacy-banner">
+      <p class="privacy-banner" data-i18n-html="privacyBanner">
         🔒 <b>隐私说明：</b>真人对练的录音<b>仅用于本次互评</b>，双方都评价完成后会<b>立即从服务器删除</b>，本地与服务器都不留存；互评结束、房间解散后，所有对话也随之清除。
       </p>
 
 
       <div class="room-meta">
-        <div><span class="muted">对方信誉</span> <strong id="other-rep">--</strong></div>
-        <div><span class="muted">模式</span> <strong id="room-mode">--</strong></div>
-        <div><span class="muted">剩余时间</span> <strong id="timer" class="timer">--:--</strong></div>
+        <div><span class="muted" data-i18n="roomMetaRep">对方信誉</span> <strong id="other-rep">--</strong></div>
+        <div><span class="muted" data-i18n="pubMode">模式</span> <strong id="room-mode">--</strong></div>
+        <div><span class="muted" data-i18n="roomMetaRemain">剩余时间</span> <strong id="timer" class="timer">--:--</strong></div>
       </div>
 
       <p id="dissolve-tip" class="dissolve-tip" hidden></p>
@@ -52,42 +54,42 @@
       </details>
 
       <section class="card" id="info-card" style="margin-top:14px">
-        <h2 class="sec-title">🔗 联机信息 / 📡 备选会议号</h2>
-        <p class="muted">实时语音暂时不稳定？<b class="iv-callout">强烈建议把你的腾讯会议号 / 飞书会议号贴在下方</b>，双方互留后直接入会继续练，对练不中断。</p>
+        <h2 class="sec-title" data-i18n="infoCardTitle">🔗 联机信息 / 📡 备选会议号</h2>
+        <p class="muted" data-i18n-html="infoCardHint">实时语音暂时不稳定？<b class="iv-callout">强烈建议把你的腾讯会议号 / 飞书会议号贴在下方</b>，双方互留后直接入会继续练，对练不中断。</p>
         <label class="field">
-          <span class="field-label">我的联机信息（选填）</span>
-          <input id="info-mine" type="text" maxlength="500" placeholder="💡 推荐：腾讯会议 123-456-789 或飞书会议链接 — 互留后直接入会对练" autocomplete="off" />
+          <span class="field-label" data-i18n="infoMine">我的联机信息（选填）</span>
+          <input id="info-mine" type="text" maxlength="500" placeholder="💡 推荐：腾讯会议 123-456-789 或飞书会议链接 — 互留后直接入会对练" autocomplete="off" data-i18n-ph="infoMinePh" />
         </label>
-        <button class="btn-mini ok" id="info-save">保存我的信息</button>
+        <button class="btn-mini ok" id="info-save" data-i18n="saveMyInfo">保存我的信息</button>
         <div id="info-peer-box" class="meet-box" style="margin-top:10px"></div>
       </section>
 
-      <p class="voice-tip">🎙 <strong>语音优先</strong>：先连麦互练结构、互相点评；熟了再开摄像头。点上方按钮即可在腾讯会议里通话。</p>
+      <p class="voice-tip" data-i18n-html="voiceTip">🎙 <strong>语音优先</strong>：先连麦互练结构、互相点评；熟了再开摄像头。点上方按钮即可在腾讯会议里通话。</p>
 
       <div class="room-actions">
-        <button class="btn-mini no" id="report-btn">⚠ 举报对方</button>
-        <button class="btn-mini grey" id="leave-btn">🚪 退出组队</button>
+        <button class="btn-mini no" id="report-btn" data-i18n="reportBtn">⚠ 举报对方</button>
+        <button class="btn-mini grey" id="leave-btn" data-i18n="leaveBtn">🚪 退出组队</button>
       </div>
     </section>
 
     <!-- ===== 2.0 试音互评：匹配后先各录 60 秒，互听互评（含回听自己），双方点头才解锁下面的功能 ===== -->
     <section class="card" id="voice-card" hidden>
       <button class="v-collapse" id="v-collapse" aria-expanded="true" type="button">
-        <h2 class="sec-title">🎙 试音互评（30–90 秒） <span class="v-badge">2.0</span></h2>
+        <h2 class="sec-title" data-i18n-html="voiceCardTitle">🎙 试音互评（30–90 秒） <span class="v-badge">2.0</span></h2>
         <span class="v-collapse-sub" id="v-collapse-sub"></span>
-        <span class="v-collapse-hint" id="v-collapse-hint" hidden>点击展开 ▾</span>
+        <span class="v-collapse-hint" id="v-collapse-hint" hidden data-i18n="voiceCollapseSub">点击展开 ▾</span>
         <span class="v-chev">▾</span>
       </button>
       <div class="v-body" id="v-body">
-      <p class="muted">双方各录一段答同一道题，互听互评。<strong>都点「愿意组队」才解锁留言板和联机信息</strong>——不合适就早点各找各的，别互相耽误时间。</p>
-      <div class="v-topic"><span class="v-topic-tag">本场题目</span><p id="v-topic">加载中…</p></div>
+      <p class="muted" data-i18n-html="voiceHint2">双方各录一段答同一道题，互听互评。<strong>都点「愿意组队」才解锁留言板和联机信息</strong>——不合适就早点各找各的，别互相耽误时间。</p>
+      <div class="v-topic"><span class="v-topic-tag" data-i18n="voiceTopicTag">本场题目</span><p id="v-topic" data-i18n="browseLoading">加载中…</p></div>
 
       <!-- 步骤 1：录制 -->
       <div class="v-step" id="v-record" hidden>
         <p class="v-state" id="v-peer-ready" hidden></p>
         <div class="v-rec-row">
-          <button class="btn-primary" id="v-start">● 开始录音</button>
-          <button class="btn-mini no" id="v-stop" hidden>■ 停止并提交</button>
+          <button class="btn-primary" id="v-start" data-i18n="voiceStart">● 开始录音</button>
+          <button class="btn-mini no" id="v-stop" hidden data-i18n="voiceStopSubmit">■ 停止并提交</button>
           <span class="v-time" id="v-time">00:00</span>
         </div>
         <div class="v-bar"><i id="v-fill"></i></div>
@@ -95,57 +97,57 @@
           <canvas id="ftWaveLine" class="ft-wave"></canvas>
           <canvas id="ftWave" class="ft-wave"></canvas>
         </div>
-        <p class="field-hint" id="v-hint">⏱ 至少录 <strong>30 秒</strong>（最多 90 秒，约满自动停止）。录音只在互评期间临时存在，<strong>双方都评完后立即销毁</strong>，手机和电脑本地都不保存。</p>
+        <p class="field-hint" id="v-hint" data-i18n-html="voiceMinHint">⏱ 至少录 <strong>30 秒</strong>（最多 90 秒，约满自动停止）。录音只在互评期间临时存在，<strong>双方都评完后立即销毁</strong>，手机和电脑本地都不保存。</p>
       </div>
 
       <!-- 步骤 2：等对方录 -->
       <div class="v-step" id="v-wait" hidden>
-        <p class="v-state">✅ 你的试音已提交（<span id="v-mine-dur">--</span>），正在等对方录制…</p>
+        <p class="v-state" data-i18n-html="voiceSubmitted">✅ 你的试音已提交（<span id="v-mine-dur">--</span>），正在等对方录制…</p>
         <div class="v-act-row">
-          <button class="btn-mini grey" id="v-retake">🔁 重录一遍</button>
-          <button class="btn-mini" id="v-append" hidden>🎙 追加再录一次</button>
+          <button class="btn-mini grey" id="v-retake" data-i18n="voiceRetake">🔁 重录一遍</button>
+          <button class="btn-mini" id="v-append" hidden data-i18n="voiceAppend">🎙 追加再录一次</button>
         </div>
-        <p class="field-hint" id="v-append-hint" hidden>对刚才那段不满意？可再录一段，对方能听到你<b>前后两段</b>试音，挑表现更好的一段当参考。</p>
+        <p class="field-hint" id="v-append-hint" hidden data-i18n-html="voiceAppendHint">对刚才那段不满意？可再录一段，对方能听到你<b>前后两段</b>试音，挑表现更好的一段当参考。</p>
       </div>
 
       <!-- 步骤 3：听 + 评 -->
       <div class="v-step" id="v-review" hidden>
-        <p class="v-state" id="v-peer-append" hidden>🎙 对方正在追加再录一次…（先听 TA 刚才那段）</p>
+        <p class="v-state" id="v-peer-append" hidden data-i18n="voicePeerAppend">🎙 对方正在追加再录一次…（先听 TA 刚才那段）</p>
         <div class="v-mine-clips" id="v-mine-list"></div>
         <div class="v-peer-clips" id="v-peer-list"></div>
         <div id="v-append-review-row" class="v-act-row" hidden style="align-items:flex-start; flex-direction:column; gap:6px; margin-top:10px">
-          <button class="btn-mini" id="v-append-review">🎙 追加再录一次</button>
-          <p class="field-hint" style="margin-left:0">听完后觉得第一段不够好？可再录一段，对方能听到你<b>前后两段</b>试音，挑更好的当参考。</p>
+          <button class="btn-mini" id="v-append-review" data-i18n="voiceAppend">🎙 追加再录一次</button>
+          <p class="field-hint" style="margin-left:0" data-i18n-html="voiceAppendReviewHint">听完后觉得第一段不够好？可再录一段，对方能听到你<b>前后两段</b>试音，挑更好的当参考。</p>
         </div>
         <audio id="v-audio" controlsList="nodownload noplaybackrate" hidden></audio>
         <form id="v-form" autocomplete="off">
           <div class="v-grid">
-            <label class="field"><span class="field-label">表达清晰</span>
-              <select id="v-clarity"><option value="5">5 · 很清楚</option><option value="4">4 · 较清楚</option><option value="3" selected>3 · 一般</option><option value="2">2 · 有点含糊</option><option value="1">1 · 听不太清</option></select>
+            <label class="field"><span class="field-label" data-i18n="vClarity">表达清晰</span>
+              <select id="v-clarity"><option value="5" data-i18n="vClarity5">5 · 很清楚</option><option value="4" data-i18n="vClarity4">4 · 较清楚</option><option value="3" selected data-i18n="vClarity3">3 · 一般</option><option value="2" data-i18n="vClarity2">2 · 有点含糊</option><option value="1" data-i18n="vClarity1">1 · 听不太清</option></select>
             </label>
-            <label class="field"><span class="field-label">逻辑结构</span>
-              <select id="v-logic"><option value="5">5 · 层次分明</option><option value="4">4 · 较有条理</option><option value="3" selected>3 · 一般</option><option value="2">2 · 有点乱</option><option value="1">1 · 没有结构</option></select>
+            <label class="field"><span class="field-label" data-i18n="vLogic">逻辑结构</span>
+              <select id="v-logic"><option value="5" data-i18n="vLogic5">5 · 层次分明</option><option value="4" data-i18n="vLogic4">4 · 较有条理</option><option value="3" selected data-i18n="vLogic3">3 · 一般</option><option value="2" data-i18n="vLogic2">2 · 有点乱</option><option value="1" data-i18n="vLogic1">1 · 没有结构</option></select>
             </label>
-            <label class="field"><span class="field-label">语速节奏</span>
-              <select id="v-pace"><option value="5">5 · 很稳</option><option value="4">4 · 较稳</option><option value="3" selected>3 · 一般</option><option value="2">2 · 偏快/偏慢</option><option value="1">1 · 卡顿明显</option></select>
+            <label class="field"><span class="field-label" data-i18n="vPace">语速节奏</span>
+              <select id="v-pace"><option value="5" data-i18n="vPace5">5 · 很稳</option><option value="4" data-i18n="vPace4">4 · 较稳</option><option value="3" selected data-i18n="vPace3">3 · 一般</option><option value="2" data-i18n="vPace2">2 · 偏快/偏慢</option><option value="1" data-i18n="vPace1">1 · 卡顿明显</option></select>
             </label>
           </div>
-          <label class="field"><span class="field-label">一句话点评（选填，≤100 字）</span>
-            <input id="v-comment" type="text" maxlength="100" placeholder="如：开头点题很稳，中间可以再举个例子" />
+          <label class="field"><span class="field-label" data-i18n="vComment">一句话点评（选填，≤100 字）</span>
+            <input id="v-comment" type="text" maxlength="100" placeholder="如：开头点题很稳，中间可以再举个例子" data-i18n-ph="vCommentPh" />
           </label>
           <div class="v-willing">
-            <label class="v-w-opt"><input type="radio" name="v-willing" value="1" checked /> <span>👍 愿意组队，继续深聊</span></label>
-            <label class="v-w-opt"><input type="radio" name="v-willing" value="0" /> <span>🙅 这次不太合适，婉拒</span></label>
+            <label class="v-w-opt"><input type="radio" name="v-willing" value="1" checked /> <span data-i18n="vWilling">👍 愿意组队，继续深聊</span></label>
+            <label class="v-w-opt"><input type="radio" name="v-willing" value="0" /> <span data-i18n="vNotWilling">🙅 这次不太合适，婉拒</span></label>
           </div>
-          <p class="field-hint">提交后对方的录音会<strong>立即从服务器删除</strong>。双方都提交才会互相揭晓评价，避免看着对方的分打分。</p>
-          <button type="submit" class="btn-primary" id="v-submit">提交评价 →</button>
+          <p class="field-hint" data-i18n-html="vSubmitHint">提交后对方的录音会<strong>立即从服务器删除</strong>。双方都提交才会互相揭晓评价，避免看着对方的分打分。</p>
+          <button type="submit" class="btn-primary" id="v-submit" data-i18n="vSubmit">提交评价 →</button>
         </form>
       </div>
 
       <!-- 步骤 4：等对方评 -->
       <div class="v-step" id="v-waitrev" hidden>
-        <p class="v-state">📨 你的评价已提交，对方的录音已销毁。正在等对方评价…</p>
-        <p class="field-hint">双方都提交后立刻揭晓结果。若两边都点了「愿意组队」，房间功能会自动解锁。</p>
+        <p class="v-state" data-i18n="vWaitRevTitle">📨 你的评价已提交，对方的录音已销毁。正在等对方评价…</p>
+        <p class="field-hint" data-i18n="vWaitRevHint">双方都提交后立刻揭晓结果。若两边都点了「愿意组队」，房间功能会自动解锁。</p>
       </div>
 
       <!-- 步骤 5：结果 -->
@@ -162,61 +164,61 @@
          只显示一行提示「点此展开」，真要研究再点开。 -->
     <section class="card iv-collapsed" id="iv-card" hidden>
       <button class="iv-collapse-toggle" id="iv-collapse-toggle" aria-expanded="false" type="button">
-        <h2 class="sec-title">🎤 面试间 <span class="v-badge">2.1</span></h2>
-        <span class="iv-collapse-sub" id="iv-collapse-sub">🚧 功能测试中 · 实时语音 + 转写 + AI 评价链路不稳定</span>
-        <span class="iv-collapse-hint" id="iv-collapse-hint">点击展开 ▸</span>
+        <h2 class="sec-title" data-i18n-html="ivCardTitle">🎤 面试间 <span class="v-badge">2.1</span></h2>
+        <span class="iv-collapse-sub" id="iv-collapse-sub" data-i18n="ivCollapseSub">🚧 功能测试中 · 实时语音 + 转写 + AI 评价链路不稳定</span>
+        <span class="iv-collapse-hint" id="iv-collapse-hint" data-i18n="ivCollapseHint">点击展开 ▸</span>
       </button>
       <div class="iv-set-row">
-        <span class="iv-set-label">🛠 面试间功能未开放，先在这里配置接口备用：</span>
-        <button class="iv-set-entry" id="iv-open-settings" type="button">🎙 打开 AI 设置（自备 Key）→</button>
+        <span class="iv-set-label" data-i18n="ivSetRow">🛠 面试间功能未开放，先在这里配置接口备用：</span>
+        <button class="iv-set-entry" id="iv-open-settings" type="button" data-i18n="ivOpenSettings">🎙 打开 AI 设置（自备 Key）→</button>
       </div>
       <div class="iv-collapse-body" id="iv-collapse-body" hidden>
       <div class="iv-testing-banner">
-        <span class="iv-testing-mark">🚧 功能测试中</span>
-        <span>WebRTC 实时语音 + 转写 + AI 评价链路尚未稳定，<b>优先建议先用腾讯会议对练</b>，稳定后这栏会自动恢复。</span>
+        <span class="iv-testing-mark" data-i18n="ivTestingMark">🚧 功能测试中</span>
+        <span data-i18n-html="ivTestingBanner">WebRTC 实时语音 + 转写 + AI 评价链路尚未稳定，<b>优先建议先用腾讯会议对练</b>，稳定后这栏会自动恢复。</span>
       </div>
-      <p class="muted">进房即用，<b>跟随搭子房间总时长（单场上限 20 分钟）</b>，时间到自动 AI 评价。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。<b>⚠ 录音 / 实时语音 / AI 评价按钮当前为测试态，可能不稳定，请优先用腾讯会议；网页语音仅作短时试音/破冰，超过 20 分钟请跳转腾讯会议 / 飞书会议继续对练。</b></p>
+      <p class="muted" data-i18n-html="ivMainHint">进房即用，<b>跟随搭子房间总时长（单场上限 20 分钟）</b>，时间到自动 AI 评价。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。<b>⚠ 录音 / 实时语音 / AI 评价按钮当前为测试态，可能不稳定，请优先用腾讯会议；网页语音仅作短时试音/破冰，超过 20 分钟请跳转腾讯会议 / 飞书会议继续对练。</b></p>
 
       <div id="iv-live">
         <div class="iv-top">
           <span class="iv-timer" id="iv-timer">20:00</span>
-          <button class="btn-mini no" id="iv-end">⏹ 结束并 AI 评价</button>
-          <button class="btn-mini" id="iv-stt">🎙 录音转文字：关</button>
-          <button class="btn-mini" id="iv-call">🔊 实时语音</button>
+          <button class="btn-mini no" id="iv-end" data-i18n="ivEndBtn">⏹ 结束并 AI 评价</button>
+          <button class="btn-mini" id="iv-stt" data-i18n="ivSttOff">🎙 录音转文字：关</button>
+          <button class="btn-mini" id="iv-call" data-i18n="ivCallBtn">🔊 实时语音</button>
         </div>
         <p id="iv-needset" class="iv-needset" hidden></p>
-        <p class="field-hint">点「🔊 实时语音」可立即连麦对练；点「🎙 录音转文字」自动把麦克风转成对话稿；没配大模型也能用（手动记笔记），配后才有「AI 评价」。点本栏「🎙 打开 AI 设置（自备 Key）」设好你自己的接口。</p>
-        <div class="iv-transcript" id="iv-transcript"><p class="muted">对话稿会实时显示在这里。开启「录音转文字」后，你说的话会自动变成文字。</p></div>
+        <p class="field-hint" data-i18n-html="ivFieldHint">点「🔊 实时语音」可立即连麦对练；点「🎙 录音转文字」自动把麦克风转成对话稿；没配大模型也能用（手动记笔记），配后才有「AI 评价」。点本栏「🎙 打开 AI 设置（自备 Key）」设好你自己的接口。</p>
+        <div class="iv-transcript" id="iv-transcript"><p class="muted" data-i18n="ivTranscriptEmpty">对话稿会实时显示在这里。开启「录音转文字」后，你说的话会自动变成文字。</p></div>
         <div class="iv-note">
-          <input id="iv-note" type="text" maxlength="300" placeholder="手动补充一句（回车发送，记为「我」）" autocomplete="off" />
-          <button class="btn-mini ok" id="iv-note-send">记</button>
+          <input id="iv-note" type="text" maxlength="300" placeholder="手动补充一句（回车发送，记为「我」）" autocomplete="off" data-i18n-ph="ivNotePh" />
+          <button class="btn-mini ok" id="iv-note-send" data-i18n="ivNoteSend">记</button>
         </div>
         <p id="iv-call-tip" class="iv-call-tip" hidden></p>
         <!-- 备选会议号：WebRTC 在对称 NAT/校园网下连不上时的兜底。每方填自己的，对方才能看到。
              默认折叠在条状摘要里：30 秒未连通自动展开，连通后自动折叠，但用户可手动再展开。 -->
         <section class="iv-fallback" id="iv-fallback" hidden>
           <button class="iv-fb-toggle" id="iv-fb-toggle" aria-expanded="false" type="button">
-            <span>📡 备选会议号（连不上时改走腾讯会议 / 飞书会议）</span>
-            <span class="iv-fb-status" id="iv-fb-status">未填</span>
+            <span data-i18n="ivFallbackTitle">📡 备选会议号（连不上时改走腾讯会议 / 飞书会议）</span>
+            <span class="iv-fb-status" id="iv-fb-status" data-i18n="ivFbStatusNone">未填</span>
             <span class="iv-fb-chev">▸</span>
           </button>
           <div class="iv-fb-body" id="iv-fb-body" hidden>
-            <p class="iv-fb-hint">WebRTC 在双方都是校园网 / 公司内网 / 部分 4G 环境下打不通。把你们俩各自常用的会议号贴在下面，<b>对方只能看到对方那一面的</b>，互不干扰。录音转文字和 AI 评价照常可用。</p>
-            <div class="iv-fb-reminder" id="iv-fb-reminder" hidden>⚠️ 实时语音没连上？在这里填你的<b>腾讯会议号</b>或<b>飞书会议号</b>，发给对方，约个外部会议继续练 —— 转录和 AI 点评照常可用。</div>
+            <p class="iv-fb-hint" data-i18n-html="ivFbHint">WebRTC 在双方都是校园网 / 公司内网 / 部分 4G 环境下打不通。把你们俩各自常用的会议号贴在下面，<b>对方只能看到对方那一面的</b>，互不干扰。录音转文字和 AI 评价照常可用。</p>
+            <div class="iv-fb-reminder" id="iv-fb-reminder" hidden data-i18n-html="ivFbReminder">⚠️ 实时语音没连上？在这里填你的<b>腾讯会议号</b>或<b>飞书会议号</b>，发给对方，约个外部会议继续练 —— 转录和 AI 点评照常可用。</div>
             <div class="iv-fb-grid">
-              <label class="field"><span class="field-label">我的腾讯会议号</span>
-                <input id="iv-fb-tencent" type="text" maxlength="200" placeholder="如：123-456-789 或会议链接" autocomplete="off" />
+              <label class="field"><span class="field-label" data-i18n="ivFbTencent">我的腾讯会议号</span>
+                <input id="iv-fb-tencent" type="text" maxlength="200" placeholder="如：123-456-789 或会议链接" autocomplete="off" data-i18n-ph="ivFbTencentPh" />
               </label>
-              <label class="field"><span class="field-label">我的飞书会议号</span>
-                <input id="iv-fb-feishu" type="text" maxlength="200" placeholder="如：飞书会议链接 / 会议室 ID" autocomplete="off" />
+              <label class="field"><span class="field-label" data-i18n="ivFbFeishu">我的飞书会议号</span>
+                <input id="iv-fb-feishu" type="text" maxlength="200" placeholder="如：飞书会议链接 / 会议室 ID" autocomplete="off" data-i18n-ph="ivFbFeishuPh" />
               </label>
             </div>
             <div class="iv-fb-actions">
-              <button class="btn-mini ok" id="iv-fb-save">保存我的会议号</button>
+              <button class="btn-mini ok" id="iv-fb-save" data-i18n="ivFbSave">保存我的会议号</button>
               <span class="iv-fb-toast" id="iv-fb-toast"></span>
             </div>
             <div class="iv-fb-peer" id="iv-fb-peer" hidden>
-              <h4>对方提供的会议号</h4>
+              <h4 data-i18n="ivFbPeerTitle">对方提供的会议号</h4>
               <p id="iv-fb-peer-tencent" class="muted"></p>
               <p id="iv-fb-peer-feishu" class="muted"></p>
             </div>
@@ -228,43 +230,43 @@
     </section>
 
     <section class="card" id="msg-card">
-      <h2 class="sec-title">💬 留言板</h2>
-      <p class="muted">互留文字：约时间、留备用联系方式。每人只能删自己发的留言。</p>
-      <div id="msg-list" class="msg-list"><p class="muted">加载中…</p></div>
-      <label class="msg-burn"><input id="msg-burn" type="checkbox" /> 🔥 阅后即焚</label>
+      <h2 class="sec-title" data-i18n="msgBoardTitle">💬 留言板</h2>
+      <p class="muted" data-i18n="msgBoardSub">互留文字：约时间、留备用联系方式。每人只能删自己发的留言。</p>
+      <div id="msg-list" class="msg-list"><p class="muted" data-i18n="msgLoading">加载中…</p></div>
+      <label class="msg-burn"><input id="msg-burn" type="checkbox" /> <span data-i18n="msgBurn">🔥 阅后即焚</span></label>
       <div class="msg-input">
-        <input id="msg-text" type="text" maxlength="300" placeholder="写点什么…（💡 也可贴上你的腾讯会议号直接约时间）" autocomplete="off" />
-        <button class="btn-mini ok" id="msg-send">发送</button>
+        <input id="msg-text" type="text" maxlength="300" placeholder="写点什么…（💡 也可贴上你的腾讯会议号直接约时间）" autocomplete="off" data-i18n-ph="msgInputPh" />
+        <button class="btn-mini ok" id="msg-send" data-i18n="msgSend">发送</button>
       </div>
     </section>
 
     <section class="card form-card" id="rate-card" hidden>
-      <h2 class="sec-title">⭐ 本次互练评价</h2>
-      <p class="muted">互评完成、且双方都愿意，才能解锁「再约一次」。</p>
+      <h2 class="sec-title" data-i18n="rateTitle">⭐ 本次互练评价</h2>
+      <p class="muted" data-i18n="rateSub">互评完成、且双方都愿意，才能解锁「再约一次」。</p>
       <form id="rate-form" autocomplete="off">
         <label class="field">
-          <span class="field-label">给对方打分 <em>*</em></span>
+          <span class="field-label" data-i18n="rateScore">给对方打分 <em>*</em></span>
           <select id="r-score">
-            <option value="5">5 · 很赞，守时专业</option>
-            <option value="4">4 · 不错</option>
-            <option value="3">3 · 一般</option>
-            <option value="2">2 · 不太行</option>
-            <option value="1">1 · 割韭菜/瞎搞</option>
+            <option value="5" data-i18n="score5">5 · 很赞，守时专业</option>
+            <option value="4" data-i18n="score4">4 · 不错</option>
+            <option value="3" data-i18n="score3">3 · 一般</option>
+            <option value="2" data-i18n="score2">2 · 不太行</option>
+            <option value="1" data-i18n="score1">1 · 割韭菜/瞎搞</option>
           </select>
         </label>
         <label class="field">
-          <span class="field-label">标签（选填，逗号分隔）</span>
-          <input id="r-tags" type="text" placeholder="如：守时,点评到位,声音清晰" />
+          <span class="field-label" data-i18n="rateTags">标签（选填，逗号分隔）</span>
+          <input id="r-tags" type="text" placeholder="如：守时,点评到位,声音清晰" data-i18n-ph="rateTagsPh" />
         </label>
-        <label class="field check"><input id="r-next" type="checkbox" /> <span>愿意再约一次</span></label>
-        <label class="field check block-next"><input id="r-block" type="checkbox" /> <span>🚫 不再匹配此人</span></label>
-        <p class="field-hint">勾选后，对方不会再出现在你的看板和收件箱。</p>
-        <button type="submit" class="btn-primary">提交评价 →</button>
+        <label class="field check"><input id="r-next" type="checkbox" /> <span data-i18n="rateNext">愿意再约一次</span></label>
+        <label class="field check block-next"><input id="r-block" type="checkbox" /> <span data-i18n="rateBlockNext">🚫 不再匹配此人</span></label>
+        <p class="field-hint" data-i18n="rateBlockHint">勾选后，对方不会再出现在你的看板和收件箱。</p>
+        <button type="submit" class="btn-primary" data-i18n="rateSubmit">提交评价 →</button>
         <p class="form-msg" id="r-msg" hidden></p>
       </form>
     </section>
 
-    <p id="expired" class="foot-note" hidden>⏰ 本次互练时间已到，房间失效。去首页重新发布意图约下一位搭子吧。</p>
+    <p id="expired" class="foot-note" hidden data-i18n="roomExpired">⏰ 本次互练时间已到，房间失效。去首页重新发布意图约下一位搭子吧。</p>
   </main>
 
   <script>
@@ -276,9 +278,10 @@
     if (me && window.FTMe) window.FTMe.set(me);
     var pairId = params.get('pair');
     if (!me) { location.href = '/'; return; }
-    if (!pairId) { document.getElementById('room').innerHTML = '<p class="muted">缺少房间参数。</p>'; return; }
+    if (!pairId) { document.getElementById('room').innerHTML = '<p class="muted">' + t('missingPairParam') + '</p>'; return; }
 
     function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+    function t(key, args){ return window.FTI18N ? window.FTI18N.t(key, args) : key; }
     function toast(m, e){var d=document.createElement('div');d.className='toast'+(e?' toast-err':'');d.textContent=m;document.body.appendChild(d);setTimeout(function(){d.classList.add('show');},10);setTimeout(function(){d.classList.remove('show');setTimeout(function(){d.remove();},300);},2600);}
     function api(method, body){
       var url=new URL('/api/pair',location.origin);
@@ -294,7 +297,7 @@
       var rateErr = r.status===429 && r.data && r.data.error==='rate_limited';
       if (rateErr) {
         if (!sessionStorage.getItem('ft_admin')) {
-          var k = prompt('已达频率上限（防刷保护）。请输入管理员密码继续测试：');
+          var k = prompt(t('ratePrompt'));
           if (k){ sessionStorage.setItem('ft_admin', k.trim()); return apiA(method, body); }
         } else { sessionStorage.removeItem('ft_admin'); }
       }
@@ -359,7 +362,7 @@
         card.classList.toggle('iv-collapsed', !open);
         btn.setAttribute('aria-expanded', String(open));
         body.hidden = !open;
-        if (hint) hint.textContent = open ? '点击折叠 ▾' : '点击展开 ▸';
+        if (hint) hint.textContent = open ? t('ivCollapseClose') : t('ivCollapseHint');
         try { localStorage.setItem(KEY, String(!open)); } catch(_){}
       }
       btn.addEventListener('click', function(e){ e.preventDefault(); set(body.hidden); });
@@ -376,8 +379,8 @@
         }
       } catch(_){}
       b.hidden = !unconfigured;
-      b.textContent = unconfigured ? '未配置' : '';
-      b.title = unconfigured ? '点击 → 语音 & AI 点评设置（自备 Key）' : '语音 & AI 点评设置';
+      b.textContent = unconfigured ? t('gearUnconfigured') : '';
+      b.title = unconfigured ? t('gearBadgeTitleNoCfg') : t('gearBadgeTitle');
     }
     refreshGearBadge();
     // 用户进过 settings 弹窗后，每秒轮询一次 badge（双击设置打开/关闭后 badge 自动收起）
@@ -385,11 +388,11 @@
 
 
     function render(p){
-      if(!p || p.pairId !== pairId){ document.getElementById('room').innerHTML='<p class="muted">无权限或房间已失效。</p>'; return; }
+      if(!p || p.pairId !== pairId){ document.getElementById('room').innerHTML='<p class="muted">' + t('noPermRoom') + '</p>'; return; }
       // 房间已被服务端结算关闭（退出 60s / 互评完 5 分钟）→ 直接回首页
-      if(p.status === 'closed'){ toast('房间已关闭'); setTimeout(function(){ location.href = '/'; }, 500); return; }
+      if(p.status === 'closed'){ toast(t('roomClosed')); setTimeout(function(){ location.href = '/'; }, 500); return; }
       document.getElementById('other-rep').textContent = p.otherRep != null ? p.otherRep : '--';
-      document.getElementById('room-mode').textContent = p.mode === 'video' ? '📹 视频' : '🎙 语音优先';
+      document.getElementById('room-mode').textContent = p.mode === 'video' ? t('modeVideoShort') : t('modeVoiceFirst');
 
       // 会话倒计时：只在本轮数据显式携带 remaining 时更新。
       // SSE 的 pair 事件可能缺该字段，缺了就保持原值，避免 remain 被清零 → tick 误弹「时间到请打分」造成闪退。
@@ -406,15 +409,15 @@
       if(p.meet){
         var link = esc(p.meet);
         if(p.meet.indexOf('meeting.tencent.com') >= 0){
-          mb.innerHTML = '<a class="btn-primary" href="'+link+'" target="_blank" rel="noopener">▶ 一键入会（腾讯会议）</a>' +
-            '<button class="btn-mini" id="copy-meet">复制会议链接</button>';
+          mb.innerHTML = '<a class="btn-primary" href="'+link+'" target="_blank" rel="noopener">' + t('meetJoin') + '</a>' +
+            '<button class="btn-mini" id="copy-meet">' + t('copyMeetLink') + '</button>';
         } else {
-          mb.innerHTML = '<p class="li-note">对方会议：'+link+'</p><button class="btn-mini" id="copy-meet">复制</button>';
+          mb.innerHTML = '<p class="li-note">' + t('peerMeet') + link + '</p><button class="btn-mini" id="copy-meet">' + t('copyBtn') + '</button>';
         }
         var cb = document.getElementById('copy-meet');
-        if(cb) cb.addEventListener('click', function(){ navigator.clipboard.writeText(p.meet).then(function(){toast('已复制');}); });
+        if(cb) cb.addEventListener('click', function(){ navigator.clipboard.writeText(p.meet).then(function(){toast(t('copied'));}); });
       } else {
-        mb.innerHTML = '<p class="muted">对方未留会议链接，可在腾讯会议里互加后开房，再把链接粘贴给对方。</p>';
+        mb.innerHTML = '<p class="muted">' + t('peerNoMeet') + '</p>';
       }
 
       if(!infoMineInit){ document.getElementById('info-mine').value = p.infoMine || ''; infoMineInit = true; }
@@ -439,11 +442,11 @@
         // 区分两种解散原因：试音互评被婉拒 vs 对方主动退出，文案不一样，避免用户误会
         var dsWord = function (n) {
           return (vGate === 'rejected')
-            ? '🙅 试音互评结束，有一方选择不组队，房间将在 ' + Math.max(0, n) + 's 后自动关闭。'
-            : '⚠️ 对方已退出组队，房间将在 ' + Math.max(0, n) + 's 后自动关闭，对话将清除。';
+            ? t('voiceRejectedClose', [Math.max(0, n)])
+            : t('peerLeftCountdown2', [Math.max(0, n)]);
         };
         dtip.textContent = dsWord(ds);
-        if (!dissolveToasted) { dissolveToasted = true; toast(vGate === 'rejected' ? '🙅 试音后有一方婉拒，房间即将关闭' : '⚠️ 对方已退出组队，房间即将自动关闭'); }
+        if (!dissolveToasted) { dissolveToasted = true; toast(vGate === 'rejected' ? t('voiceRejectedToast') : t('peerLeftToast')); }
         if (ds <= 0) closeRoom(p.pairId);
         else dissolveTimer = setInterval(function () {
           ds--; dtip.textContent = dsWord(ds);
@@ -453,10 +456,10 @@
         // 双方互评完成 → 5 分钟宽限后自动清空房间 + 对话
         dtip.hidden = false;
         var ac = p.autoCloseIn;
-        dtip.textContent = '✅ 互评完成，房间将在 ' + Math.max(0, ac) + 's 后自动解散并清除对话。';
+        dtip.textContent = t('ratedAutoClose', [Math.max(0, ac)]);
         if (ac <= 0) closeRoom(p.pairId);
         else dissolveTimer = setInterval(function () {
-          ac--; dtip.textContent = '✅ 互评完成，房间将在 ' + Math.max(0, ac) + 's 后自动解散并清除对话。';
+          ac--; dtip.textContent = t('ratedAutoClose', [Math.max(0, ac)]);
           if (ac <= 0) { clearInterval(dissolveTimer); dissolveTimer = null; closeRoom(p.pairId); }
         }, 1000);
       } else if (p.status === 'done' && !p.rated && !myRated) {
@@ -476,16 +479,16 @@
 
     function renderPeerInfo(info){
       var pb = document.getElementById('info-peer-box');
-      if(!info){ pb.innerHTML = '<p class="muted">对方还没留联机信息。</p>'; return; }
+      if(!info){ pb.innerHTML = '<p class="muted">' + t('peerNoInfo') + '</p>'; return; }
       var link = esc(info);
       if(info.indexOf('meeting.tencent.com') >= 0){
-        pb.innerHTML = '<a class="btn-primary" href="'+link+'" target="_blank" rel="noopener">▶ 对方的腾讯会议（一键入会）</a>' +
-          '<button class="btn-mini" id="copy-peer">复制会议链接</button>';
+        pb.innerHTML = '<a class="btn-primary" href="'+link+'" target="_blank" rel="noopener">' + t('peerTencentMeet') + '</a>' +
+          '<button class="btn-mini" id="copy-peer">' + t('copyMeetLink') + '</button>';
       } else {
-        pb.innerHTML = '<p class="li-note">对方：'+link+'</p><button class="btn-mini" id="copy-peer">复制</button>';
+        pb.innerHTML = '<p class="li-note">' + t('peerInfo') + link + '</p><button class="btn-mini" id="copy-peer">' + t('copyBtn') + '</button>';
       }
       var cp = document.getElementById('copy-peer');
-      if(cp) cp.addEventListener('click', function(){ navigator.clipboard.writeText(info).then(function(){toast('已复制');}); });
+      if(cp) cp.addEventListener('click', function(){ navigator.clipboard.writeText(info).then(function(){toast(t('copied'));}); });
     }
 
     function tick(){
@@ -498,7 +501,7 @@
         if (!myRated && rc.hidden){
           rc.hidden = false;
           rc.scrollIntoView({behavior:'smooth', block:'center'});
-          toast('⏰ 时间到，请给搭子打个分吧');
+          toast(t('timeUpRate'));
         }
         fireRemainZero();   // 通知面试间「时间到」跑 AI 评价
         return;
@@ -519,10 +522,10 @@
       div.dataset.id = m.id;
       var t = new Date(m.created * 1000);
       var hh = ('0'+t.getHours()).slice(-2) + ':' + ('0'+t.getMinutes()).slice(-2);
-      var del = m.mine ? '<button class="msg-del" data-id="'+esc(m.id)+'">删除</button>' : '';
-      var burnTag = m.burn ? (m.mine ? ' <span class="msg-burn-tag">🔥阅后即焚</span>' : ' <span class="msg-burn-tag">🔥</span>') : '';
+      var del = m.mine ? '<button class="msg-del" data-id="'+esc(m.id)+'">' + t('wallDelTitle') + '</button>' : '';
+      var burnTag = m.burn ? (m.mine ? ' <span class="msg-burn-tag">' + t('msgBurnTag') + '</span>' : ' <span class="msg-burn-tag">🔥</span>') : '';
       div.innerHTML = '<div class="msg-body"><span class="msg-text">' + esc(m.text) + '</span>' + del + '</div>' +
-        '<div class="msg-meta">' + (m.mine ? '我' : '搭子') + ' · ' + hh + burnTag + '</div>';
+        '<div class="msg-meta">' + (m.mine ? t('msgMine') : t('msgPeer')) + ' · ' + hh + burnTag + '</div>';
       if (prepend) return div; // 返回供调用方决定插哪里
       var box = document.getElementById('msg-list');
       // 已存在则跳过（避免重复）
@@ -538,14 +541,14 @@
     function bindMsgDel(scope){
       scope.querySelectorAll('.msg-del').forEach(function(b){
         b.addEventListener('click', function(){
-          if(!confirm('删除这条留言？')) return;
+          if(!confirm(t('msgDelConfirm'))) return;
           var msgId = b.getAttribute('data-id');
           msgApi('?me=' + encodeURIComponent(me) + '&id=' + encodeURIComponent(msgId), { method: 'DELETE' }).then(function(d){
             if (d.ok){
               var el = b.closest('.msg-item'); if (el) el.remove();
               delete knownIds[msgId];
-              toast('已删除');
-            } else { toast('删除失败', true); }
+              toast(t('delDone'));
+            } else { toast(t('msgDelFail'), true); }
           });
         });
       });
@@ -555,7 +558,7 @@
       var box = document.getElementById('msg-list');
       box.innerHTML = '';
       knownIds = {};
-      if (!list || !list.length){ box.innerHTML = '<p class="muted">还没有留言，写一句开场白吧。</p>'; return; }
+      if (!list || !list.length){ box.innerHTML = '<p class="muted">' + t('msgEmpty') + '</p>'; return; }
       list.forEach(function(m){ knownIds[m.id]=1; renderMsgItem(m); });
       box.scrollTop = box.scrollHeight;
     }
@@ -599,10 +602,10 @@
       msgApi('', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(function(d){
         if (d.ok){ inp.value = ''; document.getElementById('msg-burn').checked = false; /* 不主动 loadMsgs，等 SSE 推回来 */ }
         else if (d.error === 'rate_limited' || d.error === 'too_many_msgs'){
-          if (!admin){ var k = prompt('发送太频繁，达到频率上限。请输入管理员密码继续测试：'); if (k){ sessionStorage.setItem('ft_admin', k.trim()); sendMsg(); } }
-          else toast('发送太频繁，稍后再试', true);
+          if (!admin){ var k = prompt(t('msgRateLimitPrompt')); if (k){ sessionStorage.setItem('ft_admin', k.trim()); sendMsg(); } }
+          else toast(t('msgRateLimit'), true);
         }
-        else toast('发送失败：' + (d.error || d.status), true);
+        else toast(t('msgSendFail') + (d.error || d.status), true);
       });
     }
     document.getElementById('msg-send').addEventListener('click', sendMsg);
@@ -612,48 +615,48 @@
       var v = document.getElementById('info-mine').value.replace(/\s+/g,' ').trim();
       // 坚决反对在联机信息里留个人微信 / 手机号：这里只收腾讯会议 / 飞书会议号
       if (/微信|vx|v信|wechat|微信号|加我|私聊|1[3-9]\d{9}/i.test(v)) {
-        toast('请只留腾讯会议 / 飞书会议号，勿留个人微信或手机号', true);
+        toast(t('infoNoContact'), true);
         return;
       }
       apiA('POST',{action:'set-info',pairId:pairId,info:v}).then(function(r){
-        if(r.status===200 && r.data.ok){ toast('已保存，对方即将看到'); }
-        else toast('保存失败：'+(r.data.error||r.status), true);
+        if(r.status===200 && r.data.ok){ toast(t('infoSaved')); }
+        else toast(t('infoSaveFail')+(r.data.error||r.status), true);
       });
     });
 
     document.getElementById('report-btn').addEventListener('click', async function(){
-      if(!confirm('举报需说明原因（≥5 字），且你必须真的和对方搭过、留过联机信息。确认继续？')) return;
-      var reason = (prompt('请说明举报原因（至少 5 个字）') || '').trim();
-      if (reason.length < 5) { toast('请填写至少 5 个字的原因', true); return; }
+      if(!confirm(t('reportConfirm'))) return;
+      var reason = (prompt(t('reportReasonPrompt')) || '').trim();
+      if (reason.length < 5) { toast(t('reportReasonShort'), true); return; }
       var r = await apiA('POST',{action:'report', pairId:pairId, reason:reason});
       if(r.status===200){
-        if (r.data.dup) toast('你已经举报过对方，本次不重复计数');
-        else toast(r.data.banned ? ('已举报，累计 '+r.data.reports+'/3 个不同举报人，已封禁') : ('已举报（累计 '+r.data.reports+'/3 个不同举报人）'));
+        if (r.data.dup) toast(t('reportDup'));
+        else toast(r.data.banned ? t('reportBanned', [r.data.reports]) : t('reportCount', [r.data.reports]));
       }
-      else if (r.data && r.data.error === 'need_contact_first') toast('请先在「联机信息」里填写你的联系方式（证明你真的搭过）', true);
-      else if (r.data && r.data.error === 'pair_not_active') toast('双方未完成配对，无法举报', true);
-      else if (r.data && r.data.error === 'reason_too_short') toast('请填写至少 5 个字的原因', true);
-      else if (r.data && r.data.error === 'rate_limited') toast('操作太频繁，1 分钟后再试', true);
-      else toast('举报失败：' + (r.data && r.data.error ? r.data.error : r.status), true);
+      else if (r.data && r.data.error === 'need_contact_first') toast(t('reportNeedContact'), true);
+      else if (r.data && r.data.error === 'pair_not_active') toast(t('reportNotActive'), true);
+      else if (r.data && r.data.error === 'reason_too_short') toast(t('reportReasonShort'), true);
+      else if (r.data && r.data.error === 'rate_limited') toast(t('reportRateLimit'), true);
+      else toast(t('reportFail') + (r.data && r.data.error ? r.data.error : r.status), true);
     });
 
     document.getElementById('leave-btn').addEventListener('click', async function(){
-      if(!confirm('退出后本组队结束，可去首页找新伙伴。确定退出？')) return;
+      if(!confirm(t('leaveConfirm'))) return;
       var r = await apiA('POST',{action:'leave',pairId:pairId});
       if(r.status===200 && r.data.ok){
-        toast('已退出组队，去首页找新伙伴 👋');
+        toast(t('leaveDone'));
         setTimeout(function(){ location.href = '/'; }, 800);
       }
-      else if (r.data && r.data.error === 'rate_limited') toast('操作太频繁，稍后再试', true);
-      else if (r.data && r.data.error === 'already_rated') toast('你已评过分，无需退出', true);
-      else if (r.data && r.data.error === 'not_active') toast('本组队已结束', true);
-      else toast('退出失败：' + (r.data && r.data.error ? r.data.error : r.status), true);
+      else if (r.data && r.data.error === 'rate_limited') toast(t('leaveRateLimit'), true);
+      else if (r.data && r.data.error === 'already_rated') toast(t('leaveAlreadyRated'), true);
+      else if (r.data && r.data.error === 'not_active') toast(t('leaveNotActive'), true);
+      else toast(t('leaveFail') + (r.data && r.data.error ? r.data.error : r.status), true);
     });
 
     function closeRoom(pid) {
       vKillAudio();
       api('POST', { action: 'close', pairId: pid }).then(function (r) {
-        if (r.status === 200 && r.data && r.data.ok) toast('房间已关闭');
+        if (r.status === 200 && r.data && r.data.ok) toast(t('roomClosed'));
         setTimeout(function () { location.href = '/'; }, 600);
       });
     }
@@ -725,7 +728,7 @@
         if (peerReadyClips.length) {
           var pts = peerReadyClips.reduce(function (s, c) { return s + (c.dur | 0); }, 0);
           pr.hidden = false;
-          pr.textContent = '✅ 对方已录好（' + peerReadyClips.length + ' 段，共 ' + pts + ' 秒），录完就能互听互评';
+          pr.textContent = t('voicePeerReady', [peerReadyClips.length, pts]);
         } else {
           pr.hidden = true; pr.textContent = '';
         }
@@ -733,7 +736,7 @@
         vShow('v-wait');
         var mineClips = (vMeta.mineClips || []);
         var totalSec = 0; for (var mi = 0; mi < mineClips.length; mi++) totalSec += (mineClips[mi].dur | 0);
-        document.getElementById('v-mine-dur').textContent = mineClips.length + ' 段，共 ' + totalSec + ' 秒';
+        document.getElementById('v-mine-dur').textContent = t('voiceMineDur', [mineClips.length, totalSec]);
         document.getElementById('v-retake').hidden = false;
         document.getElementById('v-append').hidden = !vMeta.canAppend;
         document.getElementById('v-append-hint').hidden = !vMeta.canAppend;
@@ -766,9 +769,9 @@
       if (hint) hint.hidden = !collapsed;
       if (sub) {
         // 摘要文案
-        var verdictText = (vGate === 'passed') ? '🎉 已组队' : (vGate === 'result' ? '🙅 有一方婉拒' : '');
-        if (vGate === 'wait_peer') sub.textContent = '✅ 你的试音已提交，等对方录制…';
-        else if (vGate === 'wait_review') sub.textContent = '📨 等对方评价…';
+        var verdictText = (vGate === 'passed') ? t('voiceCardTitleDone') : (vGate === 'result' ? t('voiceCardTitleRejected') : '');
+        if (vGate === 'wait_peer') sub.textContent = t('voiceSubWaitPeer');
+        else if (vGate === 'wait_review') sub.textContent = t('voiceSubWaitRev');
         else if (vGate === 'result') sub.textContent = verdictText;
         else if (vGate === 'passed') sub.textContent = verdictText;
         else sub.textContent = '';
@@ -786,18 +789,18 @@
     }
     function renderVerdict() {
       var v = document.getElementById('v-verdict');
-      if (vGate === 'passed') { v.className = 'v-state ok'; v.textContent = '🎉 双方都愿意组队！留言板和联机信息已解锁，去约时间吧。'; }
-      else { v.className = 'v-state bad'; v.textContent = '🙅 有一方觉得这次不太合适，房间即将自动关闭，回首页再约下一位就好。'; }
+      if (vGate === 'passed') { v.className = 'v-state ok'; v.textContent = t('voiceVerdictPassed'); }
+      else { v.className = 'v-state bad'; v.textContent = t('voiceVerdictFail'); }
       var html = '';
-      if (vMeta.peerReview) html += revCard('对方给你的评价', vMeta.peerReview);
-      if (vMeta.myReview) html += revCard('你给对方的评价', vMeta.myReview);
+      if (vMeta.peerReview) html += revCard(t('revPeerTitle'), vMeta.peerReview);
+      if (vMeta.myReview) html += revCard(t('revMyTitle'), vMeta.myReview);
       document.getElementById('v-review-cards').innerHTML = html;
     }
     function revCard(title, r) {
       return '<div class="v-card"><h4>' + esc(title) + '</h4>' +
-        '<p class="v-scores">表达清晰 ' + r.clarity + '/5 · 逻辑结构 ' + r.logic + '/5 · 语速节奏 ' + r.pace + '/5</p>' +
+        '<p class="v-scores">' + t('revScores', [r.clarity, r.logic, r.pace]) + '</p>' +
         (r.comment ? '<p class="v-comment">「' + esc(r.comment) + '」</p>' : '') +
-        '<p class="v-will">' + (r.willing ? '👍 愿意组队' : '🙅 婉拒') + '</p></div>';
+        '<p class="v-will">' + (r.willing ? t('revWilling') : t('revNotWilling')) + '</p></div>';
     }
     // ── 录音 ──
     var ftAudioCtx = null, ftAnalyser = null, ftWaveStop = null, ftWaveLineStop = null;
@@ -808,10 +811,10 @@
     }
     async function vStart() {
       if (vBusy || vRec) return;
-      if (!navigator.mediaDevices || !window.MediaRecorder) { toast('当前浏览器不支持录音，请换 Chrome / Safari 最新版', true); return; }
+      if (!navigator.mediaDevices || !window.MediaRecorder) { toast(t('vNoRecorder'), true); return; }
       try {
         vStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
-      } catch (e) { toast('没拿到麦克风权限，请在浏览器里允许后重试', true); return; }
+      } catch (e) { toast(t('vNoMicPerm'), true); return; }
       // 实时频谱柱状图：自研 RCJWave 替代 wavesurfer 滚动波形，避免直线/工业垃圾
       try {
         var ftWaveEl = document.getElementById('ftWave');
@@ -838,7 +841,7 @@
       } catch (e) { ftWaveStop = null; }
       var mt = vMimeType();
       try { vRec = new MediaRecorder(vStream, mt ? { mimeType: mt, audioBitsPerSecond: 24000 } : { audioBitsPerSecond: 24000 }); }
-      catch (e) { try { vRec = new MediaRecorder(vStream); } catch (e2) { toast('录音初始化失败', true); return; } }
+      catch (e) { try { vRec = new MediaRecorder(vStream); } catch (e2) { toast(t('vRecInitFail'), true); return; } }
       vParts = []; vT0 = Date.now();
       vRec.ondataavailable = function (e) { if (e.data && e.data.size) vParts.push(e.data); };
       vRec.onstop = vFinish;
@@ -854,8 +857,8 @@
       document.getElementById('v-time').textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
       document.getElementById('v-fill').style.width = Math.min(100, s / MAX_SEC * 100) + '%';
       var stop = document.getElementById('v-stop');
-      if (s >= MIN_SEC) { stop.disabled = false; stop.textContent = '■ 停止并提交'; }
-      else stop.textContent = '■ 还差 ' + Math.ceil(MIN_SEC - s) + 's';
+      if (s >= MIN_SEC) { stop.disabled = false; stop.textContent = t('voiceStopSubmit'); }
+      else stop.textContent = t('voiceStopRemain', [Math.ceil(MIN_SEC - s)]);
       if (s >= MAX_SEC) vStopRec();
     }
     function vStopRec() {
@@ -876,7 +879,7 @@
       document.getElementById('v-stop').hidden = true;
       document.getElementById('v-time').textContent = '00:00';
       document.getElementById('v-fill').style.width = '0%';
-      if (dur < MIN_SEC) { toast('至少要录 ' + MIN_SEC + ' 秒，再来一次', true); vAppendMode = false; return; }
+      if (dur < MIN_SEC) { toast(t('vMin30', [MIN_SEC]), true); vAppendMode = false; return; }
       await vUpload(blob, Math.min(dur, MAX_SEC), vAppendMode);
       vAppendMode = false;
     }
@@ -890,25 +893,25 @@
     async function vUpload(blob, dur, append) {
       vBusy = true;
       var hint = document.getElementById('v-hint'), old = hint.innerHTML;
-      hint.textContent = '上传中… 0%';
+      hint.textContent = t('vUploading', [0]);
       try {
         var b64 = await blobToB64(blob);
-        if (b64.length > 1500000) { toast('录音体积偏大，请缩短到 45 秒内重录', true); return; }
+        if (b64.length > 1500000) { toast(t('vTooLarge'), true); return; }
         var init = await vPost({ action: 'init', mime: blob.type || 'audio/webm', append: !!append });
         if (!init.ok) {
-          if (init.error === 'max_attempts') toast('每段试音最多录 2 次，重录请点「重录一遍」', true);
-          else toast('上传失败：' + (init.error || ''), true);
+          if (init.error === 'max_attempts') toast(t('vMaxAttempts'), true);
+          else toast(t('vUploadFail') + (init.error || ''), true);
           return;
         }
         var SZ = 48 * 1024, total = Math.ceil(b64.length / SZ);
         for (var i = 0, seq = 0; i < b64.length; i += SZ, seq++) {
           var r = await vPost({ action: 'chunk', clipId: init.clipId, seq: seq, data: b64.substr(i, SZ) });
-          if (!r.ok) { toast('上传中断：' + (r.error || ''), true); return; }
-          hint.textContent = '上传中… ' + Math.round((seq + 1) / total * 100) + '%';
+          if (!r.ok) { toast(t('vUploadBroken') + (r.error || ''), true); return; }
+          hint.textContent = t('vUploading', [Math.round((seq + 1) / total * 100)]);
         }
         var d = await vPost({ action: 'done', clipId: init.clipId, dur: dur });
-        if (!d.ok) { toast(d.error === 'too_short' ? '不足 30 秒，请重录' : ('提交失败：' + (d.error || '')), true); return; }
-        toast('试音已提交 ✅');
+        if (!d.ok) { toast(d.error === 'too_short' ? t('vTooShort') : (t('voiceSubmitFail') + (d.error || '')), true); return; }
+        toast(t('vSubmitOk'));
         await loadVoice();
       } finally { vBusy = false; hint.innerHTML = old; }
     }
@@ -918,10 +921,10 @@
       if (!box) return;
       var clips = (vMeta && vMeta.mineClips) || [];
       if (!clips.length) { box.innerHTML = ''; return; }
-      var html = '<p class="v-list-tip">你录了 ' + clips.length + ' 段试音（这是你自己的，可随时回听）：</p>';
+      var html = '<p class="v-list-tip">' + t('voiceMineList', [clips.length]) + '</p>';
       clips.forEach(function (c, idx) {
         html += '<div class="v-mine-clip">' +
-          '<button class="btn-mini v-play-mine-btn" data-clip="' + c.id + '">▶ 播放我的第 ' + (idx + 1) + ' 段（' + (c.dur || '--') + ' 秒）</button>' +
+          '<button class="btn-mini v-play-mine-btn" data-clip="' + c.id + '">' + t('voicePlayMine', [(idx + 1), (c.dur || '--')]) + '</button>' +
           '</div>';
       });
       box.innerHTML = html;
@@ -934,13 +937,13 @@
       var box = document.getElementById('v-peer-list');
       if (!box) return;
       var clips = (vMeta && vMeta.peerClips) || [];
-      if (!clips.length) { box.innerHTML = '<p class="muted">对方还没录好，稍等…</p>'; return; }
-      var html = '<p class="v-list-tip">对方共录了 ' + clips.length + ' 段试音，逐段听完再评：</p>';
+      if (!clips.length) { box.innerHTML = '<p class="muted">' + t('voicePeerNotReady') + '</p>'; return; }
+      var html = '<p class="v-list-tip">' + t('voicePeerList', [clips.length]) + '</p>';
       clips.forEach(function (c, idx) {
         var pl = (forClipId === c.id && typeof playsLeftFor === 'number') ? playsLeftFor : c.playsLeft;
         html += '<div class="v-peer-clip">' +
-          '<button class="btn-primary v-play-btn" data-clip="' + c.id + '">▶ 播放对方第 ' + (idx + 1) + ' 段（' + (c.dur || '--') + ' 秒）</button>' +
-          '<span class="muted">' + (pl > 0 ? ('还可听 ' + pl + ' 次') : '回听次数已用完') + '</span>' +
+          '<button class="btn-primary v-play-btn" data-clip="' + c.id + '">' + t('voicePlayPeer', [(idx + 1), (c.dur || '--')]) + '</button>' +
+          '<span class="muted">' + (pl > 0 ? t('playsLeft', [pl]) : t('playsUsedUp')) + '</span>' +
           '</div>';
       });
       box.innerHTML = html;
@@ -950,13 +953,13 @@
     }
     // ── 播放对方某一段录音（内存播放，不落盘）──
     async function vPlay(clipId, btn) {
-      btn.disabled = true; btn.textContent = '加载中…';
+      btn.disabled = true; btn.textContent = t('voiceLoadingPlay');
       var d = await vGet({ action: 'fetch', clip: clipId });
-      btn.disabled = false; btn.textContent = '▶ 重听这段';
+      btn.disabled = false; btn.textContent = t('voiceReplay');
       if (!d.ok) {
-        if (d.error === 'no_plays_left') { btn.textContent = '回听次数已用完'; toast('回听次数已用完，请凭印象评价', true); }
-        else if (d.error === 'clip_gone') { toast('录音已销毁', true); loadVoice(); }
-        else { btn.textContent = '▶ 播放'; toast('播放失败：' + (d.error || ''), true); }
+        if (d.error === 'no_plays_left') { btn.textContent = t('playsUsedUp'); toast(t('voiceNoPlays'), true); }
+        else if (d.error === 'clip_gone') { toast(t('voiceClipGone'), true); loadVoice(); }
+        else { btn.textContent = t('voicePlay'); toast(t('voicePlayFail') + (d.error || ''), true); }
         return;
       }
       var bin = atob(d.b64), arr = new Uint8Array(bin.length);
@@ -965,8 +968,8 @@
       vBlobUrl = URL.createObjectURL(new Blob([arr], { type: d.mime || 'audio/webm' }));
       var au = document.getElementById('v-audio');
       au.src = vBlobUrl; au.hidden = false; au.controls = true;
-      au.play().catch(function () { toast('点一下播放器的 ▶ 即可播放'); });
-      btn.textContent = d.own ? '▶ 重听我的这段' : '▶ 重听这段';
+      au.play().catch(function () { toast(t('voiceTapPlay')); });
+      btn.textContent = d.own ? t('voiceReplayMine') : t('voiceReplay');
       if (!d.own) renderPeerClips(d.playsLeft, clipId); // 刷新该段剩余回听次数（自己的不计次）
     }
     function vKillAudio() {
@@ -983,23 +986,23 @@
       vAppendMode = true;
       vShow('v-record');
       var pr = document.getElementById('v-peer-ready');
-      pr.hidden = false; pr.textContent = '🎙 追加录制中：录完这段，对方能听到你前后两段试音，挑更好的当参考。';
+      pr.hidden = false; pr.textContent = t('voiceAppendingTip');
       document.getElementById('v-append').hidden = true;
       document.getElementById('v-append-hint').hidden = true;
     }
     document.getElementById('v-append').addEventListener('click', vStartAppend);
     document.getElementById('v-append-review').addEventListener('click', vStartAppend);
     document.getElementById('v-retake').addEventListener('click', async function () {
-      if (!confirm('重录会删掉你之前录的全部试音，确定？')) return;
+      if (!confirm(t('voiceRetakeConfirm'))) return;
       var d = await vPost({ action: 'retake' });
-      if (d.ok) { toast('已删除，重新录一段吧'); vAppendMode = false; loadVoice(); }
-      else toast(d.error === 'peer_already_reviewed' ? '对方已经评过了，不能再重录' : '操作失败', true);
+      if (d.ok) { toast(t('voiceRetakeDone')); vAppendMode = false; loadVoice(); }
+      else toast(d.error === 'peer_already_reviewed' ? t('voiceRetakeDenied') : t('opFail'), true);
     });
     document.getElementById('v-form').addEventListener('submit', async function (e) {
       e.preventDefault();
       var w = document.querySelector('input[name="v-willing"]:checked');
       var willing = !!(w && w.value === '1');
-      if (!willing && !confirm('婉拒后房间会自动关闭，双方各自去找新伙伴。确定吗？')) return;
+      if (!willing && !confirm(t('voiceWillNotPair'))) return;
       var btn = document.getElementById('v-submit'); btn.disabled = true;
       var d = await vPost({
         action: 'review',
@@ -1010,9 +1013,9 @@
         willing: willing,
       });
       btn.disabled = false;
-      if (!d.ok) { toast('提交失败：' + (d.error || ''), true); return; }
+      if (!d.ok) { toast(t('voiceSubmitFail') + (d.error || ''), true); return; }
       vKillAudio();
-      toast('评价已提交，对方录音已销毁 🔥');
+      toast(t('voiceSubmitDone'));
       await loadVoice();
     });
 
@@ -1028,15 +1031,15 @@
           // 2.1：等待对方评价
           rateWaitShown = true;
           var rc = document.getElementById('rate-card');
-          rc.innerHTML = '<h2 class="sec-title">⏳ 等待对方评价</h2>' +
-            '<p class="v-state" style="text-align:center">✅ 你的评价已提交，正在等待对方完成评价...</p>' +
-            '<p class="field-hint" style="text-align:center">双方都提交后会自动揭晓结果。<br>如果超过 3 分钟对方未提交，系统会自动结束并向你单向展示对方信息。</p>' +
+          rc.innerHTML = '<h2 class="sec-title">' + t('waitRevCardTitle') + '</h2>' +
+            '<p class="v-state" style="text-align:center">' + t('ratingSubmittedWait') + '</p>' +
+            '<p class="field-hint" style="text-align:center">' + t('waitRevHint2') + '</p>' +
             '<div style="text-align:center;padding:20px"><span style="display:inline-block;width:24px;height:24px;border:3px solid #43a047;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></span></div>';
           rc.hidden = false;
-          toast('✅ 评价已提交，等待对方完成...');
+          toast(t('ratingSubmittedWait'));
         } else {
-          toast('评价已提交 ⭐');
-          if (r.data.blocked) toast('（已屏蔽此人）');
+          toast(t('ratingThanksShort'));
+          if (r.data.blocked) toast(t('ratingBlocked'));
           document.getElementById('rate-card').hidden=true;
         }
       }
@@ -1045,14 +1048,21 @@
         if (r.data && r.data.error === 'already_rated') {
           myRated = true;
           document.getElementById('rate-card').hidden = true;
-          toast('你已提交过评价 ⭐');
-        } else toast('评价失败：' + (r.data.error || r.status), true);
+          toast(t('ratingAlready'));
+        } else toast(t('ratingFail') + (r.data.error || r.status), true);
       }
     });
 
     api('GET').then(function(r){ render(r.data.pair); });
     loadVoice();     // 2.0：先拉试音进度，决定是否放行留言板 / 联机信息
     connectStream(); // SSE 推送接管留言板；首屏 init 事件会渲染历史
+    // i18n：切换语言后重拉房间状态、试音进度、留言板与顶栏角标
+    if (window.FTI18N) window.FTI18N.onChange(function () {
+      api('GET').then(function (r) { if (r.data && r.data.pair) render(r.data.pair); });
+      loadVoice();
+      loadMsgs();
+      refreshGearBadge();
+    });
     // 轮询兜底（SSE 不可用时）：5s 一次，保证对方退出时及时刷新（配合 SSE 实时推近乎即时）
     // 录音 / 上传过程中跳过试音状态刷新，避免把用户正在操作的界面切走
     setInterval(function(){
@@ -1062,7 +1072,7 @@
           var room = document.getElementById('room');
           if(room && !room.dataset.expired){
             room.dataset.expired = '1';
-            room.innerHTML = '<p class="muted" style="text-align:center;padding:60px 20px;">⏰ 房间已过期或已关闭。<br><a href="/">← 返回首页</a></p>';
+            room.innerHTML = '<p class="muted" style="text-align:center;padding:60px 20px;">' + t('roomExpiredOrClosed') + '</p>';
             setTimeout(function(){ location.href = '/'; }, 4000);
           }
           return;
@@ -1074,13 +1084,13 @@
   })();
   </script>
     <script src="/assets/ft-util.js?v=20260806p"></script>
-    <script src="/assets/settings.js?v=20260810b"></script>
+    <script src="/assets/settings.js?v=20260831a"></script>
     <script src="/assets/ftwave.js?v=20260816b"></script>
     <script src="/assets/glare.js?v=20260807a"></script>
-  <script src="/assets/interview.js?v=20260810b"></script>
+  <script src="/assets/interview.js?v=20260831a"></script>
   <footer class="site-footer">
     <div class="container">
-      <p class="mother-slogan">开口，本身就是一种力量。</p>
+      <p class="mother-slogan" data-i18n="motherSlogan">开口，本身就是一种力量。</p>
       <p class="foot-mini">
         <a href="https://955827.xyz/letout/" target="_blank" rel="noopener">LetOut</a>
         ·

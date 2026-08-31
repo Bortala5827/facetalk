@@ -1435,3 +1435,17 @@ body::after {
 .b-ttl, .fs-ttl, .vwarm-sum-ttl, .sc-title, .sec-title { font-weight: 800; }
 /* 顶部跨链胶囊：小屏隐藏，避免顶栏拥挤（移动端走页脚跨链） */
 @media (max-width: 480px) { .nav-x { display: none; } }
+
+/* ═══ 语言切换器（i18n）═══ */
+.ft-lang {
+  appearance: none; -webkit-appearance: none;
+  font-size: 13px; font-weight: 600; color: var(--ink-2);
+  background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 26px 5px 12px; cursor: pointer; outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  transition: border-color .15s, background .15s;
+}
+.ft-lang:hover { border-color: var(--accent); color: var(--accent); background-color: var(--accent-soft); }
+.ft-lang:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 420px) { .ft-lang { max-width: 92px; } }

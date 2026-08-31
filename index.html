@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>面试搭子匹配 · 60秒试音找练友 | FaceTalk</title>
-  <meta name="description" content="FaceTalk 面试搭子匹配平台：60秒试音筛选，在面试圈找到真正适合一起练的人。辅警/公考/结构化面试在线对练，阅后即焚。" />
+  <title data-i18n="metaTitle">面试搭子匹配 · 60秒试音找练友 | FaceTalk</title>
+  <meta name="description" data-i18n-content="metaDesc" content="FaceTalk 面试搭子匹配平台：60秒试音筛选，在面试圈找到真正适合一起练的人。辅警/公考/结构化面试在线对练，阅后即焚。" />
+  <script src="/assets/i18n.js?v=20260831a"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -98,19 +99,20 @@
         <span class="v-badge v-badge-base">v2.9</span>
       </a>
       <div class="bar-right">
-        <button class="bar-hamburger" id="bar-hamburger" type="button" aria-label="菜单" aria-expanded="false">
+        <div class="bar-lang" data-lang-slot></div>
+        <button class="bar-hamburger" id="bar-hamburger" type="button" aria-label="菜单" data-i18n-aria="menuLabel" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
         <nav class="bar-menu" id="bar-menu" aria-label="更多">
-          <a href="https://exam.955827.xyz/structured.html" target="_blank" rel="noopener">🎤 结构化面试练习</a>
-          <button type="button" id="menu-warmup">🌡 声纹暖场</button>
-          <button type="button" id="menu-settings">⚙ 设置与关于</button>
+          <a href="https://exam.955827.xyz/structured.html" target="_blank" rel="noopener" data-i18n="structPractice">🎤 结构化面试练习</a>
+          <button type="button" id="menu-warmup" data-i18n="warmupMenu">🌡 声纹暖场</button>
+          <button type="button" id="menu-settings" data-i18n="settingsMenu">⚙ 设置与关于</button>
         </nav>
       </div>
     </div>
   </header>
 
-  <div id="wx-tip" class="wx-tip" hidden>
+  <div id="wx-tip" class="wx-tip" hidden data-i18n="wxTip">
     如按钮无法跳转到腾讯会议，请点右上角 ⋯ 选择「在浏览器打开」，或复制会议号手动入会。
   </div>
 
@@ -118,34 +120,34 @@
     <div class="group-banner" id="group-banner" hidden></div>
     <!-- Hero：品牌标题 + 一句话 + 入口卡 -->
     <section class="hero" id="ft-hero">
-      <p class="hero-eyebrow">面试筛选器</p>
-      <h1 class="hero-title" id="hero-title">60 秒，决定要不要聊下去</h1>
-      <p class="hero-kicker">投正式对练前，先听一段短音，判断对方值不值得组队</p>
+      <p class="hero-eyebrow" data-i18n="heroEyebrow">面试筛选器</p>
+      <h1 class="hero-title" id="hero-title" data-i18n="heroTitle">60 秒，决定要不要聊下去</h1>
+      <p class="hero-kicker" data-i18n="heroKicker">投正式对练前，先听一段短音，判断对方值不值得组队</p>
 
       <div class="entry-grid">
         <a class="entry-card pair" href="#pair-details">
           <span class="ec-emoji">🎧</span>
-          <span class="ec-title">开始筛选</span>
-          <span class="ec-desc">双向都愿意，再接着深入练</span>
-          <span class="ec-go">去试音 →</span>
+          <span class="ec-title" data-i18n="entryStart">开始筛选</span>
+          <span class="ec-desc" data-i18n="entryDesc">双向都愿意，再接着深入练</span>
+          <span class="ec-go" data-i18n="entryGo">去试音 →</span>
         </a>
       </div>
       <div class="trust-strip">
-        <span class="ts-item">🔒 <b>双方提交才能互听</b></span>
-        <span class="ts-item">🕓 <b>录音阅后即焚</b></span>
-        <span class="ts-item">🚫 <b>严禁留微信 / 手机号</b></span>
+        <span class="ts-item" data-i18n-html="trustBoth">🔒 <b>双方提交才能互听</b></span>
+        <span class="ts-item" data-i18n-html="trustBurn">🕓 <b>录音阅后即焚</b></span>
+        <span class="ts-item" data-i18n-html="trustNoContact">🚫 <b>严禁留微信 / 手机号</b></span>
       </div>
     </section>
 
     <!-- 声纹暖场：只在三条横杠菜单里打开，主页面不展示 -->
     <div class="vwarm-overlay" id="vwarmModal" hidden>
-      <div class="vwarm-dialog" role="dialog" aria-modal="true" aria-label="声纹暖场">
-        <button class="vwarm-close" id="vwarmClose" type="button" aria-label="关闭">✕</button>
+      <div class="vwarm-dialog" role="dialog" aria-modal="true" aria-label="声纹暖场" data-i18n-aria="warmupTitle">
+        <button class="vwarm-close" id="vwarmClose" type="button" aria-label="关闭" data-i18n-aria="close">✕</button>
         <div class="vwarm-stage" id="vwarm-stage">
           <span class="vw-mic" data-mic>🎤</span>
         </div>
-        <p class="vwarm-sub" id="vwarm-sub">说点什么，文字会跟着你的声音抖一抖</p>
-        <button class="vwarm-btn" id="vwarm-btn" type="button">开始暖场</button>
+        <p class="vwarm-sub" id="vwarm-sub" data-i18n="warmupSub">说点什么，文字会跟着你的声音抖一抖</p>
+        <button class="vwarm-btn" id="vwarm-btn" type="button" data-i18n="warmupStart">开始暖场</button>
       </div>
     </div>
 
@@ -153,20 +155,20 @@
     <details class="share-card">
       <summary class="sc-sum">
         <span class="sc-emoji">📣</span>
-        <h2 class="sc-title">发到社群里匹配，互评组队，效果更佳</h2>
+        <h2 class="sc-title" data-i18n="shareTitle">发到社群里匹配，互评组队，效果更佳</h2>
         <span class="sc-caret" aria-hidden="true">▾</span>
       </summary>
       <div class="sc-body">
-        <p class="sc-sub">把下面这段话发到你的辅警 / 消防 / 公考面试群里，同样目标的人看到就会来试音。</p>
-        <div class="sc-text-preview" id="sc-preview">有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz</div>
-        <button class="sc-copy-main" id="sc-copy-text" type="button">📋 复制这段话，去群里发</button>
+        <p class="sc-sub" data-i18n="shareSub">把下面这段话发到你的辅警 / 消防 / 公考面试群里，同样目标的人看到就会来试音。</p>
+        <div class="sc-text-preview" id="sc-preview" data-i18n="sharePreview">有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz</div>
+        <button class="sc-copy-main" id="sc-copy-text" type="button" data-i18n="shareCopyBtn">📋 复制这段话，去群里发</button>
       </div>
     </details>
 
     <!-- 我的信誉（桌面端按「信誉/匿名/在线」三栏横铺，避免左对齐单行空洞） -->
     <p class="me-bar">
-      <span class="me-cell"><b>我的信誉</b> <span class="rep-star">⭐</span> <strong id="my-rep">…</strong></span>
-      <span class="me-cell me-cell-mid">匿名身份 · 仅本地保存</span>
+      <span class="me-cell"><b data-i18n="myRep">我的信誉</b> <span class="rep-star">⭐</span> <strong id="my-rep">…</strong></span>
+      <span class="me-cell me-cell-mid" data-i18n="anonLocal">匿名身份 · 仅本地保存</span>
       <span class="me-cell online-pill" id="online-count" hidden></span>
     </p>
 
@@ -177,40 +179,40 @@
         <span class="fs-caret" aria-hidden="true">▾</span>
       </summary>
       <div class="fs-inner">
-      <p class="muted">同岗伙伴来和你筛选，双方都愿意再接着练；录音仅用于本次互评，结束后自动删除。</p>
+      <p class="muted" data-i18n="pubHint">同岗伙伴来和你筛选，双方都愿意再接着练；录音仅用于本次互评，结束后自动删除。</p>
       <form id="intent-form" autocomplete="off">
         <div class="field-row">
           <label class="field">
-            <span class="field-label">岗位</span>
+            <span class="field-label" data-i18n="pubRole">岗位</span>
             <select id="i-role">
-              <option value="公务员 / 事业编">公务员 / 事业编</option>
-              <option value="辅警 / 警务辅助" selected>辅警 / 警务辅助</option>
-              <option value="消防 / 政府专职消防员">消防 / 政府专职消防员</option>
-              <option value="书记员 / 公检法聘用人员">书记员 / 公检法聘用人员</option>
-              <option value="社区工作者 / 网格员">社区工作者 / 网格员</option>
-              <option value="三支一扶 / 西部计划">三支一扶 / 西部计划</option>
-              <option value="其他">其他</option>
+              <option value="公务员 / 事业编" data-i18n="pubRoleGwy">公务员 / 事业编</option>
+              <option value="辅警 / 警务辅助" selected data-i18n="pubRoleFujing">辅警 / 警务辅助</option>
+              <option value="消防 / 政府专职消防员" data-i18n="pubRoleXiaofang">消防 / 政府专职消防员</option>
+              <option value="书记员 / 公检法聘用人员" data-i18n="pubRoleShuji">书记员 / 公检法聘用人员</option>
+              <option value="社区工作者 / 网格员" data-i18n="pubRoleShequ">社区工作者 / 网格员</option>
+              <option value="三支一扶 / 西部计划" data-i18n="pubRoleSanzhi">三支一扶 / 西部计划</option>
+              <option value="其他" data-i18n="pubRoleOther">其他</option>
             </select>
           </label>
           <label class="field">
-            <span class="field-label">城市</span>
-            <input id="i-city" type="text" placeholder="如：深圳 / 武汉" />
+            <span class="field-label" data-i18n="pubCity">城市</span>
+            <input id="i-city" type="text" placeholder="如：深圳 / 武汉" data-i18n-ph="pubCityPh" />
           </label>
         </div>
         <div class="field-row">
           <label class="field">
-            <span class="field-label">模式</span>
+            <span class="field-label" data-i18n="pubMode">模式</span>
             <select id="i-mode">
-              <option value="voice">🎙 语音优先（推荐）</option>
-              <option value="video">📹 视频</option>
+              <option value="voice" data-i18n="pubModeVoice">🎙 语音优先（推荐）</option>
+              <option value="video" data-i18n="pubModeVideo">📹 视频</option>
             </select>
           </label>
         </div>
         <label class="field">
-          <span class="field-label">一句话（选填）</span>
-          <input id="i-note" type="text" maxlength="140" placeholder="如：今晚想练结构化，互评互改" />
+          <span class="field-label" data-i18n="pubNote">一句话（选填）</span>
+          <input id="i-note" type="text" maxlength="140" placeholder="如：今晚想练结构化，互评互改" data-i18n-ph="pubNotePh" />
         </label>
-        <button type="submit" class="btn-primary">发布意图 →</button>
+        <button type="submit" class="btn-primary" data-i18n="pubSubmit">发布意图 →</button>
         <p class="form-msg" id="i-msg" hidden></p>
       </form>
       </div>
@@ -219,19 +221,19 @@
     <!-- 浏览搭子（核心发现面，常驻可见） -->
     <section class="board">
       <div class="board-head">
-        <h2 class="sec-title">🔍 公开大厅（没有群也能找）</h2>
-        <button class="btn-mini" id="browse-refresh">刷新</button>
+        <h2 class="sec-title" data-i18n="browseTitle">🔍 公开大厅（没有群也能找）</h2>
+        <button class="btn-mini" id="browse-refresh" data-i18n="browseRefresh">刷新</button>
       </div>
-      <p class="board-note">群里没找到合适的？也能在这里浏览同岗伙伴的开放意图。</p>
+      <p class="board-note" data-i18n="browseNote">群里没找到合适的？也能在这里浏览同岗伙伴的开放意图。</p>
       <div id="browse-list" class="list"></div>
-      <p class="list-empty" id="browse-empty">加载中…</p>
-      <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px">你已发布意图，这里只看别人的。刷新可见新上线的搭子。</p>
+      <p class="list-empty" id="browse-empty" data-i18n="browseLoading">加载中…</p>
+      <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px" data-i18n="browseOwnHint">你已发布意图，这里只看别人的。刷新可见新上线的搭子。</p>
     </section>
 
     <!-- 我的搭子状态：默认展开（双向匹配需看到「收到的申请」并同意，不能藏起来）；可手动收起，有未处理申请时折叠标题显示红点提醒 -->
     <details class="b-collapse" id="my-status" open>
       <summary class="b-sum">
-        <span class="b-ttl">📊 我的筛选状态</span>
+        <span class="b-ttl" data-i18n="myStatus">📊 我的筛选状态</span>
         <span class="b-dot" id="statusDot" hidden></span>
         <span class="b-caret" aria-hidden="true">▾</span>
       </summary>
@@ -240,29 +242,29 @@
       <!-- 我发布的需求 -->
       <section class="board" id="mine-board" data-zone="mine">
         <div class="board-head">
-          <h2 class="sec-title">📋 我发布的需求</h2>
+          <h2 class="sec-title" data-i18n="mineBoard">📋 我发布的需求</h2>
           <span class="muted" id="mine-hint"></span>
         </div>
         <div id="mine-list" class="list"></div>
-        <p class="list-empty" id="mine-empty" hidden>还没有。发布意图后，你的申请情况会出现在这里。</p>
+        <p class="list-empty" id="mine-empty" hidden data-i18n="mineEmpty">还没有。发布意图后，你的申请情况会出现在这里。</p>
       </section>
 
       <!-- 我的邀约：收到 -->
       <section class="board" data-zone="inbox">
         <div class="board-head">
-          <h2 class="sec-title">📨 收到的申请</h2>
+          <h2 class="sec-title" data-i18n="inboxTitle">📨 收到的申请</h2>
         </div>
         <div id="inbox-list" class="list"></div>
-        <p class="list-empty" id="inbox-empty">加载中…</p>
+        <p class="list-empty" id="inbox-empty" data-i18n="browseLoading">加载中…</p>
       </section>
 
       <!-- 我的邀约：发出 -->
       <section class="board" data-zone="out">
         <div class="board-head">
-          <h2 class="sec-title">📤 我发出的申请</h2>
+          <h2 class="sec-title" data-i18n="outTitle">📤 我发出的申请</h2>
         </div>
         <div id="out-list" class="list"></div>
-        <p class="list-empty" id="out-empty">加载中…</p>
+        <p class="list-empty" id="out-empty" data-i18n="browseLoading">加载中…</p>
       </section>
 
       </div>
@@ -270,63 +272,63 @@
 
     <!-- 互练入口 -->
     <section class="card" id="room-card" hidden>
-      <h2 class="sec-title">✅ FaceTalk 筛选完成！</h2>
-      <p class="muted">双方都想继续练，就接着对练。</p>
-      <a class="btn-primary" id="room-enter" href="#">继续互练 →</a>
+      <h2 class="sec-title" data-i18n="roomDoneTitle">✅ FaceTalk 筛选完成！</h2>
+      <p class="muted" data-i18n="roomDoneSub">双方都想继续练，就接着对练。</p>
+      <a class="btn-primary" id="room-enter" href="#" data-i18n="roomContinue">继续互练 →</a>
     </section>
 
     <!-- 互评 -->
     <section class="card form-card" id="rate-card" hidden>
-      <h2 class="sec-title">⭐ 本次互练评价</h2>
-      <p class="muted">互评完成、双方都愿意，才能再约一次。</p>
+      <h2 class="sec-title" data-i18n="rateTitle">⭐ 本次互练评价</h2>
+      <p class="muted" data-i18n="rateSub">互评完成、双方都愿意，才能再约一次。</p>
       <form id="rate-form" autocomplete="off">
         <label class="field">
-          <span class="field-label">给对方打分 <em>*</em></span>
+          <span class="field-label" data-i18n="rateScore">给对方打分 <em>*</em></span>
           <select id="r-score">
-            <option value="5">5 · 很赞，守时专业</option>
-            <option value="4">4 · 不错</option>
-            <option value="3">3 · 一般</option>
-            <option value="2">2 · 不太行</option>
-            <option value="1">1 · 割韭菜/瞎搞</option>
+            <option value="5" data-i18n="score5">5 · 很赞，守时专业</option>
+            <option value="4" data-i18n="score4">4 · 不错</option>
+            <option value="3" data-i18n="score3">3 · 一般</option>
+            <option value="2" data-i18n="score2">2 · 不太行</option>
+            <option value="1" data-i18n="score1">1 · 割韭菜/瞎搞</option>
           </select>
         </label>
         <label class="field">
-          <span class="field-label">标签（选填，逗号分隔）</span>
-          <input id="r-tags" type="text" placeholder="如：守时,点评到位,声音清晰" />
+          <span class="field-label" data-i18n="rateTags">标签（选填，逗号分隔）</span>
+          <input id="r-tags" type="text" placeholder="如：守时,点评到位,声音清晰" data-i18n-ph="rateTagsPh" />
         </label>
         <label class="field check">
-          <input id="r-next" type="checkbox" /> <span>愿意再约一次</span>
+          <input id="r-next" type="checkbox" /> <span data-i18n="rateNext">愿意再约一次</span>
         </label>
-        <button type="submit" class="btn-primary">提交评价 →</button>
+        <button type="submit" class="btn-primary" data-i18n="rateSubmit">提交评价 →</button>
         <p class="form-msg" id="r-msg" hidden></p>
       </form>
     </section>
 
-    <p class="foot-note">隐私提醒：勿留身份证、住址等敏感信息；连麦走腾讯会议。</p>
+    <p class="foot-note" data-i18n="footPrivacy">隐私提醒：勿留身份证、住址等敏感信息；连麦走腾讯会议。</p>
 
   <!-- 全站公开留言墙（2026-08-08 改默认折叠，移动端友好）：首页可见，7 天自动清理 -->
   <details class="wall" id="wall">
     <summary class="wall-head">
       <div class="wall-ttl">
         <span class="wall-emoji">💬</span>
-        <h2>留言墙</h2>
-        <span class="wall-badge">7 天自动清理</span>
+        <h2 data-i18n="wallTitle">留言墙</h2>
+        <span class="wall-badge" data-i18n="wallAutoClean">7 天自动清理</span>
       </div>
       <div class="wall-head-right">
-        <button class="wall-manage" id="wallManage" type="button">🗑 管理</button>
+        <button class="wall-manage" id="wallManage" type="button" data-i18n="wallManage">🗑 管理</button>
         <span class="wall-caret" aria-hidden="true">▾</span>
       </div>
     </summary>
     <div class="wall-inner">
-      <p class="wall-sub">文明留言，禁止广告与不良信息。为彼此安全，<b>勿留手机号、微信等联系方式</b>，防骗；FaceTalk 仅用于面试筛选，录音阅后即焚。</p>
+      <p class="wall-sub" data-i18n-html="wallSub">文明留言，禁止广告与不良信息。为彼此安全，<b>勿留手机号、微信等联系方式</b>，防骗；FaceTalk 仅用于面试筛选，录音阅后即焚。</p>
       <div class="wall-form">
         <div class="wall-form-row">
-          <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名用户」）" maxlength="20">
-          <button class="wall-post" id="wallPost">✨ 发布留言</button>
+          <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名用户」）" maxlength="20" data-i18n-ph="wallNamePh">
+          <button class="wall-post" id="wallPost" data-i18n="wallPostBtn">✨ 发布留言</button>
         </div>
-        <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300"></textarea>
+        <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300" data-i18n-ph="wallTextPh"></textarea>
       </div>
-      <div class="wall-list" id="wallList"><div class="wall-empty"><span class="we-emoji">📝</span>正在加载留言…</div></div>
+      <div class="wall-list" id="wallList"><div class="wall-empty"><span class="we-emoji">📝</span><span data-i18n="wallLoading">正在加载留言…</span></div></div>
     </div>
   </details>
 
@@ -334,7 +336,7 @@
 
   <footer class="site-footer">
     <div class="container">
-      <p class="mother-slogan">开口，本身就是一种力量。</p>
+      <p class="mother-slogan" data-i18n="motherSlogan">开口，本身就是一种力量。</p>
       <p class="foot-mini">
         <a href="https://955827.xyz/solospeak/" target="_blank" rel="noopener">SoloSpeak</a>
         ·
@@ -393,7 +395,7 @@
       var mic = stage.querySelector('[data-mic]');
       var btn = document.getElementById('vwarm-btn');
       var sub = document.getElementById('vwarm-sub');
-      var subDefault = sub ? sub.textContent : '';
+      var subDefault = (window.FTI18N ? FTI18N.t('warmupSub') : (sub ? sub.textContent : ''));
       var audioCtx, analyser, data, stream, raf, running = false;
 
       function rms(){
@@ -426,7 +428,7 @@
       function start(){
         if (running) return;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          if (sub) sub.textContent = '当前浏览器不支持麦克风，用手机打开体验更佳';
+          if (sub) sub.textContent = window.FTI18N ? FTI18N.t('warmupNoMic') : '当前浏览器不支持麦克风，用手机打开体验更佳';
           return;
         }
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s){
@@ -439,12 +441,12 @@
           data = new Uint8Array(analyser.fftSize);
           src.connect(analyser);
           running = true;
-          btn.textContent = '🛑 停止';
+          btn.textContent = window.FTI18N ? FTI18N.t('warmupStop') : '🛑 停止';
           btn.classList.add('on');
-          if (sub) sub.textContent = '说吧，文字在跟着你抖';
+          if (sub) sub.textContent = window.FTI18N ? FTI18N.t('warmupSpeaking') : '说吧，文字在跟着你抖';
           loop();
         }).catch(function(){
-          if (sub) sub.textContent = '麦克风权限被拒，点「开始暖场」再授权一次';
+          if (sub) sub.textContent = window.FTI18N ? FTI18N.t('warmupDenied') : '麦克风权限被拒，点「开始暖场」再授权一次';
         });
       }
 
@@ -456,7 +458,7 @@
         stream = audioCtx = analyser = data = null;
         if (mic) mic.style.transform = '';
         if (sub) { sub.style.transform = ''; sub.textContent = subDefault; }
-        btn.textContent = '开始暖场';
+        btn.textContent = window.FTI18N ? FTI18N.t('warmupStart') : '开始暖场';
         btn.classList.remove('on');
       }
 
@@ -464,9 +466,9 @@
     })();
   </script>
   <script src="/assets/ft-util.js?v=20260806p"></script>
-  <script src="/assets/wall.js?v=20260812a"></script>
-  <script src="/assets/settings.js?v=20260812e"></script>
-  <script src="/assets/app.js?v=20260812c"></script>
+  <script src="/assets/wall.js?v=20260831a"></script>
+  <script src="/assets/settings.js?v=20260831a"></script>
+  <script src="/assets/app.js?v=20260831a"></script>
   <script>
     // 从 RCJ 任一站点（955827.xyz 任意子域）进来时，显示「← 返回」并跳回来源页，形成产品矩阵闭环
     (function () {
@@ -493,11 +495,13 @@
           var el = document.getElementById('group-banner');
           if (el) {
             var dec = (window.decodeURIComponent ? decodeURIComponent(g) : g);
-            el.appendChild(document.createTextNode('🎯 你正在为 '));
+            var pre = window.FTI18N ? FTI18N.t('groupBannerPre') : '🎯 你正在为 ';
+            var post = window.FTI18N ? FTI18N.t('groupBannerPost') : ' FaceTalk 面试筛选 · 60 秒试音，找到合适的人';
+            el.appendChild(document.createTextNode(pre));
             var b = document.createElement('b');
             b.textContent = dec;
             el.appendChild(b);
-            el.appendChild(document.createTextNode(' FaceTalk 面试筛选 · 60 秒试音，找到合适的人'));
+            el.appendChild(document.createTextNode(post));
             el.hidden = false;
           }
         }
@@ -554,7 +558,7 @@
       try {
         var btn = document.getElementById('sc-copy-text');
         if (!btn) return;
-        var TEXT = '有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz';
+        var TEXT = window.FTI18N ? FTI18N.t('sharePreview') : '有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz';
 
         // 自带 toast（不依赖任何外部全局，确保「已复制」反馈一定出现）
         var toastTimer = null;
@@ -569,16 +573,16 @@
 
         function copy(text) {
           function done() {
-            showToast('✅ 已复制，去群里粘贴吧');
+            showToast(window.FTI18N ? FTI18N.t('shareCopied') : '✅ 已复制，去群里粘贴吧');
             var old = btn.textContent;
-            btn.textContent = '✓ 已复制';
+            btn.textContent = window.FTI18N ? FTI18N.t('shareCopiedShort') : '✓ 已复制';
             setTimeout(function () { btn.textContent = old; }, 1800);
           }
           function fallback() {
             try { var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
               document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
               done();
-            } catch (e2) { showToast('复制失败，请长按手动复制'); }
+            } catch (e2) { showToast(window.FTI18N ? FTI18N.t('copyFailed') : '复制失败，请长按手动复制'); }
           }
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(done).catch(fallback);
