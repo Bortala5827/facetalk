@@ -179,7 +179,10 @@
         reports = (res[3] && res[3].list) || [];
         renderDashboard();
       })
-      .catch(function(){ el.innerHTML = '<p class="error">网络错误，请刷新重试</p>'; });
+      .catch(function(err){
+        var detail = err && (err.message || err.name) ? (err.name + ': ' + err.message) : String(err);
+        el.innerHTML = '<p class="error">请求失败：' + esc(detail) + '<br><small style="opacity:.8">如果一直失败，请按 Ctrl+F5 强制刷新或清除 facetalk.955827.xyz 的服务工作者/缓存。</small></p>';
+      });
   }
 
   function renderDashboard() {
@@ -418,8 +421,23 @@
   }
   function pad(n){ return n < 10 ? '0' + n : '' + n; }
 
-  // init
-  if (key) loadData(); else renderLogin();
+  // init：先注销服务工作者/清缓存，避免旧 SW 拦截 /api/admin 导致网络错误
+  function init() {
+    if (key) loadData(); else renderLogin();
+  }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      return Promise.all(regs.map(function(r){ return r.unregister(); }));
+    }).then(function(){
+      if ('caches' in window) {
+        return caches.keys().then(function(names){
+          return Promise.all(names.map(function(n){ return caches.delete(n); }));
+        });
+      }
+    }).then(init, init);
+  } else {
+    init();
+  }
 })();
 </script>
 </body>
