@@ -58,7 +58,7 @@ var TARGETS = [
     file: 'assets/settings.js',
     label: 'settings.js',
     refs: [
-      { file: 'pair.html',   re: /\/assets\/settings\.js\?v=([a-z0-9]+)/ },
+      { file: 'index.html',  re: /\/assets\/settings\.js\?v=([a-z0-9]+)/ },
       // solo.html 已合并至 exam 站 structured.html，不再单独管理,
     ]
   },
@@ -70,10 +70,11 @@ var TARGETS = [
     ]
   },
   {
-    file: 'assets/interview.js',
-    label: 'interview.js',
+    file: 'assets/i18n.js',
+    label: 'i18n.js',
     refs: [
-      { file: 'pair.html',   re: /\/assets\/interview\.js\?v=([a-z0-9]+)/ },
+      { file: 'index.html',  re: /\/assets\/i18n\.js\?v=([a-z0-9]+)/ },
+      { file: 'pair.html',   re: /\/assets\/i18n\.js\?v=([a-z0-9]+)/ },
     ]
   },
 ];
@@ -99,7 +100,7 @@ function nextVersion(current) {
     var d = String(now.getDate()).padStart(2, '0');
     return y + m + d + 'a';
   }
-  var m = current.match(/^(\d{6})([a-z])$/);
+  var m = current.match(/^(\d{8})([a-z])$/);
   if (!m) throw new Error('版本号格式异常: ' + current);
   var date = m[1];
   var ch = m[2].charCodeAt(0);
@@ -122,10 +123,10 @@ function check() {
     var versions = [];
     t.refs.forEach(function (ref) {
       var fp = path.join(ROOT, ref.file);
-      if (!fs.existsSync(fp)) { versions.push(ref.file + ': FILE_NOT_FOUND'); return; }
+      if (!fs.existsSync(fp)) { versions.push('FILE_NOT_FOUND:' + ref.file); return; }
       var content = fs.readFileSync(fp, 'utf8');
       var m = content.match(ref.re);
-      versions.push(ref.file + ': ' + (m ? m[1] : 'NOT_FOUND'));
+      versions.push(m ? m[1] : 'NOT_FOUND:' + ref.file);
     });
     var unique = versions.filter(function (v, i, arr) { return arr.indexOf(v) === i; });
     var ok = unique.length === 1 && !unique[0].includes('NOT_FOUND') && !unique[0].includes('FILE_NOT_FOUND');
@@ -197,7 +198,7 @@ if (args[0] === '--check') {
   ].join('\n'));
 } else {
   var ver = args[0] || null;
-  if (ver && !/^\d{6}[a-z]$/.test(ver)) {
+  if (ver && !/^\d{8}[a-z]$/.test(ver)) {
     console.error('❌ 版本号格式错误，应为 20YYMMDD + 小写字母，如 20260808f');
     process.exit(1);
   }

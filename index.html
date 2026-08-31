@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="metaTitle">面试搭子匹配 · 60秒试音找练友 | FaceTalk</title>
   <meta name="description" data-i18n-content="metaDesc" content="FaceTalk 面试搭子匹配平台：60秒试音筛选，在面试圈找到真正适合一起练的人。辅警/公考/结构化面试在线对练，阅后即焚。" />
-  <script src="/assets/i18n.js?v=20260831a"></script>
+  <script src="/assets/i18n.js?v=20260831b"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -23,7 +23,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%46%54%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260814c" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260831b" />
   <style>
     /* 顶栏三条横杠菜单（仅首页） */
     .bar-right { position: relative; }
@@ -56,23 +56,6 @@
     }
     .bar-menu a:hover, .bar-menu button:hover { background: var(--accent-soft); color: var(--accent); }
 
-    /* 声纹暖场：只在三条横杠菜单里打开，主页面不展示 */
-    .vwarm-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 40; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s ease; }
-    .vwarm-overlay.open { opacity: 1; pointer-events: auto; }
-    .vwarm-overlay[hidden] { display: none; }
-    .vwarm-dialog { background: #fff; border-radius: 18px; padding: 26px 22px; width: min(400px, 90vw); box-shadow: 0 20px 50px rgba(0,0,0,.2); text-align: center; position: relative; }
-    .vwarm-close { position: absolute; top: 10px; right: 12px; border: none; background: transparent; font-size: 1.3rem; line-height: 1; color: #94a3b8; cursor: pointer; padding: 4px; }
-    .vwarm-stage { height: 90px; display: flex; align-items: center; justify-content: center; }
-    .vw-mic { font-size: 58px; }
-    .vwarm-sub { font-size: 0.8rem; margin: 4px 0 16px; color: #64748b; }
-    .vwarm-btn { padding: 8px 18px; font-size: 14px; border-radius: 999px; border: none; background: #4f46e5; color: #fff; cursor: pointer; }
-    .vwarm-btn.on { background: #ef4444; }
-    @media (max-width: 560px) {
-      .vwarm-stage { height: 76px; }
-      .vw-mic { font-size: 50px; }
-      .vwarm-dialog { padding: 22px 18px; }
-    }
-
     /* ── Bombon 设计语言试点（2026-08-19 · 一区一色 + 完成章） ── */
     /* 一区一色：三大状态区各一识别色，一眼可辨（借鉴 Bombon 每王国一主题色） */
     .board[data-zone="mine"] .sec-title { border-left-color: var(--accent, #4f46e5); }
@@ -104,9 +87,7 @@
           <span></span><span></span><span></span>
         </button>
         <nav class="bar-menu" id="bar-menu" aria-label="更多">
-          <a href="https://exam.955827.xyz/structured.html" target="_blank" rel="noopener" data-i18n="structPractice">🎤 结构化面试练习</a>
-          <button type="button" id="menu-warmup" data-i18n="warmupMenu">🌡 声纹暖场</button>
-          <button type="button" id="menu-settings" data-i18n="settingsMenu">⚙ 设置与关于</button>
+          <button type="button" id="menu-settings" data-i18n="aboutMenu">ℹ 关于</button>
         </nav>
       </div>
     </div>
@@ -138,18 +119,6 @@
         <span class="ts-item" data-i18n-html="trustNoContact">🚫 <b>严禁留微信 / 手机号</b></span>
       </div>
     </section>
-
-    <!-- 声纹暖场：只在三条横杠菜单里打开，主页面不展示 -->
-    <div class="vwarm-overlay" id="vwarmModal" hidden>
-      <div class="vwarm-dialog" role="dialog" aria-modal="true" aria-label="声纹暖场" data-i18n-aria="warmupTitle">
-        <button class="vwarm-close" id="vwarmClose" type="button" aria-label="关闭" data-i18n-aria="close">✕</button>
-        <div class="vwarm-stage" id="vwarm-stage">
-          <span class="vw-mic" data-mic>🎤</span>
-        </div>
-        <p class="vwarm-sub" id="vwarm-sub" data-i18n="warmupSub">说点什么，文字会跟着你的声音抖一抖</p>
-        <button class="vwarm-btn" id="vwarm-btn" type="button" data-i18n="warmupStart">开始暖场</button>
-      </div>
-    </div>
 
     <!-- 发到社群里匹配：工具思维冷启动 —— 微信群无法直接点开外部链接，所以只提供「复制群发文案」。默认折叠，避免首页信息过载 -->
     <details class="share-card">
@@ -387,88 +356,11 @@
       }
     })();
   </script>
-  <script>
-    // FaceTalk 声纹暖场（极简版）：getUserMedia → AnalyserNode(RMS) 驱动 🎤 与文字随音量抖动
-    (function(){
-      var stage = document.getElementById('vwarm-stage');
-      if (!stage) return;
-      var mic = stage.querySelector('[data-mic]');
-      var btn = document.getElementById('vwarm-btn');
-      var sub = document.getElementById('vwarm-sub');
-      var subDefault = (window.FTI18N ? FTI18N.t('warmupSub') : (sub ? sub.textContent : ''));
-      var audioCtx, analyser, data, stream, raf, running = false;
 
-      function rms(){
-        if (!analyser) return 0;
-        analyser.getByteTimeDomainData(data);
-        var sum = 0;
-        for (var i = 0; i < data.length; i++) { var v = (data[i] - 128) / 128; sum += v * v; }
-        return Math.sqrt(sum / data.length);
-      }
-
-      function jitter(amp){ return (Math.random() - 0.5) * amp; }
-
-      function loop(){
-        var norm = Math.min(1, rms() * 3.4);
-        if (mic) {
-          var sc = 1 + norm * 0.55;
-          var jx = jitter(norm * 14);
-          var jy = jitter(norm * 14);
-          var rot = jitter(norm * 16);
-          mic.style.transform = 'translate(' + jx.toFixed(1) + 'px,' + jy.toFixed(1) + 'px) scale(' + sc.toFixed(2) + ') rotate(' + rot.toFixed(1) + 'deg)';
-        }
-        if (sub) {
-          var sx = jitter(norm * 6);
-          var sy = jitter(norm * 4);
-          sub.style.transform = 'translate(' + sx.toFixed(1) + 'px,' + sy.toFixed(1) + 'px)';
-        }
-        raf = requestAnimationFrame(loop);
-      }
-
-      function start(){
-        if (running) return;
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          if (sub) sub.textContent = window.FTI18N ? FTI18N.t('warmupNoMic') : '当前浏览器不支持麦克风，用手机打开体验更佳';
-          return;
-        }
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s){
-          stream = s;
-          var AC = window.AudioContext || window.webkitAudioContext;
-          audioCtx = new AC();
-          var src = audioCtx.createMediaStreamSource(s);
-          analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 1024;
-          data = new Uint8Array(analyser.fftSize);
-          src.connect(analyser);
-          running = true;
-          btn.textContent = window.FTI18N ? FTI18N.t('warmupStop') : '🛑 停止';
-          btn.classList.add('on');
-          if (sub) sub.textContent = window.FTI18N ? FTI18N.t('warmupSpeaking') : '说吧，文字在跟着你抖';
-          loop();
-        }).catch(function(){
-          if (sub) sub.textContent = window.FTI18N ? FTI18N.t('warmupDenied') : '麦克风权限被拒，点「开始暖场」再授权一次';
-        });
-      }
-
-      function stop(){
-        running = false;
-        if (raf) cancelAnimationFrame(raf);
-        if (stream) stream.getTracks().forEach(function(t){ t.stop(); });
-        if (audioCtx) audioCtx.close().catch(function(){});
-        stream = audioCtx = analyser = data = null;
-        if (mic) mic.style.transform = '';
-        if (sub) { sub.style.transform = ''; sub.textContent = subDefault; }
-        btn.textContent = window.FTI18N ? FTI18N.t('warmupStart') : '开始暖场';
-        btn.classList.remove('on');
-      }
-
-      if (btn) btn.addEventListener('click', function(){ running ? stop() : start(); });
-    })();
-  </script>
-  <script src="/assets/ft-util.js?v=20260806p"></script>
-  <script src="/assets/wall.js?v=20260831a"></script>
-  <script src="/assets/settings.js?v=20260831a"></script>
-  <script src="/assets/app.js?v=20260831a"></script>
+  <script src="/assets/ft-util.js?v=20260831b"></script>
+  <script src="/assets/wall.js?v=20260831b"></script>
+  <script src="/assets/settings.js?v=20260831b"></script>
+  <script src="/assets/app.js?v=20260831b"></script>
   <script>
     // 从 RCJ 任一站点（955827.xyz 任意子域）进来时，显示「← 返回」并跳回来源页，形成产品矩阵闭环
     (function () {
@@ -509,7 +401,7 @@
     })();
   </script>
   <script>
-    // 顶栏三条横杠菜单：练习 / 暖场 / 设置与关于
+    // 顶栏三条横杠菜单：关于
     (function () {
       try {
         var ham = document.getElementById('bar-hamburger');
@@ -528,28 +420,6 @@
 
         var setBtn = document.getElementById('menu-settings');
         if (setBtn) setBtn.addEventListener('click', function () { closeMenu(); if (window.FTSettings) window.FTSettings.open(); });
-
-        var warmBtn = document.getElementById('menu-warmup');
-        var vwarmModal = document.getElementById('vwarmModal');
-        function openVwarm() {
-          if (!vwarmModal) return;
-          vwarmModal.hidden = false;
-          requestAnimationFrame(function () { vwarmModal.classList.add('open'); });
-        }
-        function closeVwarm() {
-          if (!vwarmModal) return;
-          vwarmModal.classList.remove('open');
-          setTimeout(function () { vwarmModal.hidden = true; }, 220);
-          var b = document.getElementById('vwarm-btn');
-          if (b && b.classList.contains('on')) b.click(); // 关闭时停止麦克风
-        }
-        if (warmBtn) warmBtn.addEventListener('click', function () { closeMenu(); openVwarm(); });
-        var vwarmClose = document.getElementById('vwarmClose');
-        if (vwarmClose) vwarmClose.addEventListener('click', closeVwarm);
-        if (vwarmModal) vwarmModal.addEventListener('click', function (e) { if (e.target === vwarmModal) closeVwarm(); });
-        document.addEventListener('keydown', function (e) {
-          if (e.key === 'Escape' && vwarmModal && !vwarmModal.hidden) closeVwarm();
-        });
       } catch (e) {}
     })();
 

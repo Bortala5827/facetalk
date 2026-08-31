@@ -6,9 +6,9 @@
   <title data-i18n="pairTitle">FaceTalk · 面试间</title>
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <script src="/assets/i18n.js?v=20260831a"></script>
+  <script src="/assets/i18n.js?v=20260831b"></script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%46%54%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260811a" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260831b" />
 </head>
 <body>
   <div class="series-bar">
@@ -39,7 +39,6 @@
       <p class="privacy-banner" data-i18n-html="privacyBanner">
         🔒 <b>隐私说明：</b>真人对练的录音<b>仅用于本次互评</b>，双方都评价完成后会<b>立即从服务器删除</b>，本地与服务器都不留存；互评结束、房间解散后，所有对话也随之清除。
       </p>
-
 
       <div class="room-meta">
         <div><span class="muted" data-i18n="roomMetaRep">对方信誉</span> <strong id="other-rep">--</strong></div>
@@ -162,73 +161,6 @@
     <!-- ===== 2.1 面试间：实时转录 + 自添加大模型评价 =====
          v2.4 默认折叠：WebRTC 实时语音链路尚未稳定，避免用户点进来看到一堆无效按钮。
          只显示一行提示「点此展开」，真要研究再点开。 -->
-    <section class="card iv-collapsed" id="iv-card" hidden>
-      <button class="iv-collapse-toggle" id="iv-collapse-toggle" aria-expanded="false" type="button">
-        <h2 class="sec-title" data-i18n-html="ivCardTitle">🎤 面试间 <span class="v-badge">2.1</span></h2>
-        <span class="iv-collapse-sub" id="iv-collapse-sub" data-i18n="ivCollapseSub">🚧 功能测试中 · 实时语音 + 转写 + AI 评价链路不稳定</span>
-        <span class="iv-collapse-hint" id="iv-collapse-hint" data-i18n="ivCollapseHint">点击展开 ▸</span>
-      </button>
-      <div class="iv-set-row">
-        <span class="iv-set-label" data-i18n="ivSetRow">🛠 面试间功能未开放，先在这里配置接口备用：</span>
-        <button class="iv-set-entry" id="iv-open-settings" type="button" data-i18n="ivOpenSettings">🎙 打开 AI 设置（自备 Key）→</button>
-      </div>
-      <div class="iv-collapse-body" id="iv-collapse-body" hidden>
-      <div class="iv-testing-banner">
-        <span class="iv-testing-mark" data-i18n="ivTestingMark">🚧 功能测试中</span>
-        <span data-i18n-html="ivTestingBanner">WebRTC 实时语音 + 转写 + AI 评价链路尚未稳定，<b>优先建议先用腾讯会议对练</b>，稳定后这栏会自动恢复。</span>
-      </div>
-      <p class="muted" data-i18n-html="ivMainHint">进房即用，<b>跟随搭子房间总时长（单场上限 20 分钟）</b>，时间到自动 AI 评价。每一方用自己设备的麦克风<b>本地录音转文字</b>，实时拼成对话稿；结束用你自己配置的大模型给出结构化评价。<b>⚠ 录音 / 实时语音 / AI 评价按钮当前为测试态，可能不稳定，请优先用腾讯会议；网页语音仅作短时试音/破冰，超过 20 分钟请跳转腾讯会议 / 飞书会议继续对练。</b></p>
-
-      <div id="iv-live">
-        <div class="iv-top">
-          <span class="iv-timer" id="iv-timer">20:00</span>
-          <button class="btn-mini no" id="iv-end" data-i18n="ivEndBtn">⏹ 结束并 AI 评价</button>
-          <button class="btn-mini" id="iv-stt" data-i18n="ivSttOff">🎙 录音转文字：关</button>
-          <button class="btn-mini" id="iv-call" data-i18n="ivCallBtn">🔊 实时语音</button>
-        </div>
-        <p id="iv-needset" class="iv-needset" hidden></p>
-        <p class="field-hint" data-i18n-html="ivFieldHint">点「🔊 实时语音」可立即连麦对练；点「🎙 录音转文字」自动把麦克风转成对话稿；没配大模型也能用（手动记笔记），配后才有「AI 评价」。点本栏「🎙 打开 AI 设置（自备 Key）」设好你自己的接口。</p>
-        <div class="iv-transcript" id="iv-transcript"><p class="muted" data-i18n="ivTranscriptEmpty">对话稿会实时显示在这里。开启「录音转文字」后，你说的话会自动变成文字。</p></div>
-        <div class="iv-note">
-          <input id="iv-note" type="text" maxlength="300" placeholder="手动补充一句（回车发送，记为「我」）" autocomplete="off" data-i18n-ph="ivNotePh" />
-          <button class="btn-mini ok" id="iv-note-send" data-i18n="ivNoteSend">记</button>
-        </div>
-        <p id="iv-call-tip" class="iv-call-tip" hidden></p>
-        <!-- 备选会议号：WebRTC 在对称 NAT/校园网下连不上时的兜底。每方填自己的，对方才能看到。
-             默认折叠在条状摘要里：30 秒未连通自动展开，连通后自动折叠，但用户可手动再展开。 -->
-        <section class="iv-fallback" id="iv-fallback" hidden>
-          <button class="iv-fb-toggle" id="iv-fb-toggle" aria-expanded="false" type="button">
-            <span data-i18n="ivFallbackTitle">📡 备选会议号（连不上时改走腾讯会议 / 飞书会议）</span>
-            <span class="iv-fb-status" id="iv-fb-status" data-i18n="ivFbStatusNone">未填</span>
-            <span class="iv-fb-chev">▸</span>
-          </button>
-          <div class="iv-fb-body" id="iv-fb-body" hidden>
-            <p class="iv-fb-hint" data-i18n-html="ivFbHint">WebRTC 在双方都是校园网 / 公司内网 / 部分 4G 环境下打不通。把你们俩各自常用的会议号贴在下面，<b>对方只能看到对方那一面的</b>，互不干扰。录音转文字和 AI 评价照常可用。</p>
-            <div class="iv-fb-reminder" id="iv-fb-reminder" hidden data-i18n-html="ivFbReminder">⚠️ 实时语音没连上？在这里填你的<b>腾讯会议号</b>或<b>飞书会议号</b>，发给对方，约个外部会议继续练 —— 转录和 AI 点评照常可用。</div>
-            <div class="iv-fb-grid">
-              <label class="field"><span class="field-label" data-i18n="ivFbTencent">我的腾讯会议号</span>
-                <input id="iv-fb-tencent" type="text" maxlength="200" placeholder="如：123-456-789 或会议链接" autocomplete="off" data-i18n-ph="ivFbTencentPh" />
-              </label>
-              <label class="field"><span class="field-label" data-i18n="ivFbFeishu">我的飞书会议号</span>
-                <input id="iv-fb-feishu" type="text" maxlength="200" placeholder="如：飞书会议链接 / 会议室 ID" autocomplete="off" data-i18n-ph="ivFbFeishuPh" />
-              </label>
-            </div>
-            <div class="iv-fb-actions">
-              <button class="btn-mini ok" id="iv-fb-save" data-i18n="ivFbSave">保存我的会议号</button>
-              <span class="iv-fb-toast" id="iv-fb-toast"></span>
-            </div>
-            <div class="iv-fb-peer" id="iv-fb-peer" hidden>
-              <h4 data-i18n="ivFbPeerTitle">对方提供的会议号</h4>
-              <p id="iv-fb-peer-tencent" class="muted"></p>
-              <p id="iv-fb-peer-feishu" class="muted"></p>
-            </div>
-          </div>
-        </section>
-        <div id="iv-eval" class="iv-eval" hidden></div>
-      </div>
-      </div><!-- /iv-collapse-body -->
-    </section>
-
     <section class="card" id="msg-card">
       <h2 class="sec-title" data-i18n="msgBoardTitle">💬 留言板</h2>
       <p class="muted" data-i18n="msgBoardSub">互留文字：约时间、留备用联系方式。每人只能删自己发的留言。</p>
@@ -305,86 +237,9 @@
     }
 
     var remain = 0, timer = null, infoMineInit = false, dissolveTimer = null, dissolveToasted = false;
-    var remainListeners = [];   // 订阅 remain 变化（如 interview.js 用）—— 每秒 tick 时 fire 一次
-    var remainZeroFired = false; // 同一轮房间 0 触发一次 onTimeUp，避免重复弹评价
     // 互评提交态：本地记住「我已提交」，防止 tick/render 反复开合评价卡造成"来回闪退"
     var myRated = false;        // 我已成功提交评价
     var rateWaitShown = false;  // 提交后等待界面已接管 rate-card（render 不再碰它）
-    function fireRemain(n) {
-      remainListeners.forEach(function (cb) {
-        try { cb(n); } catch (_) {}
-      });
-    }
-    function fireRemainZero() {
-      if (remainZeroFired) return; remainZeroFired = true;
-      remainListeners.forEach(function (cb) {
-        try { if (cb.onZero) cb.onZero(); } catch (_) {}
-      });
-    }
-
-    // 暴露给 interview.js / settings.js 用的运行时句柄
-    window.FT = {
-      get me() { return me; },
-      get pairId() { return pairId; },
-      get remain() { return remain; },
-      toast: toast, esc: esc, api: api, apiA: apiA,
-      // 注册倒计时订阅；返回解绑函数。cb(n) 每秒触发一次，cb.onZero() 在归零时触发一次（直到 remain 重置回非零）
-      setRemain: function (cb) {
-        remainListeners.push(cb);
-        // 立即把当前值塞给订阅者，避免 UI 等一秒才更新
-        try { cb(remain); } catch (_) {}
-        return function () {
-          remainListeners = remainListeners.filter(function (x) { return x !== cb; });
-        };
-      },
-      // 房间从 0 重新激活时调（如再次进入房间），让 onZero 能再次触发
-      resetRemainZero: function () { remainZeroFired = false; },
-    };
-    // v2.5 面试间内 AI 设置入口（常驻可见，折叠/展开态都在）
-    var ivSetBtn = document.getElementById('iv-open-settings');
-    if (ivSetBtn) ivSetBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      if (window.FTSettings) window.FTSettings.open();
-    });
-
-    // v2.4 面试间折叠：默认收起，用户点标题才展开；展开态 localStorage 记忆
-    (function ivCollapseInit(){
-      var KEY = 'rcj_ft_iv_collapsed_v1'; // true=收起，false=已展开过
-      var card = document.getElementById('iv-card');
-      var btn = document.getElementById('iv-collapse-toggle');
-      var body = document.getElementById('iv-collapse-body');
-      var hint = document.getElementById('iv-collapse-hint');
-      if (!card || !btn || !body) return;
-      // 默认收起；用户主动展开过则记忆为 false
-      var saved = localStorage.getItem(KEY);
-      var expanded = saved === 'false';
-      function set(open){
-        card.classList.toggle('iv-collapsed', !open);
-        btn.setAttribute('aria-expanded', String(open));
-        body.hidden = !open;
-        if (hint) hint.textContent = open ? t('ivCollapseClose') : t('ivCollapseHint');
-        try { localStorage.setItem(KEY, String(!open)); } catch(_){}
-      }
-      btn.addEventListener('click', function(e){ e.preventDefault(); set(body.hidden); });
-      set(expanded); // v2.4 默认 collapsed；用户主动展开才会变 false
-    })();
-
-    // v2.4 顶栏接口角标：未填 LLM Key 时挂红点；填了则隐藏
-    function refreshGearBadge(){
-      var b = document.getElementById('bar-gear-badge'); if (!b) return;
-      var unconfigured = true;
-      try {
-        if (window.FTSettings) {
-          unconfigured = !!(typeof window.FTSettings.unconfigured === 'function' ? window.FTSettings.unconfigured() : !window.FTSettings.hasLLM());
-        }
-      } catch(_){}
-      b.hidden = !unconfigured;
-      b.textContent = unconfigured ? t('gearUnconfigured') : '';
-      b.title = unconfigured ? t('gearBadgeTitleNoCfg') : t('gearBadgeTitle');
-    }
-    refreshGearBadge();
-    // 用户进过 settings 弹窗后，每秒轮询一次 badge（双击设置打开/关闭后 badge 自动收起）
-    setInterval(refreshGearBadge, 1500);
 
 
     function render(p){
@@ -503,13 +358,11 @@
           rc.scrollIntoView({behavior:'smooth', block:'center'});
           toast(t('timeUpRate'));
         }
-        fireRemainZero();   // 通知面试间「时间到」跑 AI 评价
         return;
       }
       var m = Math.floor(remain/60), s = remain%60;
       document.getElementById('timer').textContent = (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
       remain--;
-      fireRemain(Math.max(0, remain));
     }
 
     // ===== 留言板 =====
@@ -705,14 +558,6 @@
         if (ic) ic.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
       // 2.1 面试间同样受试音门禁保护：没互评通过不给开面试
-      var ivc = document.getElementById('iv-card');
-      if (ivc) {
-        var wasHidden = ivc.hidden;
-        ivc.hidden = !unlocked;
-        // v2.2：标记「功能测试中」灰化 class（不影响开门禁，只改变按钮视觉）
-        ivc.classList.toggle('iv-testing', unlocked);
-        if (wasHidden && unlocked && window.FTInterview) window.FTInterview.onUnlock();
-      }
       if (vGate === 'skip') { card.hidden = true; return; }   // voice 表未建 → 整个环节跳过，不影响老功能
       card.hidden = false;
       document.getElementById('v-topic').textContent = vMeta.topic || '';
@@ -1083,11 +928,9 @@
     }, 5000);
   })();
   </script>
-    <script src="/assets/ft-util.js?v=20260806p"></script>
-    <script src="/assets/settings.js?v=20260831a"></script>
+    <script src="/assets/ft-util.js?v=20260831b"></script>
     <script src="/assets/ftwave.js?v=20260816b"></script>
-    <script src="/assets/glare.js?v=20260807a"></script>
-  <script src="/assets/interview.js?v=20260831a"></script>
+    <script src="/assets/glare.js?v=20260831b"></script>
   <footer class="site-footer">
     <div class="container">
       <p class="mother-slogan" data-i18n="motherSlogan">开口，本身就是一种力量。</p>
