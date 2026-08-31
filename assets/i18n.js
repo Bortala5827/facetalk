@@ -745,12 +745,7 @@
       var saved = localStorage.getItem(STORAGE_KEY);
       if (saved && LANGS.indexOf(saved) >= 0) return saved;
     } catch (e) {}
-    var nav = '';
-    try { nav = (navigator.language || '').toLowerCase(); } catch (e) {}
-    if (nav.indexOf('ja') === 0) return 'ja';
-    if (nav.indexOf('en') === 0) return 'en';
-    if (nav.indexOf('zh') === 0) return 'zh';
-    return 'zh';
+    return 'en'; // 默认英文（海外优先）；用户可经顶栏切换器中/日并记忆
   }
 
   var lang = detect();
@@ -791,7 +786,7 @@
   }
 
   function setLang(l) {
-    if (LANGS.indexOf(l) < 0) l = 'zh';
+    if (LANGS.indexOf(l) < 0) l = 'en';
     lang = l;
     try { localStorage.setItem(STORAGE_KEY, l); } catch (e) {}
     try { document.documentElement.setAttribute('lang', LANG_MAP[l]); } catch (e) {}
