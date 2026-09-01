@@ -8,3 +8,5 @@ turn_check.json
 turnt_err.txt
 # wrangler 本地缓存
 .wrangler/
+# 诊断截图（临时产物，勿提交）
+_diag*.png
