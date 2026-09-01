@@ -15,8 +15,8 @@
   var DICT = {
     // ───────────── 全局 / 通用 ─────────────
     langName: { zh: '中文', en: '中文', ja: '中文' },
-    metaTitle: { zh: '面试搭子匹配 · 60秒试音找练友 | FaceTalk', en: 'Interview Practice Match · 60s Voice Tryout | FaceTalk', ja: '面接練習マッチング · 60秒ボイス試し | FaceTalk' },
-    metaDesc: { zh: 'FaceTalk 面试搭子匹配平台：60秒试音筛选，在面试圈找到真正适合一起练的人。免费、匿名、免登录。', en: 'FaceTalk helps you find the right interview practice partner: 60-second voice tryout, mutual pick, then go deep. Free, anonymous, no sign-up.', ja: 'FaceTalkは面接練習相手探しサービス：60秒のボイス試し、相互選択、その後じっくり対練。無料・匿名・ログイン不要。' },
+    metaTitle: { zh: 'Facetalk | 60秒免社交面试口语练习工具 - 陌生人协同评测', en: 'Interview Practice Match · 60s Voice Tryout | FaceTalk', ja: '面接練習マッチング · 60秒ボイス試し | FaceTalk' },
+    metaDesc: { zh: 'Facetalk 是一款主打零社交压力的陌生人面试与口语协作工具。无需加好友，通过60秒短语音互听互评，快速筛选合拍队友，专注纯粹的组队练习。', en: 'FaceTalk helps you find the right interview practice partner: 60-second voice tryout, mutual pick, then go deep. Free, anonymous, no sign-up.', ja: 'FaceTalkは面接練習相手探しサービス：60秒のボイス試し、相互選択、その後じっくり対練。無料・匿名・ログイン不要。' },
     menuLabel: { zh: '菜单', en: 'Menu', ja: 'メニュー' },
     aboutMenu: { zh: 'ℹ 关于', en: 'ℹ About', ja: 'ℹ このアプリについて' },
     close: { zh: '关闭', en: 'Close', ja: '閉じる' },
@@ -33,6 +33,13 @@
     heroKicker: { zh: '投正式对练前，先听一段短音，判断对方值不值得组队', en: 'Before a full practice session, listen to a short clip and judge if they\'re worth pairing with', ja: '本番対練の前に、短い音声を聴いて組む価値があるか判断しよう' },
     entryStart: { zh: '开始筛选', en: 'Start Screening', ja: 'フィルター開始' },
     entryDesc: { zh: '双向都愿意，再接着深入练', en: 'Only when both agree, go deeper', ja: '双方が合意してから、さらに深く練習' },
+
+    // ───────────── SEO 核心逻辑平铺区（首页 pitch） ─────────────
+    pitchTitle: { zh: '免社交的面试口语对练工具', en: 'Social-free interview & speaking practice', ja: 'ソーシャル不要の面接・スピーキング練習ツール' },
+    pitchBody: { zh: 'Facetalk 是一款主打零社交压力的陌生人协作练习工具。不想加微信、不想寒暄、不想维持关系？用 60 秒试音互听互评，快速判断对方值不值得组队。无需加好友，匿名、免费、免登录，专注纯粹的面试口语对练与雅思模拟面试，适合考研、雅思、大厂面试等备考族。', en: 'Facetalk is a practice tool built for zero social pressure. No adding contacts, no small talk, no relationships to maintain — just a 60-second voice tryout, then mutual review to quickly see if you click. No friends needed: anonymous, free, no sign-up. Built for interview and spoken-English practice.', ja: 'Facetalk はソーシャルな気疲れゼロの練習ツールです。連絡先交換も世間話も関係維持も不要。60秒のボイス試しと相互レビューで、組む価値があるかすぐ判断できます。友だち追加不要・匿名・無料・登録なしで、面接練習とスピーキング対策に集中できます。' },
+    pitch1: { zh: '🎯 60 秒试音互听互评：不靠简历、不靠闲聊，用一段短音直接判断合拍度', en: '🎯 60-second tryout & mutual review: judge chemistry from a short clip, not a résumé or small talk', ja: '🎯 60秒のボイス試しと相互レビュー：履歴書や世間話ではなく、短い音声で相性を判断' },
+    pitch2: { zh: '🚫 零社交压力：陌生人协作练习，严禁留微信 / 手机号，练完即散', en: '🚫 Zero social pressure: practice with strangers, no contact sharing, done when you\'re done', ja: '🚫 ソーシャルな気疲れゼロ：見知らぬ人と練習、連絡先の共有は禁止、終わったら解散' },
+    pitch3: { zh: '⚡ 无压力模拟面试：双方都愿意再组队，把社交内耗降到零', en: '⚡ Stress-free mock interviews: pair up only when both say yes', ja: '⚡ ストレスフリーな模擬面接：双方が合意したときだけペア成立' },
     entryGo: { zh: '去试音 →', en: 'Try out →', ja: '試し録音へ →' },
     trustBoth: { zh: '🔒 双方提交才能互听', en: '🔒 Both submit to hear each other', ja: '🔒 双方提出後にのみ互聴' },
     trustBurn: { zh: '🕓 录音阅后即焚', en: '🕓 Clips self-destruct after review', ja: '🕓 音声は確認後に自動消去' },

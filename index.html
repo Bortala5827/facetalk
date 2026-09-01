@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title data-i18n="metaTitle">面试搭子匹配 · 60秒试音找练友 | FaceTalk</title>
+  <title data-i18n="metaTitle">Facetalk | 60秒免社交面试口语练习工具 - 陌生人协同评测</title>
   <link rel="canonical" href="https://facetalk.955827.xyz/" />
-  <meta name="description" data-i18n-content="metaDesc" content="FaceTalk 面试搭子匹配平台：60秒试音筛选，在面试圈找到真正适合一起练的人。结构化面试在线对练，阅后即焚。" />
-  <script src="/assets/i18n.js?v=20260901d"></script>
+  <meta name="description" data-i18n-content="metaDesc" content="Facetalk 是一款主打零社交压力的陌生人面试与口语协作工具。无需加好友，通过60秒短语音互听互评，快速筛选合拍队友，专注纯粹的组队练习。" />
+  <meta name="keywords" content="面试口语对练,60秒试音,AI面试筛选,陌生人协作练习,免社交口语练习,雅思模拟面试,无压力模拟面试,免社交口语对练" />
+  <script src="/assets/i18n.js?v=20260901e"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "FaceTalk",
     "url": "https://facetalk.955827.xyz/",
-    "description": "面试搭子匹配平台：60秒试音筛选，在面试圈找到真正适合一起练的人。",
+    "description": "Facetalk 是一款主打零社交压力的陌生人面试与口语协作工具：60秒试音互听互评，无需加好友，快速筛选合拍队友。",
     "author": {
       "@type": "Person",
       "name": "RCJ9527"
@@ -72,6 +73,22 @@
     @media (prefers-reduced-motion: reduce) {
       #room-card .sec-title { animation: none; }
     }
+    /* SEO 核心逻辑平铺区：克制、不抢视觉 */
+    .pitch {
+      margin: 26px auto 0;
+      max-width: 760px;
+      padding: 22px 22px 4px;
+      border: 1px solid var(--line, #e5e7eb);
+      border-radius: 16px;
+      background: var(--accent-soft, #eef2ff);
+    }
+    .pitch-title { margin: 0 0 10px; font-size: 1.18rem; font-weight: 800; color: var(--ink, #1f2330); }
+    .pitch-body { margin: 0 0 14px; line-height: 1.75; color: var(--muted, #5b6172); font-size: .96rem; }
+    .pitch-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+    .pitch-list li { padding: 9px 12px; background: #fff; border: 1px solid var(--line, #e5e7eb); border-radius: 10px; font-size: .92rem; color: var(--ink, #1f2330); }
+    @media (max-width: 560px) {
+      .pitch { padding: 18px 14px 2px; border-radius: 12px; }
+    }
   </style>
 </head>
 <body>
@@ -119,6 +136,17 @@
         <span class="ts-item" data-i18n-html="trustBurn">🕓 <b>录音阅后即焚</b></span>
         <span class="ts-item" data-i18n-html="trustNoContact">🚫 <b>严禁留微信 / 手机号</b></span>
       </div>
+    </section>
+
+    <!-- SEO 核心逻辑平铺：无社交 / 60秒试音 / 互听互评（提升百度蜘蛛文本密度，不破坏极简设计） -->
+    <section class="pitch" id="ft-pitch">
+      <h2 class="pitch-title" data-i18n="pitchTitle">免社交的面试口语对练工具</h2>
+      <p class="pitch-body" data-i18n="pitchBody">Facetalk 是一款主打零社交压力的陌生人协作练习工具。不想加微信、不想寒暄、不想维持关系？用 60 秒试音互听互评，快速判断对方值不值得组队。无需加好友，匿名、免费、免登录，专注纯粹的面试口语对练与雅思模拟面试，适合考研、雅思、大厂面试等备考族。</p>
+      <ul class="pitch-list">
+        <li data-i18n="pitch1">🎯 60 秒试音互听互评：不靠简历、不靠闲聊，用一段短音直接判断合拍度</li>
+        <li data-i18n="pitch2">🚫 零社交压力：陌生人协作练习，严禁留微信 / 手机号，练完即散</li>
+        <li data-i18n="pitch3">⚡ 无压力模拟面试：双方都愿意再组队，把社交内耗降到零</li>
+      </ul>
     </section>
 
     <!-- 发到社群里匹配：工具思维冷启动 —— 微信群无法直接点开外部链接，所以只提供「复制群发文案」。默认折叠，避免首页信息过载 -->
