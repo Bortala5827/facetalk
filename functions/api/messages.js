@@ -173,7 +173,8 @@ function streamMessages(env, db, member, pairId) {
                 if (st === 'done' && autoCloseIn === 0 && ratedAt > 0) autoCloseIn = Math.max(0, ratedAt + 300 - now);
                 send('pair', {
                   pairId, status: st, dissolving: st === 'dissolving', dissolveIn, autoCloseIn,
-                  remaining: Math.max(0, (p.expires || 0) - now),
+                  // 会话剩余时长（与 pair.js GET 保持一致：房间建起 20 分钟），不能发房间过期(1天)否则前端计时错乱
+                  remaining: Math.max(0, (p.created || 0) + 1200 - now),
                   left: !!(ratings[me] && ratings[me].left), rated: !!ratings[me],
                 });
               } else if (st !== lastPairStatus) {

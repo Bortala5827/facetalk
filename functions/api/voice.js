@@ -24,33 +24,67 @@ const MAX_ATTEMPTS = 2;             // 每人最多 2 段试音（首录 + 1 次
 const CLIP_TTL = 24 * 3600;         // 无人评价时 1 天兜底强删（与房间 ROOM_TTL 对齐，跨腾讯会议长时对练也不会中途丢录音）
 
 // 试音题库：同一房间双方抽到同一道题（按 pairId 哈希，零存储、确定性）
-const TOPICS = [
-  '谈谈你为什么报考这个岗位？说说你的真实动机。',
-  '你认为一名合格的辅警/公职人员应该具备哪些素质？请结合自身谈。',
-  '单位安排你长期做最基础的窗口登记工作，同事说没前途，你怎么看？',
-  '巡逻时发现两人在路边争吵，围观群众越来越多，你如何处置？',
-  '群众来办事情绪激动，当众指责你们办事拖沓，你如何应对？',
-  '领导交给你一项时间紧、任务重的工作，同事却不太配合，你怎么办？',
-  '有人说"辅警没有执法权，干得再多也白搭"，你怎么看这种说法？',
-  '请讲一次你在高压下完成任务的真实经历，以及你从中学到了什么。',
-  '单位要在社区办一次反诈宣传活动，由你牵头，你打算怎么组织？',
-  '值班时接到群众电话，反映邻居深夜噪音扰民，你如何处理？',
-  '你和一位资历比你老的同事在工作方法上有分歧，你怎么处理？',
-  '谈谈你对"枫桥经验"或"矛盾不上交"的理解。',
-  '执勤时被群众用手机全程拍摄并质疑你的执法，你怎么办？',
-  '你最大的缺点是什么？会不会影响这份工作？',
-  '如果这次没有被录用，你接下来会怎么打算？',
-  '一位老人走失，家属非常着急但能提供的信息很少，你如何开展工作？',
-  '你如何理解"人民群众满意"是衡量工作的第一标准？',
-  '同事工作中出现失误，领导却误以为是你造成的，你怎么办？',
-  '早高峰路口信号灯突然故障，现场严重拥堵，你如何疏导？',
-  '请用 30–90 秒即兴介绍你自己，重点讲清楚为什么你适合这个岗位。',
-];
+// 试音题库：同一房间双方抽到同一道题（按 pairId 哈希，零存储、确定性）。
+// v2.11 起按语言本地化：通用结构化 + 近期 AI/科技话题观点题（海外优先，暂不加入自定义话题）。
+const TOPICS = {
+  zh: [
+    '请做一下自我介绍，重点突出与目标岗位匹配的经历。',
+    '你最近做过最难的一个决定是什么？当时是怎么权衡的？',
+    '讲一件你经历过的失败，你从中学到了什么？',
+    '你的优点和缺点分别是什么？缺点你打算怎么改进？',
+    '为什么选择现在这个职业方向？未来 3 年的规划是什么？',
+    '说说你对 AI 改变工作的看法：机会和风险分别在哪里？',
+    '如果 AI 能完成你一半的工作，你会把省下的时间花在哪里？',
+    'AI 时代你怎么理解终身学习？如何保持竞争力？',
+    '你最近在关注什么新技术或新趋势？为什么？',
+    '团队里意见出现分歧时你会怎么做？举个具体例子。',
+    '你如何应对压力和高强度的工作节奏？',
+    '讲一件你主动推动改变（流程、工具或想法）的经历。',
+    '你怎样判断一份工作适不适合自己？',
+    '远程协作和办公室协作你更倾向哪种？为什么？',
+    '如果 AI 面试官来面你，你会怎么准备？',
+  ],
+  en: [
+    'Please introduce yourself, highlighting experience relevant to the target role.',
+    'What is the hardest decision you have made recently, and how did you weigh it?',
+    'Tell me about a failure you have experienced and what you learned from it.',
+    'What are your strengths and weaknesses? How are you working on the latter?',
+    'Why did you choose your current career path? Where do you see yourself in 3 years?',
+    'How do you think AI will change the way we work — opportunities and risks?',
+    'If AI could do half of your job, where would you spend the time you save?',
+    'What does lifelong learning mean in the AI era, and how do you stay competitive?',
+    'What new technology or trend are you following recently, and why?',
+    'How do you handle disagreement within a team? Give a concrete example.',
+    'How do you manage pressure and high-intensity workloads?',
+    'Tell me about a time you proactively drove a change (process, tool, or idea).',
+    'How do you judge whether a job is a good fit for you?',
+    'Do you prefer remote or in-office collaboration? Why?',
+    'If an AI interviewer interviewed you, how would you prepare?',
+  ],
+  ja: [
+    '自己紹介をお願いします。応募職種に合う経験を中心に話してください。',
+    '最近下した最も難しい決断と、その判断の仕方を教えてください。',
+    'これまでの失敗経験と、そこから学んだことを教えてください。',
+    'あなたの長所と短所は？短所はどう改善していますか？',
+    '今のキャリアを選んだ理由と、3年後の目標は？',
+    'AIは働き方をどう変えると思いますか？チャンスとリスクは？',
+    'AIが仕事の半分をこなせるとしたら、空いた時間を何に使いますか？',
+    'AI時代の生涯学習とは？競争力をどう保ちますか？',
+    '最近注目している技術やトレンドは？その理由は？',
+    'チーム内で意見が割れたらどうしますか？具体例を挙げてください。',
+    'プレッシャーやハードな仕事量にはどう対応しますか？',
+    '自分から改善（プロセス・ツール・アイデア）を推進した経験はありますか？',
+    '仕事が自分に合っているかどうか、どう判断しますか？',
+    'リモートとオフィス、どちらを好みますか？理由は？',
+    'AI面接官に面接されるなら、どう準備しますか？',
+  ],
+};
 
-function topicFor(pairId) {
+function topicFor(pairId, lang) {
   let h = 2166136261;
   for (let i = 0; i < pairId.length; i++) { h ^= pairId.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return TOPICS[(h >>> 0) % TOPICS.length];
+  const list = TOPICS[lang] || TOPICS.en;
+  return list[(h >>> 0) % list.length];
 }
 function safeParse(s) { try { return JSON.parse(s || '{}') || {}; } catch (e) { return {}; } }
 function clamp5(v) { return Math.max(1, Math.min(5, parseInt(v, 10) || 3)); }
@@ -153,7 +187,7 @@ export async function onRequest(context) {
     }
 
     // 默认：返回当前试音进度，供前端决定显示哪一步
-    return json(await metaOf(db, m, pairId));
+    return json(await metaOf(db, m, pairId, url.searchParams.get('lang') || 'en'));
   }
 
   // ─────────────── POST：录制 / 上传 / 评价 ───────────────
@@ -192,7 +226,7 @@ export async function onRequest(context) {
       await db.prepare(`INSERT INTO voice_clips (id, pair_id, owner, mime, dur, bytes, chunks, plays, ready, created, expires)
         VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0, ?, ?)`)
         .bind(id, pairId, m.r.id, String(body.mime || 'audio/webm').slice(0, 40), now, now + CLIP_TTL).run();
-      return json({ ok: true, clipId: id, topic: topicFor(pairId), minSec: MIN_SEC, maxSec: MAX_SEC, attempt: mineRows.length + 1 });
+      return json({ ok: true, clipId: id, topic: topicFor(pairId, body.lang || 'en'), minSec: MIN_SEC, maxSec: MAX_SEC, attempt: mineRows.length + 1 });
     }
 
     // 2) 传片：单片 base64 ≤ 64KB
@@ -287,7 +321,7 @@ export async function onRequest(context) {
 }
 
 // 当前试音进度：前端据此决定显示「录制 / 等待 / 评价 / 结果」哪一屏
-async function metaOf(db, m, pairId) {
+async function metaOf(db, m, pairId, lang) {
   const me = m.r.id, other = m.other;
   const ratings = safeParse(m.p.ratings);
   const mineAll = await db.prepare('SELECT id, dur, ready, created FROM voice_clips WHERE pair_id=? AND owner=? ORDER BY created ASC').bind(pairId, me).all();
@@ -320,7 +354,7 @@ async function metaOf(db, m, pairId) {
 
   return {
     ok: true, ready: true, gate,
-    topic: topicFor(pairId),
+    topic: topicFor(pairId, lang),
     minSec: MIN_SEC, maxSec: MAX_SEC, maxPlays: MAX_PLAYS, maxAttempts: MAX_ATTEMPTS,
     mineClips: mineClips,
     myClipCount: mineClips.length,

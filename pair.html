@@ -6,16 +6,11 @@
   <title data-i18n="pairTitle">FaceTalk · 面试间</title>
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <script src="/assets/i18n.js?v=20260831b"></script>
+  <script src="/assets/i18n.js?v=20260901a"></script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%46%54%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css?v=20260831b" />
+  <link rel="stylesheet" href="/assets/style.css?v=20260901a" />
 </head>
 <body>
-  <div class="series-bar">
-    <a href="https://955827.xyz/">← RCJ Lab</a>
-    <span class="series-name">Speak Series</span>
-    <a href="https://955827.xyz/solospeak/">SoloSpeak →</a>
-  </div>
   <header class="topbar">
     <div class="container bar-inner">
       <a class="brand" href="/"><span class="brand-mark">FT</span><span class="brand-text">FaceTalk</span></a>
@@ -80,7 +75,7 @@
         <span class="v-chev">▾</span>
       </button>
       <div class="v-body" id="v-body">
-      <p class="muted" data-i18n-html="voiceHint2">双方各录一段答同一道题，互听互评。<strong>都点「愿意组队」才解锁留言板和联机信息</strong>——不合适就早点各找各的，别互相耽误时间。</p>
+      <p class="muted" data-i18n-html="voiceHint2">双方各录一段答同一道题，互听互评。<strong>都点「愿意组队」才解锁联机信息</strong>——不合适就早点各找各的，别互相耽误时间。</p>
       <div class="v-topic"><span class="v-topic-tag" data-i18n="voiceTopicTag">本场题目</span><p id="v-topic" data-i18n="browseLoading">加载中…</p></div>
 
       <!-- 步骤 1：录制 -->
@@ -158,19 +153,6 @@
       </div><!-- /v-body -->
     </section>
 
-    <!-- ===== 2.1 面试间：实时转录 + 自添加大模型评价 =====
-         v2.4 默认折叠：WebRTC 实时语音链路尚未稳定，避免用户点进来看到一堆无效按钮。
-         只显示一行提示「点此展开」，真要研究再点开。 -->
-    <section class="card" id="msg-card">
-      <h2 class="sec-title" data-i18n="msgBoardTitle">💬 留言板</h2>
-      <p class="muted" data-i18n="msgBoardSub">互留文字：约时间、留备用联系方式。每人只能删自己发的留言。</p>
-      <div id="msg-list" class="msg-list"><p class="muted" data-i18n="msgLoading">加载中…</p></div>
-      <label class="msg-burn"><input id="msg-burn" type="checkbox" /> <span data-i18n="msgBurn">🔥 阅后即焚</span></label>
-      <div class="msg-input">
-        <input id="msg-text" type="text" maxlength="300" placeholder="写点什么…（💡 也可贴上你的腾讯会议号直接约时间）" autocomplete="off" data-i18n-ph="msgInputPh" />
-        <button class="btn-mini ok" id="msg-send" data-i18n="msgSend">发送</button>
-      </div>
-    </section>
 
     <section class="card form-card" id="rate-card" hidden>
       <h2 class="sec-title" data-i18n="rateTitle">⭐ 本次互练评价</h2>
@@ -246,8 +228,8 @@
       if(!p || p.pairId !== pairId){ document.getElementById('room').innerHTML='<p class="muted">' + t('noPermRoom') + '</p>'; return; }
       // 房间已被服务端结算关闭（退出 60s / 互评完 5 分钟）→ 直接回首页
       if(p.status === 'closed'){ toast(t('roomClosed')); setTimeout(function(){ location.href = '/'; }, 500); return; }
-      document.getElementById('other-rep').textContent = p.otherRep != null ? p.otherRep : '--';
-      document.getElementById('room-mode').textContent = p.mode === 'video' ? t('modeVideoShort') : t('modeVoiceFirst');
+      if (p.otherRep != null) document.getElementById('other-rep').textContent = p.otherRep;
+      if (p.mode) document.getElementById('room-mode').textContent = p.mode === 'video' ? t('modeVideoShort') : t('modeVoiceFirst');
 
       // 会话倒计时：只在本轮数据显式携带 remaining 时更新。
       // SSE 的 pair 事件可能缺该字段，缺了就保持原值，避免 remain 被清零 → tick 误弹「时间到请打分」造成闪退。
@@ -261,6 +243,7 @@
       timer = setInterval(tick, 1000);
 
       var mb = document.getElementById('meet-box');
+      if (p.meet !== undefined) {
       if(p.meet){
         var link = esc(p.meet);
         if(p.meet.indexOf('meeting.tencent.com') >= 0){
@@ -276,7 +259,8 @@
       }
 
       if(!infoMineInit){ document.getElementById('info-mine').value = p.infoMine || ''; infoMineInit = true; }
-      renderPeerInfo(p.infoPeer || '');
+      }
+      if (p.infoPeer !== undefined) renderPeerInfo(p.infoPeer || '');
 
       // 房间自动解散 / 退出提示
       if (dissolveTimer) { clearInterval(dissolveTimer); dissolveTimer = null; }
@@ -325,7 +309,7 @@
       } else {
         // 我已提交/等待对方/普通状态 → 隐藏评价卡；但若等待界面已接管则不动它，避免来回闪退
         var rc3 = document.getElementById('rate-card');
-        if (!rateWaitShown) rc3.hidden = true;
+      if (!rateWaitShown && (remain > 0 || myRated)) rc3.hidden = true;
         if (rb2) rb2.style.display = '';
         dtip.hidden = true;
         dissolveToasted = false; // 房间恢复正常，下次再进入 dissolving 可重新弹 toast
@@ -361,108 +345,24 @@
         return;
       }
       var m = Math.floor(remain/60), s = remain%60;
+      document.getElementById('expired').hidden = false;
       document.getElementById('timer').textContent = (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
       remain--;
     }
 
-    // ===== 留言板 =====
-    function msgApi(path, opt){
-      return fetch('/api/messages' + path, opt).then(function(r){ return r.json().catch(function(){ return {}; }); });
-    }
-    function renderMsgItem(m, prepend){
-      var div = document.createElement('div');
-      div.className = 'msg-item' + (m.mine ? ' mine' : '');
-      div.dataset.id = m.id;
-      var t = new Date(m.created * 1000);
-      var hh = ('0'+t.getHours()).slice(-2) + ':' + ('0'+t.getMinutes()).slice(-2);
-      var del = m.mine ? '<button class="msg-del" data-id="'+esc(m.id)+'">' + t('wallDelTitle') + '</button>' : '';
-      var burnTag = m.burn ? (m.mine ? ' <span class="msg-burn-tag">' + t('msgBurnTag') + '</span>' : ' <span class="msg-burn-tag">🔥</span>') : '';
-      div.innerHTML = '<div class="msg-body"><span class="msg-text">' + esc(m.text) + '</span>' + del + '</div>' +
-        '<div class="msg-meta">' + (m.mine ? t('msgMine') : t('msgPeer')) + ' · ' + hh + burnTag + '</div>';
-      if (prepend) return div; // 返回供调用方决定插哪里
-      var box = document.getElementById('msg-list');
-      // 已存在则跳过（避免重复）
-      if (box.querySelector('[data-id="'+CSS.escape(m.id)+'"]')) return;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
-      bindMsgDel(div);
-      // 阅后即焚：收到的焚消息，5 秒后自动销毁（对方读后即焚）
-      if (m.burn && !m.mine) {
-        setTimeout(function(){ div.classList.add('burned'); setTimeout(function(){ div.remove(); }, 400); }, 5000);
-      }
-    }
-    function bindMsgDel(scope){
-      scope.querySelectorAll('.msg-del').forEach(function(b){
-        b.addEventListener('click', function(){
-          if(!confirm(t('msgDelConfirm'))) return;
-          var msgId = b.getAttribute('data-id');
-          msgApi('?me=' + encodeURIComponent(me) + '&id=' + encodeURIComponent(msgId), { method: 'DELETE' }).then(function(d){
-            if (d.ok){
-              var el = b.closest('.msg-item'); if (el) el.remove();
-              delete knownIds[msgId];
-              toast(t('delDone'));
-            } else { toast(t('msgDelFail'), true); }
-          });
-        });
-      });
-    }
-    var knownIds = {}; // 已渲染的留言 id，避免重复
-    function renderAll(list){
-      var box = document.getElementById('msg-list');
-      box.innerHTML = '';
-      knownIds = {};
-      if (!list || !list.length){ box.innerHTML = '<p class="muted">' + t('msgEmpty') + '</p>'; return; }
-      list.forEach(function(m){ knownIds[m.id]=1; renderMsgItem(m); });
-      box.scrollTop = box.scrollHeight;
-    }
-    function appendNew(list){
-      if (!list || !list.length) return;
-      var box = document.getElementById('msg-list');
-      var empty = box.querySelector('p.muted'); if (empty) empty.remove();
-      list.forEach(function(m){
-        if (knownIds[m.id]) return;
-        knownIds[m.id] = 1;
-        renderMsgItem(m);
-      });
-      box.scrollTop = box.scrollHeight;
-    }
-    function loadMsgs(){
-      return msgApi('?me=' + encodeURIComponent(me) + '&pair=' + encodeURIComponent(pairId)).then(function(d){
-        if (d.ok) renderAll(d.list || []);
-      });
-    }
-    // ===== SSE 实时推送 =====
+    // ===== SSE 实时推送（房间状态，不再承载留言板）=====
     var stream = null;
     function connectStream(){
       try {
         if (stream) { try { stream.close(); } catch(_){} }
         stream = new EventSource('/api/messages?me=' + encodeURIComponent(me) + '&pair=' + encodeURIComponent(pairId) + '&stream=1');
-        stream.addEventListener('init', function(ev){ try { var d = JSON.parse(ev.data); renderAll(d.list || []); } catch(_){} });
-        // 实时接收到房间状态变化（对方退出 / 互评完 / 已关闭）→ 立即重渲染，后台标签也能即时提示
+        // 实时接收房间状态变化（对方退出 / 互评完 / 已关闭）→ 只处理状态相关字段，避免覆盖完整数据
         stream.addEventListener('pair', function(ev){ try { var d = JSON.parse(ev.data); if (d && d.pairId === pairId) render(d); } catch(_){} });
-        stream.addEventListener('messages', function(ev){ try { var d = JSON.parse(ev.data); appendNew(d.list || []); } catch(_){} });
         stream.addEventListener('bye', function(){ try { stream.close(); } catch(_){} setTimeout(connectStream, 500); });
         stream.addEventListener('error', function(){ /* EventSource 自动重连 */ });
-      } catch(e) { /* SSE 不可用时回落到轮询 */ setInterval(loadMsgs, 10000); }
+      } catch(e) { /* SSE 不可用时由 5s 轮询兜底 */ }
     }
-    function sendMsg(){
-      var inp = document.getElementById('msg-text');
-      var text = inp.value.replace(/\s+/g,' ').trim();
-      if(!text){ return; }
-      var admin = sessionStorage.getItem('ft_admin') || '';
-      var body = { me: me, pair: pairId, text: text, burn: document.getElementById('msg-burn').checked };
-      if (admin) body.adminKey = admin;
-      msgApi('', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(function(d){
-        if (d.ok){ inp.value = ''; document.getElementById('msg-burn').checked = false; /* 不主动 loadMsgs，等 SSE 推回来 */ }
-        else if (d.error === 'rate_limited' || d.error === 'too_many_msgs'){
-          if (!admin){ var k = prompt(t('msgRateLimitPrompt')); if (k){ sessionStorage.setItem('ft_admin', k.trim()); sendMsg(); } }
-          else toast(t('msgRateLimit'), true);
-        }
-        else toast(t('msgSendFail') + (d.error || d.status), true);
-      });
-    }
-    document.getElementById('msg-send').addEventListener('click', sendMsg);
-    document.getElementById('msg-text').addEventListener('keydown', function(e){ if(e.key === 'Enter') sendMsg(); });
+
 
     document.getElementById('info-save').addEventListener('click', function(){
       var v = document.getElementById('info-mine').value.replace(/\s+/g,' ').trim();
@@ -522,14 +422,14 @@
 
     function vGet(extra) {
       var u = new URL('/api/voice', location.origin);
-      u.searchParams.set('me', me); u.searchParams.set('pair', pairId);
+      u.searchParams.set('me', me); u.searchParams.set('pair', pairId); u.searchParams.set('lang', window.FTI18N ? (FTI18N.getLang() || 'en') : 'en');
       var admin = sessionStorage.getItem('ft_admin') || ''; if (admin) u.searchParams.set('admin', admin);
       if (extra) Object.keys(extra).forEach(function (k) { u.searchParams.set(k, extra[k]); });
       return fetch(u).then(function (r) { return r.json().catch(function () { return {}; }); });
     }
     function vPost(body) {
       var admin = sessionStorage.getItem('ft_admin') || '';
-      var b = Object.assign({ me: me, pair: pairId }, body); if (admin) b.adminKey = admin;
+      var b = Object.assign({ me: me, pair: pairId, lang: window.FTI18N ? (FTI18N.getLang() || 'en') : 'en' }, body); if (admin) b.adminKey = admin;
       return fetch('/api/voice', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) })
         .then(function (r) { return r.json().catch(function () { return {}; }); });
     }
@@ -545,11 +445,10 @@
         applyVoiceGate();
       }).catch(function () { /* 网络抖动：保持当前界面 */ });
     }
-    // 强制前置：试音没通过之前，留言板 / 联机信息一律不开放
+    // 强制前置：试音没通过之前，联机信息一律不开放
     function applyVoiceGate() {
       var card = document.getElementById('voice-card');
       var unlocked = (vGate === 'skip' || vGate === 'passed');
-      document.getElementById('msg-card').hidden = !unlocked;
       document.getElementById('info-card').hidden = !unlocked;
       // 双方试音互评结束、都愿意继续组队 → 自动跳到「联机信息 / 备选会议号」，优先引导互留会议号（只滚一次，避免轮询反复跳）
       if (vGate === 'passed' && !vPassedScrolled) {
@@ -899,13 +798,12 @@
     });
 
     api('GET').then(function(r){ render(r.data.pair); });
-    loadVoice();     // 2.0：先拉试音进度，决定是否放行留言板 / 联机信息
-    connectStream(); // SSE 推送接管留言板；首屏 init 事件会渲染历史
-    // i18n：切换语言后重拉房间状态、试音进度、留言板与顶栏角标
+    loadVoice();     // 2.0：先拉试音进度，决定是否放行联机信息
+    connectStream(); // SSE 推送房间状态；实时收到对方退出/互评/关闭
+    // i18n：切换语言后重拉房间状态、试音进度、联机信息与顶栏角标
     if (window.FTI18N) window.FTI18N.onChange(function () {
       api('GET').then(function (r) { if (r.data && r.data.pair) render(r.data.pair); });
       loadVoice();
-      loadMsgs();
       refreshGearBadge();
     });
     // 轮询兜底（SSE 不可用时）：5s 一次，保证对方退出时及时刷新（配合 SSE 实时推近乎即时）
@@ -928,14 +826,13 @@
     }, 5000);
   })();
   </script>
-    <script src="/assets/ft-util.js?v=20260831b"></script>
+    <script src="/assets/ft-util.js?v=20260901a"></script>
     <script src="/assets/ftwave.js?v=20260816b"></script>
-    <script src="/assets/glare.js?v=20260831b"></script>
+    <script src="/assets/glare.js?v=20260901a"></script>
   <footer class="site-footer">
     <div class="container">
       <p class="mother-slogan" data-i18n="motherSlogan">开口，本身就是一种力量。</p>
       <p class="foot-mini">
-        <a href="https://955827.xyz/letout/" target="_blank" rel="noopener">LetOut</a>
         ·
         <a href="https://exam.955827.xyz/" target="_blank" rel="noopener">Exam Hub</a>
       </p>

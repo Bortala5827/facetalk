@@ -42,7 +42,7 @@
 
     // ───────────── 社群分享卡 ─────────────
     shareTitle: { zh: '📣 发到社群里匹配，互评组队，效果更佳', en: '📣 Share in your community for better matches', ja: '📣 コミュニティに共有して、より良いマッチングを' },
-    shareSub: { zh: '把下面这段话发到你的辅警 / 消防 / 公考面试群里，同样目标的人看到就会来试音。', en: 'Post this to your interview-prep group — people with the same goal will come try out.', ja: 'この文を面接対策のグループに貼ってください。同じ目標の人たちが試しに来てくれます。' },
+    shareSub: { zh: '把下面这段话发到你的面试练习 / 求职群里，同样目标的人看到就会来试音。', en: 'Post this to your interview-prep group — people with the same goal will come try out.', ja: 'この文を面接対策のグループに貼ってください。同じ目標の人たちが試しに来てくれます。' },
     sharePreview: { zh: '有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz', en: 'Anyone up for interview practice? Use FaceTalk 60s voice tryout — we only pair when both agree 👉 facetalk.955827.xyz', ja: '一緒に面接練習しませんか？FaceTalkで60秒のボイス試し。双方合意したら組もう 👉 facetalk.955827.xyz' },
     shareCopyBtn: { zh: '📋 复制这段话，去群里发', en: '📋 Copy this text and share it', ja: '📋 この文をコピーして共有' },
     shareCopied: { zh: '✅ 已复制，去群里粘贴吧', en: '✅ Copied — paste it in your group', ja: '✅ コピーしました。グループに貼ってください' },
@@ -58,19 +58,18 @@
     pubRole: { zh: '岗位', en: 'Role', ja: '職種' },
     pubCity: { zh: '城市', en: 'City', ja: '都市' },
     pubMode: { zh: '模式', en: 'Mode', ja: 'モード' },
-    pubNote: { zh: '一句话（选填）', en: 'One-liner (optional)', ja: '一言（任意）' },
+    pubNote: { zh: '备注（选填）', en: 'Note (optional)', ja: '備考（任意）' },
     pubSubmit: { zh: '发布意图 →', en: 'Post Intent →', ja: '意図を投稿 →' },
     pubRoleGwy: { zh: '公务员 / 事业编', en: 'Civil Servant / Public Institution', ja: '公務員 / 事業編' },
-    pubRoleFujing: { zh: '辅警 / 警务辅助', en: 'Auxiliary Police', ja: '補助警察' },
-    pubRoleXiaofang: { zh: '消防 / 政府专职消防员', en: 'Firefighter / Government Fire Brigade', ja: '消防 / 政府専任消防士' },
-    pubRoleShuji: { zh: '书记员 / 公检法聘用人员', en: 'Court Clerk / Judicial Staff', ja: '書記官 / 司法機関職員' },
-    pubRoleShequ: { zh: '社区工作者 / 网格员', en: 'Community Worker / Grid Officer', ja: 'コミュニティワーカー' },
-    pubRoleSanzhi: { zh: '三支一扶 / 西部计划', en: 'Grassroots Service / Western Plan', ja: '三支一扶 / 西部計画' },
-    pubRoleOther: { zh: '其他', en: 'Other', ja: 'その他' },
+    pubRoleBiz: { zh: '企业 / 商务', en: 'Corporate / Business', ja: '企業 / ビジネス' },
+    pubRoleTech: { zh: '科技 / 互联网', en: 'Tech / Internet', ja: 'IT / インターネット' },
+    pubRoleEdu: { zh: '教师 / 教育', en: 'Education / Teaching', ja: '教育 / 教員' },
+    pubRoleMed: { zh: '医疗 / 医护', en: 'Healthcare / Medical', ja: '医療 / 看護' },
+    pubRoleOther: { zh: '其他（备注里写方向）', en: 'Other (describe in note)', ja: 'その他（備考欄に記入）' },
     pubCityPh: { zh: '如：深圳 / 武汉', en: 'e.g. Shenzhen / Wuhan', ja: '例：深セン / 武漢' },
     pubModeVoice: { zh: '🎙 语音优先（推荐）', en: '🎙 Voice first (recommended)', ja: '🎙 音声優先（推奨）' },
     pubModeVideo: { zh: '📹 视频', en: '📹 Video', ja: '📹 ビデオ' },
-    pubNotePh: { zh: '如：今晚想练结构化，互评互改', en: 'e.g. Practicing structured interview tonight, review each other', ja: '例：今夜は構造化面接を練習、相互評価' },
+    pubNotePh: { zh: '如：想练企业结构化面试 / 想聊聊 AI 方向', en: 'e.g. Practicing structured interviews / want to discuss AI topics', ja: '例：構造化面接を練習 / AIの話題を話したい' },
     pubOk: { zh: '意图已发布，等对方来申请', en: 'Intent posted — waiting for others to apply', ja: '意図を投稿しました。申請を待っています' },
     pubFail: { zh: '发布失败：', en: 'Failed to post: ', ja: '投稿失敗：' },
 
@@ -248,7 +247,7 @@
     // ───────────── pair.html 试音互评 ─────────────
     voiceCardTitle: { zh: '🎙 试音互评（30–90 秒） <span class="v-badge">2.0</span>', en: '🎙 Voice Tryout & Review (30–90s) <span class="v-badge">2.0</span>', ja: '🎙 ボイス試しと相互評価（30〜90秒） <span class="v-badge">2.0</span>' },
     voiceCollapseSub: { zh: '点击展开 ▾', en: 'Tap to expand ▾', ja: 'タップで展開 ▾' },
-    voiceHint2: { zh: '双方各录一段答同一道题，互听互评。<strong>都点「愿意组队」才解锁留言板和联机信息</strong>——不合适就早点各找各的，别互相耽误时间。', en: 'Each of you records an answer to the same question, then listen and review. <strong>Only when you both pick "Willing to Pair" do the message board and contact info unlock</strong> — if it\'s not a fit, move on early.', ja: '同じ質問に対する回答を各自録音し、互いに聴いて評価します。<strong>双方が「組む意思あり」を選んだときだけ掲示板と連絡情報が解放されます</strong>。合わなければ早めに別れましょう。' },
+    voiceHint2: { zh: '双方各录一段答同一道题，互听互评。<strong>都点「愿意组队」才解锁联机信息</strong>——不合适就早点各找各的，别互相耽误时间。', en: 'Each of you records an answer to the same question, then listen and review. <strong>Only when you both pick "Willing to Pair" do the contact info unlock</strong> — if it\'s not a fit, move on early.', ja: '同じ質問に対する回答を各自録音し、互いに聴いて評価します。<strong>双方が「組む意思あり」を選んだときだけ掲示板と連絡情報が解放されます</strong>。合わなければ早めに別れましょう。' },
     voiceTopicTag: { zh: '本场题目', en: 'Question', ja: '今回のお題' },
     voiceTopicLoading: { zh: '加载中…', en: 'Loading…', ja: '読み込み中…' },
     voiceStart: { zh: '● 开始录音', en: '● Start Recording', ja: '● 録音開始' },
@@ -345,21 +344,6 @@
     roomClosedToast: { zh: '房间已关闭', en: 'Room closed', ja: '部屋を閉じました' },
     missingPairParam: { zh: '缺少房间参数。', en: 'Missing room parameter.', ja: '部屋パラメータがありません。' },
 
-    // ───────────── pair.html 留言板 ─────────────
-    msgBoardTitle: { zh: '💬 留言板', en: '💬 Message Board', ja: '💬 掲示板' },
-    msgBoardSub: { zh: '互留文字：约时间、留备用联系方式。每人只能删自己发的留言。', en: 'Leave messages: set a time, share backup contact. You can only delete your own messages.', ja: '連絡事項を書き込めます：時間を決める、予備連絡先を共有。削除できるのは自分の投稿のみ。' },
-    msgLoading: { zh: '加载中…', en: 'Loading…', ja: '読み込み中…' },
-    msgBurn: { zh: '🔥 阅后即焚', en: '🔥 Burn after reading', ja: '🔥 読んだら消去' },
-    msgInputPh: { zh: '写点什么…（💡 也可贴上你的腾讯会议号直接约时间）', en: 'Say something… (💡 paste your Tencent Meeting ID to set a time)', ja: '何か書く…（💡 テンセント会議番号を貼って時間を決めることも）' },
-    msgSend: { zh: '发送', en: 'Send', ja: '送信' },
-    msgMine: { zh: '我', en: 'Me', ja: '自分' },
-    msgPeer: { zh: '搭子', en: 'Partner', ja: '相手' },
-    msgDel: { zh: '删除', en: 'Delete', ja: '削除' },
-    msgDelConfirm: { zh: '删除这条留言？', en: 'Delete this message?', ja: 'このメッセージを削除しますか？' },
-    msgDelFail: { zh: '删除失败', en: 'Failed to delete', ja: '削除失敗' },
-    msgEmpty: { zh: '还没有留言，写一句开场白吧。', en: 'No messages yet — write an opening line.', ja: 'まだメッセージがありません。一言どうぞ。' },
-    msgRateLimit: { zh: '发送太频繁，稍后再试', en: 'Sending too fast — try again later', ja: '送信が頻繁すぎます。後で再試行' },
-    msgSendFail: { zh: '发送失败：', en: 'Failed to send: ', ja: '送信失敗：' },
 
     // ───────────── pair.html 举报 / 退出 ─────────────
     reportConfirm: { zh: '举报需说明原因（≥5 字），且你必须真的和对方搭过、留过联机信息。确认继续？', en: 'Reporting needs a reason (≥5 chars) and you must have actually practiced and shared contact info. Continue?', ja: '報告には理由（5文字以上）が必要で、実際に対練し連絡情報を共有している必要があります。続行しますか？' },
@@ -465,16 +449,6 @@
     peerLeftCountdown2: { zh: '⚠️ 对方已退出组队，房间将在 {0}s 后自动关闭，对话将清除。', en: '⚠️ Your partner left — the room closes in {0}s and the chat will be cleared.', ja: '⚠️ 相手が退出しました。{0}秒後にルームが閉じ、会話は消去されます。' },
     roomExpiredOrClosed: { zh: '⏰ 房间已过期或已关闭。<br><a href="/">← 返回首页</a>', en: '⏰ This room has expired or closed.<br><a href="/">← Back to home</a>', ja: '⏰ ルームは期限切れまたは終了しました。<br><a href="/">← ホームへ戻る</a>' },
 
-    // ───────────── pair.html 留言板 ─────────────
-    msgBurnTag: { zh: '🔥阅后即焚', en: '🔥burn-after-read', ja: '🔥閲覧後消去' },
-    msgMine: { zh: '我', en: 'Me', ja: '自分' },
-    msgPeer: { zh: '搭子', en: 'Partner', ja: '相手' },
-    msgDelConfirm: { zh: '删除这条留言？', en: 'Delete this message?', ja: 'このメッセージを削除しますか？' },
-    msgDelFail: { zh: '删除失败', en: 'Delete failed', ja: '削除に失敗' },
-    msgEmpty: { zh: '还没有留言，写一句开场白吧。', en: 'No messages yet — leave an opening line.', ja: 'まだメッセージがありません。一言どうぞ。' },
-    msgRateLimitPrompt: { zh: '发送太频繁，达到频率上限。请输入管理员密码继续测试：', en: 'Too many messages — rate limit reached. Enter the admin password to continue testing:', ja: '送信が多すぎて制限に達しました。テストを続けるには管理者パスワードを入力：' },
-    msgRateLimit: { zh: '发送太频繁，稍后再试', en: 'Too many messages, try again later', ja: '送信が多すぎます。しばらくしてから再試行' },
-    msgSendFail: { zh: '发送失败：', en: 'Send failed: ', ja: '送信に失敗：' },
 
     // ───────────── pair.html 联机信息 / 举报 / 退出 ─────────────
     infoNoContact: { zh: '请只留腾讯会议 / 飞书会议号，勿留个人微信或手机号', en: 'Tencent Meeting / Feishu Meeting IDs only — no WeChat or phone numbers', ja: 'テンセント会議・飛書会議の番号のみ。微信・電話番号は不可' },

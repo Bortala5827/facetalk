@@ -20,11 +20,10 @@
   function roleLabel(r) {
     var map = {
       '公务员 / 事业编': 'pubRoleGwy',
-      '辅警 / 警务辅助': 'pubRoleFujing',
-      '消防 / 政府专职消防员': 'pubRoleXiaofang',
-      '书记员 / 公检法聘用人员': 'pubRoleShuji',
-      '社区工作者 / 网格员': 'pubRoleShequ',
-      '三支一扶 / 西部计划': 'pubRoleSanzhi',
+      '企业 / 商务': 'pubRoleBiz',
+      '科技 / 互联网': 'pubRoleTech',
+      '教师 / 教育': 'pubRoleEdu',
+      '医疗 / 医护': 'pubRoleMed',
       '其他': 'pubRoleOther'
     };
     return map[r] ? t(map[r]) : r;
@@ -136,11 +135,10 @@
       if (!role) return;
       var map = {
         'gongkao': '公务员 / 事业编',
-        'fujing': '辅警 / 警务辅助',
-        'xiaofang': '消防 / 政府专职消防员',
-        'shujiyuan': '书记员 / 公检法聘用人员',
-        'shequ': '社区工作者 / 网格员',
-        'sanzhiyifu': '三支一扶 / 西部计划',
+        'biz': '企业 / 商务',
+        'tech': '科技 / 互联网',
+        'edu': '教师 / 教育',
+        'med': '医疗 / 医护',
         'other': '其他'
       };
       var label = map[role] || role;
