@@ -855,20 +855,6 @@ a { color: inherit; text-decoration: none; }
 .done-tip { font-size: 12.5px; color: var(--ink-3); margin: 14px 0 0; line-height: 1.6; }
 .done-card .btn-primary { max-width: 360px; margin: 0 auto; }
 
-/* 柔蓝实时波形（面试练习时给自己 / 对方看） */
-.ft-wave {
-  display: block;
-  width: 100%;
-  height: 60px;
-  margin: 14px auto 4px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #f3f6fd 0%, #eef2fb 100%);
-  border: 1px solid var(--line);
-}
-/* 声纹双轨：左=实时波形线，右=频率柱（共享 analyser） */
-.ft-wave-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0 4px; }
-.ft-wave-row .ft-wave { margin: 0; }
-
 /* ===== 新定位：面试群里的智能连接工具（v2.6 改版） ===== */
 .group-banner {
   display: flex; align-items: center; gap: 8px;
@@ -1141,12 +1127,6 @@ body::after {
 .rec-orb.recording::after  { animation: recPulse 2.1s ease-out infinite 1.05s; }
 @keyframes recPulse { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(1.55); opacity: 0; } }
 
-/* 波形 */
-.rec-wave {
-  display: block; width: 100%; max-width: 320px; height: 64px; margin: 22px auto 6px;
-  border-radius: 14px; background: linear-gradient(180deg, #f3f5fd, #e9edfa);
-  border: 1px solid var(--line);
-}
 .rec-readout { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 6px; }
 .rec-time { font-variant-numeric: tabular-nums; font-size: 32px; font-weight: 800; color: var(--accent-d); letter-spacing: 1px; }
 .rec-cap { font-size: 14px; font-weight: 600; color: var(--ink-3); }
