@@ -1,22 +1,44 @@
-# FaceTalk · 面试筛选器
+# FaceTalk · Anonymous Interview Screener with Voice Matching
 
-面试筛选器：60 秒试音，双向选择，合适了再去腾讯会议深聊。免费、匿名、免登录，数据存 Cloudflare D1。
+> English · 日本語 · 中文 — a 60-second voice tryout and two-way matching screener.
+> Free, anonymous, no login. Built on Cloudflare Pages + D1; ships as a PWA
+> and a thin WebView APK.
 
-- **演示**：https://facetalk.955827.xyz
-- **仓库**：`github.com/Bortala5827/facetalk`
+**Live site:** https://facetalk.955827.xyz
 
-## 交互闭环
+FaceTalk helps two people decide whether to invest time in a real conversation.
+Post an anonymous intent, browse or apply, and only when **both sides agree** do
+you pair up — then do a short voice-first practice (deep-link to a meeting app),
+rate each other, and unlock a rematch. Three reports auto-ban; reputation carries
+across sessions.
 
-发匿名意图 → 浏览 / 申请 → **双向互选**（都愿意才组队）→ 限时互练（语音优先，走腾讯会议深链）→ 互评 + 再约门槛。3 人举报自动封禁，信誉跨会话累积。
+## Interaction loop
 
-## 技术
+post anonymous intent → browse / apply → **two-way mutual selection**
+(both must agree to pair) → timed voice practice (meeting-app deep-link)
+→ mutual rating + rematch gate. 3 reports → auto-ban; reputation persists.
 
-Cloudflare Pages Functions + D1。PWA + 极薄 WebView APK（GitHub Actions 自动打包发布到 Releases，避开 `.xyz` 在微信 / QQ 被拦）。
+## Highlights
 
-## 部署
+- 🌐 Trilingual UI (English / 日本語 / 中文), single-click switch
+- 🎙️ **60-second voice tryout** before committing to a full call
+- 🤝 **Two-way matching** — pair only when both agree
+- 🕶️ Anonymous & no-login by default; reputation-based trust
+- 📱 PWA + thin WebView APK (GitHub Actions builds & publishes to Releases,
+  bypassing `.xyz` blocks inside WeChat / QQ)
 
-CF 建 D1 库，Console 执行 `schema.sql` 建表 → 绑定到 Pages 项目（变量名 `DB`，**Deployments Retry**）→（可选）环境变量 `ADMIN_KEY` → 启用 `.github/workflows/d1-cleanup.yml` 定时清理。
+## Tech stack
+
+- Cloudflare Pages Functions + D1 (SQLite)
+- PWA (service worker, installable)
+- Vanilla JS `i18n` dictionary
+
+## Deploy
+
+Create a D1 database, run `schema.sql` in the Cloudflare console, bind it to the
+Pages project as `DB` (enable **Deployments Retry**). Optionally set `ADMIN_KEY`.
+Enable `.github/workflows/d1-cleanup.yml` for scheduled cleanup.
 
 ---
 
-RCJ 产品生态之一 · 总站 [RCJ Hub](https://955827.xyz)
+Part of the [RCJ ecosystem](https://955827.xyz).
