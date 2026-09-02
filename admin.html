@@ -171,10 +171,12 @@
     el.innerHTML = '<p style="text-align:center;color:var(--ink-3);padding:60px">加载中…</p>';
     Promise.all([api('list_users'), api('list_intents'), api('list_walls'), api('list_reports')])
       .then(function(res){
-        if (res[0].error) { logout(res[0].error); return; }
-        if (res[1].error) { logout(res[1].error); return; }
-        users = res[0].list || [];
-        intents = res[1].list || [];
+        // Promise.all 返回数组，按索引取各接口结果；仅 401/forbidden 视为登录失效
+        var authErr = null;
+        (res || []).forEach(function(x){ if (x && x.error === 'forbidden') authErr = authErr || x; });
+        if (authErr) { logout(authErr.error); return; }
+        users = (res[0] && res[0].list) || [];
+        intents = (res[1] && res[1].list) || [];
         walls = (res[2] && res[2].list) || [];
         reports = (res[3] && res[3].list) || [];
         renderDashboard();
