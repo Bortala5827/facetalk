@@ -83,22 +83,7 @@
     @media (prefers-reduced-motion: reduce) {
       #room-card .sec-title { animation: none; }
     }
-    /* SEO 核心逻辑平铺区：克制、不抢视觉 */
-    .pitch {
-      margin: 26px auto 0;
-      max-width: 760px;
-      padding: 22px 22px 4px;
-      border: 1px solid var(--line, #e5e7eb);
-      border-radius: 16px;
-      background: var(--accent-soft, #eef2ff);
-    }
-    .pitch-title { margin: 0 0 10px; font-size: 1.18rem; font-weight: 800; color: var(--ink, #1f2330); }
-    .pitch-body { margin: 0 0 14px; line-height: 1.75; color: var(--muted, #5b6172); font-size: .96rem; }
-    .pitch-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
-    .pitch-list li { padding: 9px 12px; background: #fff; border: 1px solid var(--line, #e5e7eb); border-radius: 10px; font-size: .92rem; color: var(--ink, #1f2330); }
-    @media (max-width: 560px) {
-      .pitch { padding: 18px 14px 2px; border-radius: 12px; }
-    }
+    /* .pitch 文案墙已移除（2026-09-08）：首页以 hero + meta 承载，工具化优先 */
   </style>
 </head>
 <body>
@@ -135,41 +120,28 @@
 
       <div class="entry-grid">
         <a class="entry-card pair" href="#pair-details">
-          <span class="ec-emoji">🎧</span>
           <span class="ec-title" data-i18n="entryStart">开始筛选</span>
           <span class="ec-desc" data-i18n="entryDesc">双向都愿意，再接着深入练</span>
           <span class="ec-go" data-i18n="entryGo">去试音 →</span>
         </a>
       </div>
       <div class="trust-strip">
-        <span class="ts-item" data-i18n-html="trustBoth">🔒 <b>双方提交才能互听</b></span>
-        <span class="ts-item" data-i18n-html="trustBurn">🕓 <b>录音阅后即焚</b></span>
-        <span class="ts-item" data-i18n-html="trustNoContact">🚫 <b>严禁留微信 / 手机号</b></span>
+        <span class="ts-item" data-i18n-html="trustBoth"><b>双方提交才能互听</b></span>
+        <span class="ts-item" data-i18n-html="trustBurn"><b>录音阅后即焚</b></span>
+        <span class="ts-item" data-i18n-html="trustNoContact"><b>严禁留微信 / 手机号</b></span>
       </div>
-    </section>
-
-    <!-- SEO 核心逻辑平铺：无社交 / 60秒试音 / 互听互评（提升百度蜘蛛文本密度，不破坏极简设计） -->
-    <section class="pitch" id="ft-pitch">
-      <h2 class="pitch-title" data-i18n="pitchTitle">免社交的面试口语对练工具</h2>
-      <p class="pitch-body" data-i18n="pitchBody">Facetalk 是一款主打零社交压力的陌生人协作练习工具。不想加微信、不想寒暄、不想维持关系？用 60 秒试音互听互评，快速判断对方值不值得组队。无需加好友，匿名、免费、免登录，专注纯粹的面试口语对练与雅思模拟面试，适合考研、雅思、大厂面试等备考族。</p>
-      <ul class="pitch-list">
-        <li data-i18n="pitch1">🎯 60 秒试音互听互评：不靠简历、不靠闲聊，用一段短音直接判断合拍度</li>
-        <li data-i18n="pitch2">🚫 零社交压力：陌生人协作练习，严禁留微信 / 手机号，练完即散</li>
-        <li data-i18n="pitch3">⚡ 无压力模拟面试：双方都愿意再组队，把社交内耗降到零</li>
-      </ul>
     </section>
 
     <!-- 发到社群里匹配：工具思维冷启动 —— 微信群无法直接点开外部链接，所以只提供「复制群发文案」。默认折叠，避免首页信息过载 -->
     <details class="share-card">
       <summary class="sc-sum">
-        <span class="sc-emoji">📣</span>
-        <h2 class="sc-title" data-i18n="shareTitle">发到社群里匹配，互评组队，效果更佳</h2>
+        <h2 class="sc-title" data-i18n="shareTitle">发到社群，匹配更快</h2>
         <span class="sc-caret" aria-hidden="true">▾</span>
       </summary>
       <div class="sc-body">
         <p class="sc-sub" data-i18n="shareSub">把下面这段话发到你的面试练习 / 求职群里，同样目标的人看到就会来试音。</p>
-        <div class="sc-text-preview" id="sc-preview" data-i18n="sharePreview">有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz</div>
-        <button class="sc-copy-main" id="sc-copy-text" type="button" data-i18n="shareCopyBtn">📋 复制这段话，去群里发</button>
+        <div class="sc-text-preview" id="sc-preview" data-i18n="sharePreview">有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 facetalk.955827.xyz</div>
+        <button class="sc-copy-main" id="sc-copy-text" type="button" data-i18n="shareCopyBtn">复制这段话，去群里发</button>
       </div>
     </details>
 
@@ -183,11 +155,11 @@
     <!-- 发布意图（发布成功后自动折叠） -->
     <details class="form-collapse" id="pair-details" open>
       <summary class="form-sum">
-        <span class="fs-ttl" data-i18n="pubTitle">📋 Post Your Intent</span>
+        <span class="fs-ttl" data-i18n="pubTitle">Post Your Intent</span>
         <span class="fs-caret" aria-hidden="true">▾</span>
       </summary>
       <div class="fs-inner">
-      <p class="muted" data-i18n="pubHint">同岗伙伴来和你筛选，双方都愿意再接着练；录音仅用于本次互评，结束后自动删除。</p>
+      <p class="muted" data-i18n="pubHint">双方都愿意再接着练；录音仅用于本次互评，结束后自动删除。</p>
       <form id="intent-form" autocomplete="off">
         <div class="field-row">
           <label class="field">
@@ -210,8 +182,8 @@
           <label class="field">
             <span class="field-label" data-i18n="pubMode">模式</span>
             <select id="i-mode">
-              <option value="voice" data-i18n="pubModeVoice">🎙 语音优先（推荐）</option>
-              <option value="video" data-i18n="pubModeVideo">📹 视频</option>
+              <option value="voice" data-i18n="pubModeVoice">语音优先（推荐）</option>
+              <option value="video" data-i18n="pubModeVideo">视频</option>
             </select>
           </label>
         </div>
@@ -228,7 +200,7 @@
     <!-- 浏览搭子（核心发现面，常驻可见） -->
     <section class="board">
       <div class="board-head">
-        <h2 class="sec-title" data-i18n="browseTitle">🔍 公开大厅（没有群也能找）</h2>
+        <h2 class="sec-title" data-i18n="browseTitle">公开大厅</h2>
         <button class="btn-mini" id="browse-refresh" data-i18n="browseRefresh">刷新</button>
       </div>
       <p class="board-note" data-i18n="browseNote">群里没找到合适的？也能在这里浏览同岗伙伴的开放意图。</p>
@@ -237,49 +209,43 @@
       <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px" data-i18n="browseOwnHint">你已发布意图，这里只看别人的。刷新可见新上线的搭子。</p>
     </section>
 
-    <!-- 我的搭子状态：默认展开（双向匹配需看到「收到的申请」并同意，不能藏起来）；可手动收起，有未处理申请时折叠标题显示红点提醒 -->
-    <details class="b-collapse" id="my-status" open>
+    <!-- 我的搭子：默认折叠（工具思维——不追溯历史，只显动作）；有未处理申请时 JS 自动展开 + 红点 -->
+    <details class="b-collapse" id="my-status">
       <summary class="b-sum">
-        <span class="b-ttl" data-i18n="myStatus">📊 我的筛选状态</span>
+        <span class="b-ttl" data-i18n="myStatus">我的搭子</span>
         <span class="b-dot" id="statusDot" hidden></span>
         <span class="b-caret" aria-hidden="true">▾</span>
       </summary>
       <div class="b-inner">
 
-      <!-- 我发布的需求 -->
-      <section class="board" id="mine-board" data-zone="mine">
-        <div class="board-head">
-          <h2 class="sec-title" data-i18n="mineBoard">📋 我发布的需求</h2>
-          <span class="muted" id="mine-hint"></span>
-        </div>
-        <div id="mine-list" class="list"></div>
-        <p class="list-empty" id="mine-empty" hidden data-i18n="mineEmpty">还没有。发布意图后，你的申请情况会出现在这里。</p>
-      </section>
-
-      <!-- 我的邀约：收到 -->
+      <!-- 收到的申请：双向匹配关键动作，常驻可见 -->
       <section class="board" data-zone="inbox">
         <div class="board-head">
-          <h2 class="sec-title" data-i18n="inboxTitle">📨 收到的申请</h2>
+          <h2 class="sec-title" data-i18n="inboxTitle">收到的申请</h2>
         </div>
         <div id="inbox-list" class="list"></div>
         <p class="list-empty" id="inbox-empty" data-i18n="browseLoading">加载中…</p>
       </section>
 
-      <!-- 我的邀约：发出 -->
-      <section class="board" data-zone="out">
-        <div class="board-head">
-          <h2 class="sec-title" data-i18n="outTitle">📤 我发出的申请</h2>
-        </div>
+      <!-- 历史：默认收起，不追溯 -->
+      <details class="sub-collapse" id="mine-board" data-zone="mine">
+        <summary class="sub-sum" data-i18n="mineBoard">我发布的需求</summary>
+        <div id="mine-list" class="list"></div>
+        <p class="list-empty" id="mine-empty" hidden data-i18n="mineEmpty">还没有。发布意图后，这里会显示申请情况。</p>
+      </details>
+
+      <details class="sub-collapse" data-zone="out">
+        <summary class="sub-sum" data-i18n="outTitle">我发出的申请</summary>
         <div id="out-list" class="list"></div>
         <p class="list-empty" id="out-empty" data-i18n="browseLoading">加载中…</p>
-      </section>
+      </details>
 
       </div>
     </details>
 
     <!-- 互练入口 -->
     <section class="card" id="room-card" hidden>
-      <h2 class="sec-title" data-i18n="roomDoneTitle">✅ FaceTalk 筛选完成！</h2>
+      <h2 class="sec-title" data-i18n="roomDoneTitle">FaceTalk 筛选完成</h2>
       <p class="muted" data-i18n="roomDoneSub">双方都想继续练，就接着对练。</p>
       <a class="btn-primary" id="room-enter" href="#" data-i18n="roomContinue">继续互练 →</a>
     </section>
@@ -317,12 +283,11 @@
   <details class="wall" id="wall">
     <summary class="wall-head">
       <div class="wall-ttl">
-        <span class="wall-emoji">💬</span>
         <h2 data-i18n="wallTitle">留言墙</h2>
         <span class="wall-badge" data-i18n="wallAutoClean">7 天自动清理</span>
       </div>
       <div class="wall-head-right">
-        <button class="wall-manage" id="wallManage" type="button" data-i18n="wallManage">🗑 管理</button>
+        <button class="wall-manage" id="wallManage" type="button" data-i18n="wallManage">管理</button>
         <span class="wall-caret" aria-hidden="true">▾</span>
       </div>
     </summary>
@@ -331,11 +296,11 @@
       <div class="wall-form">
         <div class="wall-form-row">
           <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名用户」）" maxlength="20" data-i18n-ph="wallNamePh">
-          <button class="wall-post" id="wallPost" data-i18n="wallPostBtn">✨ 发布留言</button>
+          <button class="wall-post" id="wallPost" data-i18n="wallPostBtn">发布留言</button>
         </div>
         <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300" data-i18n-ph="wallTextPh"></textarea>
       </div>
-      <div class="wall-list" id="wallList"><div class="wall-empty"><span class="we-emoji">📝</span><span data-i18n="wallLoading">正在加载留言…</span></div></div>
+      <div class="wall-list" id="wallList"><div class="wall-empty"><span data-i18n="wallLoading">正在加载留言…</span></div></div>
     </div>
   </details>
 
@@ -423,7 +388,7 @@
           var el = document.getElementById('group-banner');
           if (el) {
             var dec = (window.decodeURIComponent ? decodeURIComponent(g) : g);
-            var pre = window.FTI18N ? FTI18N.t('groupBannerPre') : '🎯 你正在为 ';
+            var pre = window.FTI18N ? FTI18N.t('groupBannerPre') : '你正在为 ';
             var post = window.FTI18N ? FTI18N.t('groupBannerPost') : ' FaceTalk 面试筛选 · 60 秒试音，找到合适的人';
             el.appendChild(document.createTextNode(pre));
             var b = document.createElement('b');
@@ -464,7 +429,7 @@
       try {
         var btn = document.getElementById('sc-copy-text');
         if (!btn) return;
-        var TEXT = window.FTI18N ? FTI18N.t('sharePreview') : '有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz';
+        var TEXT = window.FTI18N ? FTI18N.t('sharePreview') : '有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 facetalk.955827.xyz';
 
         // 自带 toast（不依赖任何外部全局，确保「已复制」反馈一定出现）
         var toastTimer = null;
@@ -479,9 +444,9 @@
 
         function copy(text) {
           function done() {
-            showToast(window.FTI18N ? FTI18N.t('shareCopied') : '✅ 已复制，去群里粘贴吧');
+            showToast(window.FTI18N ? FTI18N.t('shareCopied') : '已复制，去群里粘贴吧');
             var old = btn.textContent;
-            btn.textContent = window.FTI18N ? FTI18N.t('shareCopiedShort') : '✓ 已复制';
+            btn.textContent = window.FTI18N ? FTI18N.t('shareCopiedShort') : '已复制';
             setTimeout(function () { btn.textContent = old; }, 1800);
           }
           function fallback() {

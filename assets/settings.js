@@ -16,22 +16,15 @@
       '<div class="set-modal">' +
         '<div class="set-head"><span>' + t('setTabAbout') + '</span><button class="set-x" id="set-x" type="button" aria-label="' + t('close') + '">✕</button></div>' +
         '<div class="set-panel set-panel-active">' +
-          '<div class="set-about">' +
-            '<p class="set-about-lead">' + t('setAboutLead') + '</p>' +
-            '<div class="set-journey">' +
-              '<span><b>' + t('setJourneyMeet') + '</b> ' + t('setJourneyMeetD') + '</span>' +
-              '<span><b>' + t('setJourneyTry') + '</b> ' + t('setJourneyTryD') + '</span>' +
-              '<span><b>' + t('setJourneyMatch') + '</b> ' + t('setJourneyMatchD') + '</span>' +
-              '<span><b>' + t('setJourneyGrow') + '</b> ' + t('setJourneyGrowD') + '</span>' +
+            '<div class="set-about">' +
+              '<p class="set-about-lead">' + t('setAboutLead') + '</p>' +
+              '<ul class="set-about-list">' +
+                '<li>' + t('setAboutCost') + '</li>' +
+                '<li>' + t('setAboutTrust') + '</li>' +
+                '<li>' + t('setAboutMatchCost') + '</li>' +
+              '</ul>' +
+              '<p class="set-about-safe">' + t('setAboutSafe') + '</p>' +
             '</div>' +
-            '<ul class="set-about-list">' +
-              '<li>' + t('setAboutCost') + '</li>' +
-              '<li>' + t('setAboutTrust') + '</li>' +
-              '<li>' + t('setAboutMatchCost') + '</li>' +
-            '</ul>' +
-            '<p class="set-about-safe">' + t('setAboutSafe') + '</p>' +
-            '<p class="set-about-safe">' + t('setAboutLine') + '</p>' +
-          '</div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(wrap);

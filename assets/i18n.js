@@ -37,31 +37,31 @@
     // ───────────── SEO 核心逻辑平铺区（首页 pitch） ─────────────
     pitchTitle: { zh: '免社交的面试口语对练工具', en: 'Social-free interview & speaking practice', ja: 'ソーシャル不要の面接・スピーキング練習ツール' },
     pitchBody: { zh: 'Facetalk 是一款主打零社交压力的陌生人协作练习工具。不想加微信、不想寒暄、不想维持关系？用 60 秒试音互听互评，快速判断对方值不值得组队。无需加好友，匿名、免费、免登录，专注纯粹的面试口语对练与雅思模拟面试，适合考研、雅思、大厂面试等备考族。', en: 'Facetalk is a practice tool built for zero social pressure. No adding contacts, no small talk, no relationships to maintain — just a 60-second voice tryout, then mutual review to quickly see if you click. No friends needed: anonymous, free, no sign-up. Built for interview and spoken-English practice.', ja: 'Facetalk はソーシャルな気疲れゼロの練習ツールです。連絡先交換も世間話も関係維持も不要。60秒のボイス試しと相互レビューで、組む価値があるかすぐ判断できます。友だち追加不要・匿名・無料・登録なしで、面接練習とスピーキング対策に集中できます。' },
-    pitch1: { zh: '🎯 60 秒试音互听互评：不靠简历、不靠闲聊，用一段短音直接判断合拍度', en: '🎯 60-second tryout & mutual review: judge chemistry from a short clip, not a résumé or small talk', ja: '🎯 60秒のボイス試しと相互レビュー：履歴書や世間話ではなく、短い音声で相性を判断' },
-    pitch2: { zh: '🚫 零社交压力：陌生人协作练习，严禁留微信 / 手机号，练完即散', en: '🚫 Zero social pressure: practice with strangers, no contact sharing, done when you\'re done', ja: '🚫 ソーシャルな気疲れゼロ：見知らぬ人と練習、連絡先の共有は禁止、終わったら解散' },
-    pitch3: { zh: '⚡ 无压力模拟面试：双方都愿意再组队，把社交内耗降到零', en: '⚡ Stress-free mock interviews: pair up only when both say yes', ja: '⚡ ストレスフリーな模擬面接：双方が合意したときだけペア成立' },
+    pitch1: { zh: '60 秒试音互听互评：不靠简历、不靠闲聊，用一段短音直接判断合拍度', en: '60-second tryout & mutual review: judge chemistry from a short clip, not a résumé or small talk', ja: '60秒のボイス試しと相互レビュー：履歴書や世間話ではなく、短い音声で相性を判断' },
+    pitch2: { zh: '零社交压力：陌生人协作练习，严禁留微信 / 手机号，练完即散', en: 'Zero social pressure: practice with strangers, no contact sharing, done when you\'re done', ja: 'ソーシャルな気疲れゼロ：見知らぬ人と練習、連絡先の共有は禁止、終わったら解散' },
+    pitch3: { zh: '无压力模拟面试：双方都愿意再组队，把社交内耗降到零', en: 'Stress-free mock interviews: pair up only when both say yes', ja: 'ストレスフリーな模擬面接：双方が合意したときだけペア成立' },
     entryGo: { zh: '去试音 →', en: 'Try out →', ja: '試し録音へ →' },
-    trustBoth: { zh: '🔒 双方提交才能互听', en: '🔒 Both submit to hear each other', ja: '🔒 双方提出後にのみ互聴' },
-    trustBurn: { zh: '🕓 录音阅后即焚', en: '🕓 Clips self-destruct after review', ja: '🕓 音声は確認後に自動消去' },
-    trustNoContact: { zh: '🚫 严禁留微信 / 手机号', en: '🚫 No WeChat / phone numbers', ja: '🚫 微信・電話番号の共有禁止' },
+    trustBoth: { zh: '双方提交才能互听', en: 'Both submit to hear each other', ja: '双方提出後にのみ互聴' },
+    trustBurn: { zh: '录音阅后即焚', en: 'Clips self-destruct after review', ja: '音声は確認後に自動消去' },
+    trustNoContact: { zh: '严禁留微信 / 手机号', en: 'No WeChat / phone numbers', ja: '微信・電話番号の共有禁止' },
 
     // ───────────── 声纹暖场 ─────────────
 
     // ───────────── 社群分享卡 ─────────────
-    shareTitle: { zh: '📣 发到社群里匹配，互评组队，效果更佳', en: '📣 Share in your community for better matches', ja: '📣 コミュニティに共有して、より良いマッチングを' },
+    shareTitle: { zh: '发到社群里匹配，互评组队，效果更佳', en: 'Share in your community for better matches', ja: 'コミュニティに共有して、より良いマッチングを' },
     shareSub: { zh: '把下面这段话发到你的面试练习 / 求职群里，同样目标的人看到就会来试音。', en: 'Post this to your interview-prep group — people with the same goal will come try out.', ja: 'この文を面接対策のグループに貼ってください。同じ目標の人たちが試しに来てくれます。' },
-    sharePreview: { zh: '有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 👉 facetalk.955827.xyz', en: 'Anyone up for interview practice? Use FaceTalk 60s voice tryout — we only pair when both agree 👉 facetalk.955827.xyz', ja: '一緒に面接練習しませんか？FaceTalkで60秒のボイス試し。双方合意したら組もう 👉 facetalk.955827.xyz' },
-    shareCopyBtn: { zh: '📋 复制这段话，去群里发', en: '📋 Copy this text and share it', ja: '📋 この文をコピーして共有' },
-    shareCopied: { zh: '✅ 已复制，去群里粘贴吧', en: '✅ Copied — paste it in your group', ja: '✅ コピーしました。グループに貼ってください' },
-    shareCopiedShort: { zh: '✓ 已复制', en: '✓ Copied', ja: '✓ コピー済み' },
+    sharePreview: { zh: '有人一起练面试吗？用 FaceTalk 60 秒试音，双方都愿意再组队 facetalk.955827.xyz', en: 'Anyone up for interview practice? Use FaceTalk 60s voice tryout — we only pair when both agree facetalk.955827.xyz', ja: '一緒に面接練習しませんか？FaceTalkで60秒のボイス試し。双方合意したら組もう facetalk.955827.xyz' },
+    shareCopyBtn: { zh: '复制这段话，去群里发', en: 'Copy this text and share it', ja: 'この文をコピーして共有' },
+    shareCopied: { zh: '已复制，去群里粘贴吧', en: 'Copied — paste it in your group', ja: 'コピーしました。グループに貼ってください' },
+    shareCopiedShort: { zh: '已复制', en: 'Copied', ja: 'コピー済み' },
 
     // ───────────── 我的信誉条 ─────────────
     myRep: { zh: '我的信誉', en: 'My Reputation', ja: '自分の評価' },
     anonLocal: { zh: '匿名身份 · 仅本地保存', en: 'Anonymous identity · stored locally only', ja: '匿名ID · ローカルのみ保存' },
 
     // ───────────── 发布意图 ─────────────
-    pubTitle: { zh: '📋 发布你的意图', en: '📋 Post Your Intent', ja: '📋 あなたの意図を投稿' },
-    pubHint: { zh: '同岗伙伴来和你筛选，双方都愿意再接着练；录音仅用于本次互评，结束后自动删除。', en: 'Same-role partners come to screen with you; you continue only when both agree. Clips are used only for this review and auto-deleted after.', ja: '同じ職種の相手があなたを選びに来ます。双方合意で続行。音声は今回の評価のみに使い、終了後自動削除されます。' },
+    pubTitle: { zh: '发布你的意图', en: 'Post Your Intent', ja: 'あなたの意図を投稿' },
+    pubHint: { zh: '同岗伙伴来筛选；双方都愿意才组队，录音仅本次互评使用。', en: 'Same-role partners screen each other; you continue only when both agree. Clips are used only for this review.', ja: '同じ職種の相手が選びに来ます。双方合意で続行。音声は今回の評価のみに使います。' },
     pubRole: { zh: '岗位', en: 'Role', ja: '職種' },
     pubCity: { zh: '城市', en: 'City', ja: '都市' },
     pubMode: { zh: '模式', en: 'Mode', ja: 'モード' },
@@ -74,20 +74,20 @@
     pubRoleMed: { zh: '医疗 / 医护', en: 'Healthcare / Medical', ja: '医療 / 看護' },
     pubRoleOther: { zh: '其他（备注里写方向）', en: 'Other (describe in note)', ja: 'その他（備考欄に記入）' },
     pubCityPh: { zh: '如：深圳 / 武汉', en: 'e.g. Shenzhen / Wuhan', ja: '例：深セン / 武漢' },
-    pubModeVoice: { zh: '🎙 语音优先（推荐）', en: '🎙 Voice first (recommended)', ja: '🎙 音声優先（推奨）' },
-    pubModeVideo: { zh: '📹 视频', en: '📹 Video', ja: '📹 ビデオ' },
+    pubModeVoice: { zh: '语音优先（推荐）', en: 'Voice first (recommended)', ja: '音声優先（推奨）' },
+    pubModeVideo: { zh: '视频', en: 'Video', ja: 'ビデオ' },
     pubNotePh: { zh: '如：想练企业结构化面试 / 想聊聊 AI 方向', en: 'e.g. Practicing structured interviews / want to discuss AI topics', ja: '例：構造化面接を練習 / AIの話題を話したい' },
     pubOk: { zh: '意图已发布，等对方来申请', en: 'Intent posted — waiting for others to apply', ja: '意図を投稿しました。申請を待っています' },
     pubFail: { zh: '发布失败：', en: 'Failed to post: ', ja: '投稿失敗：' },
 
     // ───────────── 公开大厅 ─────────────
-    browseTitle: { zh: '🔍 公开大厅（没有群也能找）', en: '🔍 Public Lobby (find partners even without a group)', ja: '🔍 公開ロビー（グループがなくても探せる）' },
+    browseTitle: { zh: '公开大厅', en: 'Public Lobby', ja: '公開ロビー' },
     browseRefresh: { zh: '刷新', en: 'Refresh', ja: '更新' },
     browseNote: { zh: '群里没找到合适的？也能在这里浏览同岗伙伴的开放意图。', en: 'No luck in groups? Browse open intents from same-role partners here.', ja: 'グループで見つからない？同じ職種の相手の公開意図をここで探せます。' },
     browseLoading: { zh: '加载中…', en: 'Loading…', ja: '読み込み中…' },
     browseOwnHint: { zh: '你已发布意图，这里只看别人的。刷新可见新上线的搭子。', en: 'You\'ve posted an intent, so this only shows others. Refresh to see new partners.', ja: '意図を投稿済みなので、ここでは他人のみ表示。更新すると新しい相手が見えます。' },
     browseEmpty: { zh: '还没人发，那你就敢为人先，做第一个吃螃蟹的人。', en: 'No one\'s posted yet — be the first mover.', ja: 'まだ誰も投稿していません。あなたが最初になりましょう。' },
-    onlineCount: { zh: '🌐 当前在线发需求 <b>{0}</b> 人', en: '🌐 <b>{0}</b> online now', ja: '🌐 いま <b>{0}</b> 人がオンライン' },
+    onlineCount: { zh: '当前在线发需求 <b>{0}</b> 人', en: '<b>{0}</b> online now', ja: 'いま <b>{0}</b> 人がオンライン' },
     onlineNow: { zh: '当前在线', en: 'Online now', ja: 'オンライン' },
     activeNow: { zh: '刚刚活跃', en: 'Active recently', ja: '最近アクティブ' },
     minsAgo: { zh: '{0} 分钟前', en: '{0} min ago', ja: '{0}分前' },
@@ -97,8 +97,8 @@
     mineTag: { zh: '我的', en: 'Mine', ja: '自分の' },
     delete: { zh: '删除', en: 'Delete', ja: '削除' },
     applyTeam: { zh: '申请组队', en: 'Apply to Pair', ja: '組む申請' },
-    modeVoiceShort: { zh: '🎙 语音', en: '🎙 Voice', ja: '🎙 音声' },
-    modeVideoShort: { zh: '📹 视频', en: '📹 Video', ja: '📹 ビデオ' },
+    modeVoiceShort: { zh: '语音', en: 'Voice', ja: '音声' },
+    modeVideoShort: { zh: '视频', en: 'Video', ja: 'ビデオ' },
     applied: { zh: '已申请，等对方同意', en: 'Applied — waiting for their approval', ja: '申請しました。相手の同意待ち' },
     applyFail: { zh: '申请失败：', en: 'Apply failed: ', ja: '申請失敗：' },
     delIntentConfirm: { zh: '确定删除这条意图？', en: 'Delete this intent?', ja: 'この意図を削除しますか？' },
@@ -106,10 +106,10 @@
     delFail: { zh: '删除失败：', en: 'Delete failed: ', ja: '削除失敗：' },
 
     // ───────────── 我的筛选状态 ─────────────
-    myStatus: { zh: '📊 我的筛选状态', en: '📊 My Screening Status', ja: '📊 自分の選考状況' },
-    mineBoard: { zh: '📋 我发布的需求', en: '📋 My Posted Intents', ja: '📋 投稿した意図' },
-    inboxTitle: { zh: '📨 收到的申请', en: '📨 Received Applications', ja: '📨 受け取った申請' },
-    outTitle: { zh: '📤 我发出的申请', en: '📤 My Applications', ja: '📤 送った申請' },
+    myStatus: { zh: '我的搭子', en: 'My Matches', ja: '自分のマッチ' },
+    mineBoard: { zh: '我发布的', en: 'My Posted', ja: '投稿した' },
+    inboxTitle: { zh: '收到的', en: 'Received', ja: '受け取った' },
+    outTitle: { zh: '我发出的', en: 'Sent', ja: '送った' },
     mineEmpty: { zh: '还没有。发布意图后，你的申请情况会出现在这里。', en: 'Nothing yet. After you post an intent, its applications show here.', ja: 'まだありません。意図を投稿すると申請状況がここに表示されます。' },
     inboxEmpty: { zh: '还没人申请你——好搭子，值得等。', en: 'No applications yet — a good partner is worth the wait.', ja: 'まだ申請はありません。良い相手は待つ価値があります。' },
     outEmpty: { zh: '你还没主动找过谁——敢开口的人，先被听见。', en: 'You haven\'t reached out yet — those who dare to speak get heard first.', ja: 'まだ誰にも申請していません。声を上げる人から聞かれます。' },
@@ -163,7 +163,7 @@
     adminClearedEmpty: { zh: '已清空', en: 'Cleared', ja: '消去済み' },
 
     // ───────────── 房间卡片 + 互评 ─────────────
-    roomDoneTitle: { zh: '✅ FaceTalk 筛选完成！', en: '✅ FaceTalk screening complete!', ja: '✅ FaceTalkの選考が完了！' },
+    roomDoneTitle: { zh: 'FaceTalk 筛选完成！', en: 'FaceTalk screening complete!', ja: 'FaceTalkの選考が完了！' },
     roomDoneSub: { zh: '双方都想继续练，就接着对练。', en: 'You both want to continue — keep practicing.', ja: '双方とも続けたいなら、そのまま対練。' },
     roomContinue: { zh: '继续互练 →', en: 'Keep Practicing →', ja: '対練を続ける →' },
     rateTitle: { zh: '⭐ 本次互练评价', en: '⭐ Rate This Practice Session', ja: '⭐ 今回の対練を評価' },
@@ -185,10 +185,10 @@
     // ───────────── 留言墙 ─────────────
     wallTitle: { zh: '留言墙', en: 'Message Wall', ja: 'メッセージウォール' },
     wallAutoClean: { zh: '7 天自动清理', en: 'Auto-cleared every 7 days', ja: '7日ごとに自動削除' },
-    wallManage: { zh: '🗑 管理', en: '🗑 Manage', ja: '🗑 管理' },
+    wallManage: { zh: '管理', en: 'Manage', ja: '管理' },
     wallSub: { zh: '文明留言，禁止广告与不良信息。为彼此安全，<b>勿留手机号、微信等联系方式</b>，防骗；FaceTalk 仅用于面试筛选，录音阅后即焚。', en: 'Keep it civil, no ads or spam. For everyone\'s safety, <b>don\'t leave phone numbers or WeChat</b>; FaceTalk is only for interview screening and clips self-destruct.', ja: '礼儀正しく、広告・不適切な内容は禁止。安全のため<b>電話番号や微信などの連絡先を書かないで</b>ください。FaceTalkは面接選考専用で、音声は自動消去されます。' },
     wallNamePh: { zh: '昵称（留空为「匿名用户」）', en: 'Nickname (blank = "Anonymous")', ja: 'ニックネーム（空欄は「匿名」）' },
-    wallPostBtn: { zh: '✨ 发布留言', en: '✨ Post', ja: '✨ 投稿' },
+    wallPostBtn: { zh: '发布留言', en: 'Post', ja: '投稿' },
     wallTextPh: { zh: '说点什么…（例如：今晚想练结构化，求个搭子互评）', en: 'Say something… (e.g. practicing structured interview tonight, need a partner)', ja: '何か書いてください…（例：今夜構造化面接を練習。相手募集中）' },
     wallLoading: { zh: '正在加载留言…', en: 'Loading messages…', ja: 'メッセージ読み込み中…' },
     wallEmpty: { zh: '还没人留言，做第一个说话的人。', en: 'No messages yet — be the first to speak.', ja: 'まだメッセージがありません。最初に話しましょう。' },
@@ -208,7 +208,7 @@
     wallPostFail: { zh: '发布失败，请重试', en: 'Failed to post — try again', ja: '投稿失敗。再試行してください' },
     wallPostNetErr: { zh: '网络异常，发布失败', en: 'Network error — post failed', ja: 'ネットワークエラー。投稿失敗' },
     wallAdminPrompt: { zh: '输入管理员密码（与管理后台 ADMIN_KEY / 限流解锁 MS_ADMIN_KEY 一致；都没设时默认 rcj9527）。\n批量管理留言建议用 /admin 后台「留言墙」标签页，更顺手。', en: 'Enter the admin password (same as ADMIN_KEY / rate-limit unlock MS_ADMIN_KEY; default rcj9527 if unset).\nFor batch management use the "Message Wall" tab in /admin.', ja: '管理者パスワードを入力してください（管理用ADMIN_KEY / 制限解除MS_ADMIN_KEYと同じ。未設定なら既定 rcj9527）。\n大量管理は /admin の「メッセージウォール」タブを推奨。' },
-    wallNeedAdmin: { zh: '请先点「🗑 管理」并输入口令（或去 /admin 后台「留言墙」标签页批量管理）', en: 'Tap "🗑 Manage" and enter the key first (or use the Message Wall tab in /admin)', ja: '先に「🗑 管理」をタップしてキーを入力してください（または /admin のタブで管理）' },
+    wallNeedAdmin: { zh: '请先点「 管理」并输入口令（或去 /admin 后台「留言墙」标签页批量管理）', en: 'Tap " Manage" and enter the key first (or use the Message Wall tab in /admin)', ja: '先に「 管理」をタップしてキーを入力してください（または /admin のタブで管理）' },
     wallDelConfirm: { zh: '确定删除这条留言？', en: 'Delete this message?', ja: 'このメッセージを削除しますか？' },
     wallDelFail: { zh: '删除失败，口令可能不对', en: 'Delete failed — the key may be wrong', ja: '削除失敗。キーが違う可能性があります' },
 
@@ -394,7 +394,7 @@
     langLabel: { zh: '语言', en: 'Language', ja: '言語' },
 
     // ───────────── 群上下文横幅（?group=）─────────────
-    groupBannerPre: { zh: '🎯 你正在为 ', en: '🎯 You are browsing for ', ja: '🎯 あなたは ' },
+    groupBannerPre: { zh: '你正在为', en: 'You are browsing for', ja: 'あなたは' },
     groupBannerPost: { zh: ' FaceTalk 面试筛选 · 60 秒试音，找到合适的人', en: ' — FaceTalk interview screening · 60s tryout to find the right partner', ja: ' — FaceTalk 面接選考 · 60秒試しで適切な相手を探す' },
 
     // ───────────── admin.html 管理后台 ─────────────
