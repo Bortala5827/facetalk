@@ -3,10 +3,11 @@
 -- 在 Cloudflare → D1 → mianshi-dazi-d1 → 控制台，整段粘贴执行一次即可。
 -- 全部是新表（CREATE TABLE IF NOT EXISTS），不改动任何老表，重复执行也安全。
 --
--- 设计要点：
---   * 录音以 base64 分片存 voice_chunks，单片 ≤ 48KB，避开 D1 单值上限；
---   * 对方一提交评价 → 立即物理 DELETE 录音行（阅后即焚）；
---   * 兜底：2 小时无人评价，每日 cleanup 强删，绝不长期占用空间；
+-- 设计要点（2026-09-12 起：录音本体迁 R2 对象存储）：
+--   * 录音 base64 一次 POST 上传，服务端解码后写入 R2（bucket: facetalk-voice，key: clips/{clipId}）；
+--   * D1 只保留 voice_clips 元数据（时长/回听次数/ready），voice_chunks 旧分片表已废弃不再写入；
+--   * 双方都提交评价 → 立即物理 DELETE（R2 对象 + D1 元数据行，阅后即焚）；
+--   * 兜底：2 小时无人评价每日 cleanup 强删；R2 生命周期规则 1 天自动焚毁，双保险；
 --   * 本地零留存：浏览器只用内存 Blob，播完 revokeObjectURL，不写 localStorage。
 -- ============================================================
 

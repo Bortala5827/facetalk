@@ -69,13 +69,18 @@ export async function requireToken(env, me) {
 }
 export function clampRep(v) { return Math.max(0, Math.min(100, v | 0)); }
 
-// 清空一个房间里的全部试音录音（分片 + 主行）。
+// 清空一个房间里的全部试音录音：R2 对象（clips/{id}）+ D1 元数据行。
 // 结算 / 关房 / 每日清理都会调用，保证"云端不留存"。
-// voice_* 表未建时静默跳过，不影响 1.0 的既有功能。
-export async function dropPairClips(db, pairId) {
+// voice_* 表未建或 R2 未绑定时静默跳过，不影响 1.0 的既有功能。
+export async function dropPairClips(env, db, pairId) {
   try {
+    const r = await db.prepare('SELECT id FROM voice_clips WHERE pair_id=?').bind(pairId).all();
+    const rows = (r && r.results) || [];
+    const bucket = (env && env.VOICE && typeof env.VOICE.delete === 'function') ? env.VOICE : null;
+    if (bucket) {
+      await Promise.all(rows.map(c => bucket.delete('clips/' + c.id).catch(() => {})));
+    }
     await db.batch([
-      db.prepare('DELETE FROM voice_chunks WHERE clip_id IN (SELECT id FROM voice_clips WHERE pair_id=?)').bind(pairId),
       db.prepare('DELETE FROM voice_clips WHERE pair_id=?').bind(pairId),
     ]);
   } catch (e) { /* 表未建：无录音可清 */ }

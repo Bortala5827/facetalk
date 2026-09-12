@@ -29,7 +29,7 @@ post anonymous intent → browse / apply → **two-way mutual selection**
 
 ## Tech stack
 
-- Cloudflare Pages Functions + D1 (SQLite)
+- Cloudflare Pages Functions + D1 (SQLite) + R2 (object storage for voice clips)
 - PWA (service worker, installable)
 - Vanilla JS `i18n` dictionary
 
@@ -37,6 +37,12 @@ post anonymous intent → browse / apply → **two-way mutual selection**
 
 Create a D1 database, run `schema.sql` in the Cloudflare console, bind it to the
 Pages project as `DB` (enable **Deployments Retry**). Optionally set `ADMIN_KEY`.
+
+Voice clips (60s tryout recordings) are stored in R2, not D1: create an R2 bucket
+`facetalk-voice` with a 1-day lifecycle rule (prefix `clips/` auto-burns), bind it
+to the Pages project as `VOICE` (or via `[[r2_buckets]]` in `wrangler.toml`).
+If the bucket is missing, the voice tryout auto-skips without breaking v1.0.
+
 Enable `.github/workflows/d1-cleanup.yml` for scheduled cleanup.
 
 ---

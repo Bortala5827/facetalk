@@ -1,7 +1,7 @@
 'use strict';
 // 面试搭子 2.0 · 试音互评 端到端逻辑自测（录音时长 30~90 秒）
-// 直接导入生产函数 functions/api/voice.js 的 onRequest，用内存 mock D1 跑通完整链路，
-// 覆盖：init/chunk/done/fetch 回听上限、双方互评即焚、双方婉拒自动解散、时长校验、重录、表缺失降级。
+// 直接导入生产函数 functions/api/voice.js 的 onRequest，用内存 mock D1 + mock R2 跑通完整链路，
+// 覆盖：init/upload/fetch 回听上限、双方互评即焚、双方婉拒自动解散、时长校验、重录、表缺失降级、R2 未绑定降级。
 // 运行：node scripts/selftest-voice.js  （接入 .github/workflows/selftest.yml，push 到 main 自动跑）
 
 const path = require('path');
@@ -24,24 +24,13 @@ function makeDb(opts) {
     if (sql.startsWith("CREATE TABLE IF NOT EXISTS voice_chunks")) { if (!allowDDL) throw new Error('DDL denied'); if (store.voice_chunks === undefined) store.voice_chunks = []; return 0; }
     if (sql.startsWith("CREATE TABLE IF NOT EXISTS voice_reviews")) { if (!allowDDL) throw new Error('DDL denied'); if (store.voice_reviews === undefined) store.voice_reviews = []; return 0; }
     if (sql.startsWith("CREATE INDEX")) { if (!allowDDL) throw new Error('DDL denied'); return 0; }
-    // 阅后即焚：dropClip（单片）
-    if (sql.startsWith("DELETE FROM voice_chunks WHERE clip_id=?")) {
-      const before = store.voice_chunks.length;
-      store.voice_chunks = store.voice_chunks.filter(c => c.clip_id !== p[0]);
-      return before - store.voice_chunks.length;
-    }
+    // 阅后即焚：dropClip（单段：D1 元数据行）
     if (sql.startsWith("DELETE FROM voice_clips WHERE id=?")) {
       const before = store.voice_clips.length;
       store.voice_clips = store.voice_clips.filter(c => c.id !== p[0]);
       return before - store.voice_clips.length;
     }
-    // dropPairClips：整房间清录音
-    if (sql.includes("clip_id IN (SELECT id FROM voice_clips WHERE pair_id=?")) {
-      const ids = new Set(store.voice_clips.filter(c => c.pair_id === p[0]).map(c => c.id));
-      const before = store.voice_chunks.length;
-      store.voice_chunks = store.voice_chunks.filter(c => !ids.has(c.clip_id));
-      return before - store.voice_chunks.length;
-    }
+    // dropPairClips：整房间清元数据行（R2 对象删除走 mock bucket）
     if (sql.startsWith("DELETE FROM voice_clips WHERE pair_id=?")) {
       const before = store.voice_clips.length;
       store.voice_clips = store.voice_clips.filter(c => c.pair_id !== p[0]);
@@ -61,20 +50,10 @@ function makeDb(opts) {
       });
       return 1;
     }
-    // 分片入库
-    if (sql.startsWith("INSERT OR REPLACE INTO voice_chunks")) {
-      store.voice_chunks = store.voice_chunks.filter(c => !(c.clip_id === p[0] && c.seq === p[1]));
-      store.voice_chunks.push({ clip_id: p[0], seq: p[1], data: p[2] });
-      return 1;
-    }
-    if (sql.startsWith("UPDATE voice_clips SET bytes=bytes+")) {
-      const c = store.voice_clips.find(x => x.id === p[1]);
-      if (c) { c.bytes += p[0]; c.chunks += 1; return 1; }
-      return 0;
-    }
+    // 上传完成：标记 ready + 记录时长/体积（R2 对象已由 mock bucket.put 存入）
     if (sql.startsWith("UPDATE voice_clips SET ready=1")) {
-      const c = store.voice_clips.find(x => x.id === p[1]);
-      if (c) { c.ready = 1; c.dur = p[0]; return 1; }
+      const c = store.voice_clips.find(x => x.id === p[2]);
+      if (c) { c.ready = 1; c.dur = p[0]; c.bytes = p[1]; return 1; }
       return 0;
     }
     // 评价格
@@ -159,12 +138,12 @@ function makeDb(opts) {
     return null;
   }
   function doAll(sql, p) {
-    if (sql.startsWith("SELECT seq, data FROM voice_chunks WHERE clip_id=?")) {
-      return store.voice_chunks.filter(c => c.clip_id === p[0]).sort((a, b) => a.seq - b.seq).map(c => ({ seq: c.seq, data: c.data }));
-    }
-    // init / retake：读取某人全部试音段 id（不依赖 owner 唯一性，支持多段）
+    // init / retake / dropPairClips：读取某人或某房间的全部试音段 id
     if (sql.startsWith("SELECT id FROM voice_clips WHERE pair_id=? AND owner=?")) {
       return store.voice_clips.filter(c => c.pair_id === p[0] && c.owner === p[1]).map(c => ({ id: c.id }));
+    }
+    if (sql.startsWith("SELECT id FROM voice_clips WHERE pair_id=?")) {
+      return store.voice_clips.filter(c => c.pair_id === p[0]).map(c => ({ id: c.id }));
     }
     // metaOf：我的全部试音段（按 created 升序）
     if (sql.startsWith("SELECT id, dur, ready, created FROM voice_clips WHERE pair_id=? AND owner=?")) {
@@ -198,6 +177,24 @@ function makeDb(opts) {
   return db;
 }
 
+// ── 极简 R2 bucket mock：录音本体（clips/{id}）只在这里，阅后即焚看对象删没删 ──
+function makeBucket() {
+  const store = new Map();
+  return {
+    _store: store,
+    async put(key, data, opts) { store.set(key, { data, opts: opts || {} }); return { key }; },
+    async get(key) {
+      const o = store.get(key);
+      if (!o) return null;
+      const d = o.data;
+      return {
+        arrayBuffer: async () => d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength),
+      };
+    },
+    async delete(key) { store.delete(key); return {}; },
+  };
+}
+
 // ── 请求构造 ──
 function GET(me, pair, qp) {
   const u = new URL('https://t/');
@@ -217,31 +214,29 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
 // ── 运行 ──
 (async function () {
   const { onRequest } = await import(pathToFileURL(path.join(__dirname, '..', 'functions', 'api', 'voice.js')).href);
-  const ctx = (db, req) => ({ request: req, env: { DB: db } });
+  const ctx = (db, bucket, req) => ({ request: req, env: bucket ? { DB: db, VOICE: bucket } : { DB: db } });
   const pairBase = [{ id: 'p1', a: 'uA', b: 'uB', ratings: '{}', status: 'matched' }];
   const users = [{ id: 'uA', rep: 50, banned: 0 }, { id: 'uB', rep: 50, banned: 0 }];
-  const CHUNK = 'A'.repeat(48 * 1024); // 单片 < MAX_CHUNK(64K)
+  const CHUNK = 'A'.repeat(48 * 1024); // 上传数据示例（一次 upload 拼两段：96KB base64 < MAX_B64）
 
-  async function record(db, me, dur) {
-    const init = await (await onRequest(ctx(db, POST({ me, pair: 'p1', action: 'init', mime: 'audio/webm' })))).json();
+  async function record(db, bucket, me, dur) {
+    const init = await (await onRequest(ctx(db, bucket, POST({ me, pair: 'p1', action: 'init', mime: 'audio/webm' })))).json();
     if (!init.ok) return init;
-    for (let i = 0, seq = 0; i < 2; i++, seq++) {
-      await onRequest(ctx(db, POST({ me, pair: 'p1', action: 'chunk', clipId: init.clipId, seq, data: CHUNK })));
-    }
-    return await (await onRequest(ctx(db, POST({ me, pair: 'p1', action: 'done', clipId: init.clipId, dur })))).json();
+    return await (await onRequest(ctx(db, bucket, POST({ me, pair: 'p1', action: 'upload', clipId: init.clipId, data: CHUNK + CHUNK, dur })))).json();
   }
-  async function gate(db, me) {
-    const d = await (await onRequest(ctx(db, GET(me, 'p1')))).json();
+  async function gate(db, bucket, me) {
+    const d = await (await onRequest(ctx(db, bucket, GET(me, 'p1')))).json();
     return d;
   }
 
   console.log('=== 1) 表缺失且 DDL 被拒 → 跳过试音，不影响 v1.0 ===');
   {
     const db = makeDb({ voiceTables: false, allowDDL: false, users, pairs: pairBase });
-    const g = await gate(db, 'uA');
+    const bucket = makeBucket();
+    const g = await gate(db, bucket, 'uA');
     check('GET 返回 ready:false', g.ready === false);
     check('GET 返回 gate:"skip"', g.gate === 'skip');
-    const initRes = await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })));
+    const initRes = await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'init' })));
     const ib = await initRes.json();
     check('POST init 返回 503 voice_not_ready（不 500）', initRes.status === 503 && ib.error === 'voice_not_ready');
   }
@@ -249,66 +244,73 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
   console.log('\n=== 1B) 自动建表：首次请求发现表缺失 → 运行时建表 → v2.0 自动激活 ===');
   {
     const db = makeDb({ voiceTables: false, allowDDL: true, users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    const g0 = await gate(db, 'uA');
+    const bucket = makeBucket();
+    const g0 = await gate(db, bucket, 'uA');
     check('首次请求后 ready 变为 true（表已自动建好）', g0.ready === true);
     check('自动建表后 gate 进入 record（试音环节可用）', g0.gate === 'record');
     check('voice_clips 数组已被建出', Array.isArray(db._store.voice_clips));
-    const ia = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
+    const ia = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
     check('自动建表后 init 正常返回 clipId', !!ia.clipId && ia.clipId.startsWith('vc_'));
+  }
+
+  console.log('\n=== 1C) R2 未绑定 → 跳过试音，不影响 v1.0 ===');
+  {
+    const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
+    const g = await gate(db, null, 'uA');
+    check('GET 返回 ready:false（无 R2 绑定）', g.ready === false);
+    check('GET 返回 gate:"skip"', g.gate === 'skip');
+    const initRes = await onRequest(ctx(db, null, POST({ me: 'uA', pair: 'p1', action: 'init' })));
+    const ib = await initRes.json();
+    check('POST init 返回 503 voice_not_ready（不 500）', initRes.status === 503 && ib.error === 'voice_not_ready');
   }
 
   console.log('\n=== 2) 完整链路：双方都愿意组队 → 解锁，且双方录音阅后即焚 ===');
   {
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    const ia = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
+    const bucket = makeBucket();
+    const ia = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
     check('init 返回 clipId 且带题目', !!ia.clipId && ia.clipId.startsWith('vc_') && !!ia.topic);
     check('init 返回最短 30 / 最长 90', ia.minSec === 30 && ia.maxSec === 90);
-    const ib = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'init' })))).json();
+    const ib = await (await onRequest(ctx(db, bucket, POST({ me: 'uB', pair: 'p1', action: 'init' })))).json();
 
-    // A 上传 2 片 + done(55s)
-    for (let i = 0, seq = 0; i < 2; i++, seq++) {
-      const r = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: ia.clipId, seq, data: CHUNK })))).json();
-      check('A 分片' + seq + ' 上传成功', r.ok);
-    }
-    const doneA = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: ia.clipId, dur: 55 })))).json();
-    check('A done 成功', doneA.ok && doneA.dur === 55);
-    // B 上传 + done(55s)
-    for (let i = 0, seq = 0; i < 2; i++, seq++) {
-      await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'chunk', clipId: ib.clipId, seq, data: CHUNK })));
-    }
-    const doneB = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'done', clipId: ib.clipId, dur: 55 })))).json();
-    check('B done 成功', doneB.ok && doneB.dur === 55);
+    // A 一次上传 + B 一次上传（R2 单对象，无需分片）
+    const ua = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'upload', clipId: ia.clipId, data: CHUNK + CHUNK, dur: 55 })))).json();
+    check('A 上传成功', ua.ok && ua.dur === 55);
+    check('A 录音已写入 R2 单对象（非 D1 分片）', bucket._store.size === 1 && bucket._store.has('clips/' + ia.clipId));
+    const ub = await (await onRequest(ctx(db, bucket, POST({ me: 'uB', pair: 'p1', action: 'upload', clipId: ib.clipId, data: CHUNK + CHUNK, dur: 55 })))).json();
+    check('B 上传成功', ub.ok && ub.dur === 55);
 
-    const ga = await gate(db, 'uA');
-    const gb = await gate(db, 'uB');
+    const ga = await gate(db, bucket, 'uA');
+    const gb = await gate(db, bucket, 'uB');
     check('双方都录完 → 各自 gate="review"', ga.gate === 'review' && gb.gate === 'review');
     check('题目确定性：双方抽到同一题', ga.topic === gb.topic);
     check('peer 录音可拉取（clipId 暴露）', gb.peerClips && gb.peerClips.length && !!gb.peerClips[0].id);
 
     // B 拉 A 的录音：第 1 次 playsLeft=1，第 2 次=0，第 3 次 no_plays_left
-    const f1 = await (await onRequest(ctx(db, GET('uB', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
+    const f1 = await (await onRequest(ctx(db, bucket, GET('uB', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
     check('首次回听返回音频与 playsLeft=1', f1.ok && !!f1.b64 && f1.playsLeft === 1);
-    const f2 = await (await onRequest(ctx(db, GET('uB', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
+    const f2 = await (await onRequest(ctx(db, bucket, GET('uB', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
     check('二次回听 playsLeft=0', f2.ok && f2.playsLeft === 0);
-    const f3 = await (await onRequest(ctx(db, GET('uB', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
+    const f3 = await (await onRequest(ctx(db, bucket, GET('uB', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
     check('三次回听被拦 no_plays_left', !f3.ok && f3.error === 'no_plays_left');
     // 可以回放自己的录音（#6 产品变更：用户反馈"只能听对方、听不到自己不合理"）
-    const fself = await (await onRequest(ctx(db, GET('uA', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
+    const fself = await (await onRequest(ctx(db, bucket, GET('uA', 'p1', { action: 'fetch', clip: ia.clipId })))).json();
     check('可以回放自己的录音（own:true，不计次、不扣对方额度）', fself.ok && fself.own === true && fself.playsLeft === null);
 
     // A 评价 willing=1 → 等双方都评完才统一焚毁（B 的录音暂留）
-    const ra = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'review', clarity: 5, logic: 4, pace: 3, comment: '不错', willing: 1 })))).json();
+    const ra = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'review', clarity: 5, logic: 4, pace: 3, comment: '不错', willing: 1 })))).json();
     check('A 评价提交成功，未结算（B 未评）', ra.ok && ra.settled == null);
     check('延后焚毁：A 评完 → B 的录音仍在库（等双方都评完才焚）', !!db._store.voice_clips.find(c => c.owner === 'uB'));
     check('延后焚毁：A 自己的录音也仍在', !!db._store.voice_clips.find(c => c.owner === 'uA'));
-    const ga2 = await gate(db, 'uA');
+    const ga2 = await gate(db, bucket, 'uA');
     check('A 评完 → gate="wait_review"', ga2.gate === 'wait_review');
 
-    // B 评价 willing=1 → 双方都评完 → 统一焚毁双方录音
-    const rb = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'review', clarity: 4, logic: 5, pace: 4, comment: '可以', willing: 1 })))).json();
+    // B 评价 willing=1 → 双方都评完 → 统一焚毁双方录音（R2 对象 + D1 元数据）
+    const rb = await (await onRequest(ctx(db, bucket, POST({ me: 'uB', pair: 'p1', action: 'review', clarity: 4, logic: 5, pace: 4, comment: '可以', willing: 1 })))).json();
     check('B 评价 → settled="passed"', rb.ok && rb.settled === 'passed');
-    check('阅后即焚：双方都评完 → 所有录音清空', db._store.voice_clips.length === 0);
-    const ga3 = await gate(db, 'uA');
+    check('阅后即焚：双方都评完 → D1 元数据清空', db._store.voice_clips.length === 0);
+    check('阅后即焚：R2 对象一并删除', bucket._store.size === 0);
+    const ga3 = await gate(db, bucket, 'uA');
     check('双方通过 → gate="passed" 解锁房间', ga3.gate === 'passed' && ga3.passed === true);
     check('pair.ratings 写入 _voice.passed=1', JSON.parse(db._store.pairs[0].ratings)._voice.passed === 1);
     check('pair 状态保持 matched（未解散）', db._store.pairs[0].status === 'matched');
@@ -317,74 +319,78 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
   console.log('\n=== 3) 双方婉拒 → 房间 60s 自动解散 ===');
   {
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    const ia = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
-    const ib = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'init' })))).json();
-    await record(db, 'uA', 55); await record(db, 'uB', 55);
-    const ra = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'review', willing: 0 })))).json();
+    const bucket = makeBucket();
+    const ia = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
+    const ib = await (await onRequest(ctx(db, bucket, POST({ me: 'uB', pair: 'p1', action: 'init' })))).json();
+    await record(db, bucket, 'uA', 55); await record(db, bucket, 'uB', 55);
+    const ra = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'review', willing: 0 })))).json();
     check('A 婉拒提交成功', ra.ok && ra.settled == null);
-    const rb = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'review', willing: 0 })))).json();
+    const rb = await (await onRequest(ctx(db, bucket, POST({ me: 'uB', pair: 'p1', action: 'review', willing: 0 })))).json();
     check('B 婉拒 → settled="rejected"', rb.settled === 'rejected');
     check('房间置 dissolving 待 60s 解散', db._store.pairs[0].status === 'dissolving' && db._store.pairs[0].dissolve_at > 0);
-    check('gate 显示 rejected（前端文案区分婉拒解散）', (await gate(db, 'uA')).gate === 'rejected');
-    check('婉拒后录音焚毁', db._store.voice_clips.length === 0);
+    check('gate 显示 rejected（前端文案区分婉拒解散）', (await gate(db, bucket, 'uA')).gate === 'rejected');
+    check('婉拒后 D1 录音焚毁', db._store.voice_clips.length === 0);
+    check('婉拒后 R2 对象焚毁', bucket._store.size === 0);
   }
 
   console.log('\n=== 4) 时长校验：<30s 与 >90s 都拒收并删除 ===');
   {
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    await record(db, 'uA', 20); // dur<30（当前下限 30s）→ too_short 删除
-    const gShort = await gate(db, 'uA');
+    const bucket = makeBucket();
+    await record(db, bucket, 'uA', 20); // dur<30（当前下限 30s）→ too_short 删除
+    const gShort = await gate(db, bucket, 'uA');
     check('不足 30s → 录音被删，gate 回到 record', gShort.gate === 'record' && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);
-    // 重新录但 done 传 100s（>90 上限）→ too_long 拒收
-    const init = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
-    for (let i = 0, seq = 0; i < 2; i++, seq++) await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: init.clipId, seq, data: CHUNK })));
-    const longRes = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: init.clipId, dur: 100 })))).json();
+    // 重新录但 dur 传 100s（>90 上限）→ too_long 拒收
+    const init = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
+    const longRes = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'upload', clipId: init.clipId, data: CHUNK + CHUNK, dur: 100 })))).json();
     check('超过 90s → 拒收 too_long', !longRes.ok && longRes.error === 'too_long');
   }
 
-  console.log('\n=== 5) 单片过大被拦 + 重录规则 ===');
+  console.log('\n=== 5) 上传超限被拦 + 重录规则 ===');
   {
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    const init = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
-    const big = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: init.clipId, seq: 0, data: 'X'.repeat(70 * 1024) })))).json();
-    check('单片 > 64K → chunk_too_big', !big.ok && big.error === 'chunk_too_big');
+    const bucket = makeBucket();
+    const init = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'init' })))).json();
+    const big = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'upload', clipId: init.clipId, data: 'X'.repeat(900 * 1024 + 1), dur: 55 })))).json();
+    check('上传 > 900KB → clip_too_big', !big.ok && big.error === 'clip_too_big');
     // A 录完，B 未评 → A 可重录
-    await record(db, 'uA', 55);
-    const retake = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
+    await record(db, bucket, 'uA', 55);
+    const retake = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
     check('对方未评 → 可重录', retake.ok && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);
+    check('重录后 R2 对象也被清', bucket._store.size === 0);
     // 重新录 + B 先评价（willing=1）→ A 的录音仍在（延后焚毁），但对方已评不让重录
-    await record(db, 'uA', 55);
-    await record(db, 'uB', 55);
-    const rb = await (await onRequest(ctx(db, POST({ me: 'uB', pair: 'p1', action: 'review', willing: 1 })))).json();
+    await record(db, bucket, 'uA', 55);
+    await record(db, bucket, 'uB', 55);
+    const rb = await (await onRequest(ctx(db, bucket, POST({ me: 'uB', pair: 'p1', action: 'review', willing: 1 })))).json();
     check('B 评价提交成功（cnt.c=1，未结算）', rb.ok && rb.settled == null);
     check('延后焚毁：A 的录音仍在（等 A 评完才焚）', !!db._store.voice_clips.find(c => c.owner === 'uA'));
     // A 想重录：对方已评 → 重录被拒（peer_already_reviewed），而非 no_clip
-    const retakeA = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
+    const retakeA = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
     check('对方已评 → 重录被拒 peer_already_reviewed', !retakeA.ok && retakeA.error === 'peer_already_reviewed');
   }
 
   console.log('\n=== 6) 追加试音：首录后可再录一次（最多 2 段），对方可听到前后两段 ===');
   {
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    await record(db, 'uA', 55);
-    let ga = await gate(db, 'uA');
+    const bucket = makeBucket();
+    await record(db, bucket, 'uA', 55);
+    let ga = await gate(db, bucket, 'uA');
     check('首录后 mineClips 长度=1', ga.mineClips.length === 1);
     check('首录后 canAppend=true（可追加）', ga.canAppend === true);
     // A 追加一段（append:true）
-    const initA2 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init', append: true, mime: 'audio/webm' })))).json();
+    const initA2 = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'init', append: true, mime: 'audio/webm' })))).json();
     check('追加 init 返回 clipId', !!initA2.clipId);
-    for (let i = 0, seq = 0; i < 2; i++, seq++) await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: initA2.clipId, seq, data: CHUNK })));
-    const doneA2 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: initA2.clipId, dur: 55 })))).json();
-    check('追加 done 成功', doneA2.ok);
-    ga = await gate(db, 'uA');
+    const doneA2 = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'upload', clipId: initA2.clipId, data: CHUNK + CHUNK, dur: 55 })))).json();
+    check('追加上传成功', doneA2.ok);
+    ga = await gate(db, bucket, 'uA');
     check('追加后 mineClips 长度=2', ga.mineClips.length === 2);
     check('追加到 2 段后 canAppend=false（达上限）', ga.canAppend === false);
     // 第 3 段追加应被拒
-    const initA3 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init', append: true })))).json();
+    const initA3 = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'init', append: true })))).json();
     check('第 3 段追加被拒 max_attempts', !initA3.ok && initA3.error === 'max_attempts');
     // B 录一段后，B 能看到 A 的前后两段
-    await record(db, 'uB', 55);
-    const gb = await gate(db, 'uB');
+    await record(db, bucket, 'uB', 55);
+    const gb = await gate(db, bucket, 'uB');
     check('B 看到对方(=A)试音段数=2', gb.peerClips.length === 2);
     check('B 可分段拉取 A 的两段（均 ready）', gb.peerClips.every(c => !!c.id && c.ready));
   }
@@ -392,14 +398,15 @@ function check(name, cond) { if (cond) { pass++; console.log('  ✓ ' + name); }
   console.log('\n=== 6B) 重录（retake）删除自己的全部试音段（含追加段）===');
   {
     const db = makeDb({ users, pairs: JSON.parse(JSON.stringify(pairBase)) });
-    await record(db, 'uA', 55);
-    const initA2 = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'init', append: true })))).json();
-    for (let i = 0, seq = 0; i < 2; i++, seq++) await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'chunk', clipId: initA2.clipId, seq, data: CHUNK })));
-    await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'done', clipId: initA2.clipId, dur: 55 })))).json();
+    const bucket = makeBucket();
+    await record(db, bucket, 'uA', 55);
+    const initA2 = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'init', append: true })))).json();
+    await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'upload', clipId: initA2.clipId, data: CHUNK + CHUNK, dur: 55 })))).json();
     check('重录前置：A 已有 2 段试音', db._store.voice_clips.filter(c => c.owner === 'uA').length === 2);
-    const rt = await (await onRequest(ctx(db, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
+    const rt = await (await onRequest(ctx(db, bucket, POST({ me: 'uA', pair: 'p1', action: 'retake' })))).json();
     check('retake 成功且删光 A 全部 2 段', rt.ok && db._store.voice_clips.filter(c => c.owner === 'uA').length === 0);
-    check('retake 后 mineClips 长度=0，可重新首录', (await gate(db, 'uA')).mineClips.length === 0);
+    check('retake 后 R2 对象全清', bucket._store.size === 0);
+    check('retake 后 mineClips 长度=0，可重新首录', (await gate(db, bucket, 'uA')).mineClips.length === 0);
   }
 
   console.log('\n========================================');

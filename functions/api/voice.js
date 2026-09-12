@@ -6,25 +6,25 @@ import { json, err, genId, requireToken, getDB, nowSec, rateLimit, getIp, adminB
 //       任一方婉拒 → 房间 60 秒后自动解散，双方回首页各找各的，互不浪费时间。
 //
 // 存储原则（用户要求：云端与本地都不留存）：
-//   * 录音以 base64 分片写 voice_chunks，评价一提交立刻物理 DELETE；
-//   * 兜底 1 天过期强删（每日 cleanup 扫）；
+//   * 录音本体（base64）一次性 POST 上传，服务端解码后写入 R2 对象（clips/{clipId}）；
+//   * 评价一提交 → 立刻物理 DELETE（R2 对象 + D1 元数据行）；
+//   * 兜底：R2 生命周期规则 1 天自动焚毁 + 每日 cleanup 扫过期，双保险；
 //   * 浏览器侧只用内存 Blob + revokeObjectURL，不写 localStorage/IndexedDB。
 //
-// 兼容原则：voice_* 三张表未建时，首次请求自动建表（详见 voiceReady）；
-//           即使建表失败也返回 ready:false，前端自动跳过试音环节，
+// 兼容原则：voice_* 表未建或 R2 未绑定时，首次请求自动建表（详见 voiceReady）；
+//           即使不可用也返回 ready:false，前端自动跳过试音环节，
 //           老房间与留言板不受任何影响（不会 500）。
 // ============================================================
 
 const MIN_SEC = 30;                 // 服务端下限 30 秒（前端 30 秒解锁停止键；留 2 秒容错在 done 校验里由 dur 真实值兜底）
 const MAX_SEC = 90;                 // 上限 90 秒（前端满 90 秒自动停止），留容错
 const MAX_B64 = 900 * 1024;         // 单段录音 base64 上限 ≈ 675KB 原始音频
-const MAX_CHUNK = 64 * 1024;        // 单片 base64 上限，避开 D1 单值限制
 const MAX_PLAYS = 2;                // 每段对方最多回听 2 次
 const MAX_ATTEMPTS = 2;             // 每人最多 2 段试音（首录 + 1 次追加），对方可全听到
 const CLIP_TTL = 24 * 3600;         // 无人评价时 1 天兜底强删（与房间 ROOM_TTL 对齐，跨腾讯会议长时对练也不会中途丢录音）
+const VOICE_KEY = (id) => 'clips/' + id;   // R2 对象 key：clips/{clipId}
 
 // 试音题库：同一房间双方抽到同一道题（按 pairId 哈希，零存储、确定性）
-// 试音题库：同一房间双方抽到同一道题（按 pairId 哈希，零存储、确定性）。
 // v2.11 起按语言本地化：通用结构化 + 近期 AI/科技话题观点题（海外优先，暂不加入自定义话题）。
 const TOPICS = {
   zh: [
@@ -66,7 +66,7 @@ const TOPICS = {
     '最近下した最も難しい決断と、その判断の仕方を教えてください。',
     'これまでの失敗経験と、そこから学んだことを教えてください。',
     'あなたの長所と短所は？短所はどう改善していますか？',
-    '今のキャリアを選んだ理由と、3年後の目標は？',
+    '今のキャリアを選んだ理由と、3年後の計画は？',
     'AIは働き方をどう変えると思いますか？チャンスとリスクは？',
     'AIが仕事の半分をこなせるとしたら、空いた時間を何に使いますか？',
     'AI時代の生涯学習とは？競争力をどう保ちますか？',
@@ -89,8 +89,27 @@ function topicFor(pairId, lang) {
 function safeParse(s) { try { return JSON.parse(s || '{}') || {}; } catch (e) { return {}; } }
 function clamp5(v) { return Math.max(1, Math.min(5, parseInt(v, 10) || 3)); }
 
-// voice_* 三张表是否已建（未建时整个模块降级为"不可用"，绝不影响 1.0 功能）
-async function voiceReady(db) {
+// R2 对象存储绑定：录音本体唯一存放处（阅后即焚）
+function getBucket(env) {
+  return (env && env.VOICE && typeof env.VOICE.put === 'function' && typeof env.VOICE.get === 'function' && typeof env.VOICE.delete === 'function') ? env.VOICE : null;
+}
+// base64 ↔ 二进制（Workers 全局 atob/btoa 可用）
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function bytesToB64(bytes) {
+  let s = '';
+  const CH = 0x8000;
+  for (let i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+  return btoa(s);
+}
+
+// voice_* 表 + R2 是否就绪（未就绪时整个模块降级为"不可用"，绝不影响 1.0 功能）
+async function voiceReady(env, db) {
+  if (!getBucket(env)) return false;   // R2 未绑定 → 跳过试音（不 500）
   try { await db.prepare('SELECT 1 FROM voice_clips LIMIT 1').first(); return true; }
   catch (e) {
     // 表未建 → 尝试运行时自动建表（D1 绑定有写权限；CREATE TABLE IF NOT EXISTS 幂等安全）
@@ -100,6 +119,7 @@ async function voiceReady(db) {
 }
 
 // 自动建表 DDL（与 voice-tables.sql 一致；CREATE TABLE IF NOT EXISTS 可重复执行）
+// 注：voice_chunks 是旧版分片协议遗留表，现已不再写入（录音本体在 R2），保留 DDL 仅为幂等兼容。
 const VOICE_DDL = [
   `CREATE TABLE IF NOT EXISTS voice_clips (
     id       TEXT PRIMARY KEY,
@@ -108,7 +128,6 @@ const VOICE_DDL = [
     mime     TEXT NOT NULL DEFAULT 'audio/webm',
     dur      INTEGER NOT NULL DEFAULT 0,
     bytes    INTEGER NOT NULL DEFAULT 0,
-    chunks   INTEGER NOT NULL DEFAULT 0,
     plays    INTEGER NOT NULL DEFAULT 0,
     ready    INTEGER NOT NULL DEFAULT 0,
     created  INTEGER NOT NULL,
@@ -164,7 +183,7 @@ export async function onRequest(context) {
     const pairId = url.searchParams.get('pair');
     const m = await memberCheck(url.searchParams.get('me'), pairId);
     if (m.error) return err(m.error, m.status);
-    if (!await voiceReady(db)) return json({ ok: true, ready: false, gate: 'skip' });
+    if (!await voiceReady(env, db)) return json({ ok: true, ready: false, gate: 'skip' });
 
     // 取回录音（内存播放，不落盘）。
     // 对方的录音：每取一次算一次回听，上限 MAX_PLAYS 次。
@@ -177,11 +196,14 @@ export async function onRequest(context) {
       if (!c.ready) return err('clip_not_ready', 409);
       const isOwn = c.owner === m.r.id;
       if (!isOwn && (c.plays | 0) >= MAX_PLAYS) return err('no_plays_left', 409);
-      const { results } = await db.prepare('SELECT seq, data FROM voice_chunks WHERE clip_id=? ORDER BY seq ASC').bind(clipId).all();
-      if (!results || !results.length) return err('clip_gone', 404);
+      // 录音本体在 R2：一个 GET 拉回（读一次 = 一个对象，不再读 15+ 行拼接）
+      const bucket = getBucket(env);
+      const obj = bucket ? await bucket.get(VOICE_KEY(clipId)) : null;
+      if (!obj) return err('clip_gone', 404);   // 对象已被焚毁/未上传成功 → 与删除同义
+      const buf = await obj.arrayBuffer();
       if (!isOwn) await db.prepare('UPDATE voice_clips SET plays=plays+1 WHERE id=?').bind(clipId).run();
       return json({
-        ok: true, mime: c.mime, dur: c.dur, b64: results.map(x => x.data).join(''), own: isOwn,
+        ok: true, mime: c.mime, dur: c.dur, b64: bytesToB64(new Uint8Array(buf)), own: isOwn,
         playsLeft: isOwn ? null : Math.max(0, MAX_PLAYS - ((c.plays | 0) + 1)),
       });
     }
@@ -197,7 +219,7 @@ export async function onRequest(context) {
     const pairId = String(body.pair || body.pairId || '');
     const m = await memberCheck(body.me, pairId);
     if (m.error) return err(m.error, m.status);
-    if (!await voiceReady(db)) return err('voice_not_ready', 503);
+    if (!await voiceReady(env, db)) return err('voice_not_ready', 503);
     const action = body.action;
     const now = nowSec();
 
@@ -205,7 +227,7 @@ export async function onRequest(context) {
     const ratings0 = safeParse(m.p.ratings);
     if (ratings0._voice && action !== 'meta') return err('voice_settled', 409);
 
-    // 1) 开录：建 clip 壳子，返回题目
+    // 1) 开录：建 clip 壳子（D1 只存元数据，录音本体等 upload 后进 R2），返回题目
     if (action === 'init') {
       if (!await rateLimit(db, 'rl:vc:' + ip, 30, 600) && !adminBypass(env, request, body)) return err('rate_limited', 429);
       // 一人可有多段试音（首录 + 追加），按 created 排序；这里取全部旧段
@@ -220,7 +242,7 @@ export async function onRequest(context) {
       } else {
         // 首录 / 重录：对方已评不允许；否则清掉全部旧录音再录
         if (mineRows.length && peerReviewed) return err('peer_already_reviewed', 409);
-        if (mineRows.length) await dropAllMyClips(db, pairId, m.r.id);
+        if (mineRows.length) await dropAllMyClips(env, db, pairId, m.r.id);
       }
       const id = 'vc_' + genId(12);
       await db.prepare(`INSERT INTO voice_clips (id, pair_id, owner, mime, dur, bytes, chunks, plays, ready, created, expires)
@@ -229,53 +251,47 @@ export async function onRequest(context) {
       return json({ ok: true, clipId: id, topic: topicFor(pairId, body.lang || 'en'), minSec: MIN_SEC, maxSec: MAX_SEC, attempt: mineRows.length + 1 });
     }
 
-    // 2) 传片：单片 base64 ≤ 64KB
-    if (action === 'chunk') {
+    // 2) 上传：一次提交整段 base64（≤ MAX_B64 字符），解码后直写 R2 单对象。
+    //    旧版 chunk 分片协议已废弃（那是为绕 D1 单值上限而设计；R2 是对象存储，无需分片）。
+    if (action === 'upload') {
       const clipId = String(body.clipId || '');
       const c = await db.prepare('SELECT * FROM voice_clips WHERE id=? AND pair_id=? AND owner=?').bind(clipId, pairId, m.r.id).first();
       if (!c) return err('clip_gone', 404);
       if (c.ready) return err('clip_finalized', 409);
       const data = String(body.data || '');
-      const seq = parseInt(body.seq, 10) || 0;
-      if (!data) return err('empty_chunk', 400);
-      if (data.length > MAX_CHUNK) return err('chunk_too_big', 413);
-      if ((c.bytes | 0) + data.length > MAX_B64) return err('clip_too_big', 413);
-      await db.batch([
-        db.prepare('INSERT OR REPLACE INTO voice_chunks (clip_id, seq, data) VALUES (?, ?, ?)').bind(clipId, seq, data),
-        db.prepare('UPDATE voice_clips SET bytes=bytes+?, chunks=chunks+1 WHERE id=?').bind(data.length, clipId),
-      ]);
-      return json({ ok: true, seq });
-    }
-
-    // 3) 收工：校验时长后标记可播放
-    if (action === 'done') {
-      const clipId = String(body.clipId || '');
       const dur = Math.round(Number(body.dur) || 0);
-      const c = await db.prepare('SELECT * FROM voice_clips WHERE id=? AND pair_id=? AND owner=?').bind(clipId, pairId, m.r.id).first();
-      if (!c) return err('clip_gone', 404);
-      if (dur < MIN_SEC) { await dropClip(db, clipId); return err('too_short', 400); }
-      if (dur > MAX_SEC) { await dropClip(db, clipId); return err('too_long', 400); }
-      if (!(c.chunks | 0)) { await dropClip(db, clipId); return err('no_audio', 400); }
-      await db.prepare('UPDATE voice_clips SET ready=1, dur=? WHERE id=?').bind(dur, clipId).run();
+      if (!data) return err('empty_audio', 400);
+      if (data.length > MAX_B64) return err('clip_too_big', 413);
+      if (dur < MIN_SEC) { await dropClip(env, db, clipId); return err('too_short', 400); }
+      if (dur > MAX_SEC) { await dropClip(env, db, clipId); return err('too_long', 400); }
+      let bin;
+      try { bin = b64ToBytes(data); } catch (e) { return err('bad_b64', 400); }
+      if (!bin || !bin.length) { await dropClip(env, db, clipId); return err('no_audio', 400); }
+      const bucket = getBucket(env);
+      if (!bucket) return err('voice_not_ready', 503);
+      try {
+        await bucket.put(VOICE_KEY(clipId), bin, { httpMetadata: { contentType: c.mime || 'audio/webm' } });
+      } catch (e) { return err('store_fail', 503); }
+      await db.prepare('UPDATE voice_clips SET ready=1, dur=?, bytes=? WHERE id=?').bind(dur, data.length, clipId).run();
       return json({ ok: true, dur });
     }
 
-    // 4) 撤回重录（对方还没评价时允许）：删掉自己全部试音段，重新录一段
+    // 3) 撤回重录（对方还没评价时允许）：删掉自己全部试音段，重新录一段
     if (action === 'retake') {
       const mine = await db.prepare('SELECT id FROM voice_clips WHERE pair_id=? AND owner=?').bind(pairId, m.r.id).all();
       if (!mine.results || !mine.results.length) return err('no_clip', 404);
       const peerReviewed = await db.prepare('SELECT 1 AS x FROM voice_reviews WHERE pair_id=? AND reviewer=?').bind(pairId, m.other).first();
       if (peerReviewed) return err('peer_already_reviewed', 409);
-      await dropAllMyClips(db, pairId, m.r.id);
+      await dropAllMyClips(env, db, pairId, m.r.id);
       return json({ ok: true });
     }
 
-    // 5) 提交互评 → 等双方都评完再统一焚毁所有录音
+    // 4) 提交互评 → 等双方都评完再统一焚毁所有录音
     // 设计要点（修复"另一方闪退"）：
     //   若一方评完立即 dropClip(对方)，对方此时还没听完/还没评，录音就没了，会触发
     //   「我的录音刚才还在、怎么现在让我重新录」的状态错乱（前端表现为"闪退"）。
-    //   改为延后焚毁：双方都评完（cnt.c>=2）由 dropPairClips 兜底清空所有录音。
-    //   兜底：单方评完后若对方迟迟不评，2h TTL 过期每日 cleanup 强删（不长期占用）。
+    //   改为延后焚毁：双方都评完（cnt.c>=2）由 dropPairClips 兜底清空所有录音（R2 对象 + D1 行）。
+    //   兜底：单方评完后若对方迟迟不评，2h TTL 过期每日 cleanup 强删（不长期占用）；R2 生命周期 1 天兜底。
     if (action === 'review') {
       if (!await rateLimit(db, 'rl:vr:' + ip, 20, 600) && !adminBypass(env, request, body)) return err('rate_limited', 429);
       const exists = await db.prepare('SELECT 1 AS x FROM voice_reviews WHERE pair_id=? AND reviewer=?').bind(pairId, m.r.id).first();
@@ -309,8 +325,8 @@ export async function onRequest(context) {
           }
           settled = 'rejected';
         }
-        // 双方都评完 → 把房间里所有残留录音一并清空（阅后即焚）
-        await dropPairClips(db, pairId);
+        // 双方都评完 → 把房间里所有残留录音一并清空（阅后即焚：R2 对象 + D1 元数据）
+        await dropPairClips(env, db, pairId);
       }
       return json({ ok: true, settled });
     }
@@ -372,20 +388,17 @@ async function metaOf(db, m, pairId, lang) {
 function pickRev(r) {
   return { clarity: r.clarity | 0, logic: r.logic | 0, pace: r.pace | 0, comment: r.comment || '', willing: !!r.willing };
 }
-// 物理删除一段录音（分片 + 主行）
-async function dropClip(db, clipId) {
-  try {
-    await db.batch([
-      db.prepare('DELETE FROM voice_chunks WHERE clip_id=?').bind(clipId),
-      db.prepare('DELETE FROM voice_clips WHERE id=?').bind(clipId),
-    ]);
-  } catch (e) { /* 表不存在时忽略 */ }
+// 物理删除一段录音：R2 对象 + D1 元数据行（阅后即焚）
+async function dropClip(env, db, clipId) {
+  const bucket = getBucket(env);
+  if (bucket) { try { await bucket.delete(VOICE_KEY(clipId)); } catch (e) { /* 对象可能已被焚毁 */ } }
+  try { await db.prepare('DELETE FROM voice_clips WHERE id=?').bind(clipId).run(); } catch (e) { /* 表不存在时忽略 */ }
 }
 // 物理删除某人在某房间的全部试音段（重录 / 撤回时调用）
-async function dropAllMyClips(db, pairId, owner) {
+async function dropAllMyClips(env, db, pairId, owner) {
   try {
     const r = await db.prepare('SELECT id FROM voice_clips WHERE pair_id=? AND owner=?').bind(pairId, owner).all();
     const rows = (r && r.results) || [];
-    for (const c of rows) await dropClip(db, c.id);
+    for (const c of rows) await dropClip(env, db, c.id);
   } catch (e) { /* 表不存在时忽略 */ }
 }

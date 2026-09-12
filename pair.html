@@ -411,7 +411,7 @@
     }
 
     // ===================== 2.0 试音互评 =====================
-    // 录音全程只在内存里流转：录 → base64 分片上传 → 对方听完评完，服务端立刻物理删除。
+    // 录音全程只在内存里流转：录 → base64 一次上传（R2 对象存储）→ 对方听完评完，服务端立刻物理删除。
     // 本地不写 localStorage/IndexedDB，播放用 Blob URL，用完即 revoke。
     var MIN_SEC = 30, MAX_SEC = 90;
     var vMeta = null, vGate = 'skip', vRec = null, vStream = null, vParts = [], vT0 = 0, vTimer = null, vBlobUrl = null, vBusy = false, vAppendMode = false, vPassedScrolled = false;
@@ -614,13 +614,9 @@
           else toast(t('vUploadFail') + (init.error || ''), true);
           return;
         }
-        var SZ = 48 * 1024, total = Math.ceil(b64.length / SZ);
-        for (var i = 0, seq = 0; i < b64.length; i += SZ, seq++) {
-          var r = await vPost({ action: 'chunk', clipId: init.clipId, seq: seq, data: b64.substr(i, SZ) });
-          if (!r.ok) { toast(t('vUploadBroken') + (r.error || ''), true); return; }
-          hint.textContent = t('vUploading', [Math.round((seq + 1) / total * 100)]);
-        }
-        var d = await vPost({ action: 'done', clipId: init.clipId, dur: dur });
+        // 整段 base64 一次上传：R2 对象存储，无需分片
+        hint.textContent = t('vUploading', [100]);
+        var d = await vPost({ action: 'upload', clipId: init.clipId, data: b64, dur: dur });
         if (!d.ok) { toast(d.error === 'too_short' ? t('vTooShort') : (t('voiceSubmitFail') + (d.error || '')), true); return; }
         toast(t('vSubmitOk'));
         await loadVoice();

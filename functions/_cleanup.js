@@ -19,6 +19,14 @@ export async function runCleanup(env) {
   const weekAgo = now - 7 * 86400;
   const threeDays = now - 3 * 86400;
 
+  // R2 录音焚毁助手：按 clip id 列表删 R2 对象（clips/{id}）+ D1 元数据行（批量、容错）
+  const voiceBucket = (env && env.VOICE && typeof env.VOICE.delete === 'function') ? env.VOICE : null;
+  async function purgeVoiceIds(ids) {
+    if (!ids.length) return;
+    if (voiceBucket) await Promise.all(ids.map(id => voiceBucket.delete('clips/' + id).catch(() => {})));
+    for (const id of ids) { try { await db.prepare('DELETE FROM voice_clips WHERE id=?').bind(id).run(); } catch (e) {} }
+  }
+
   // 拆成几个独立 batch：D1 的 batch 是事务，一条语句报错会让整批回滚。
   // 分开跑可以保证「某一段出问题不会连累其它清理」。
   let deleted = 0;
@@ -50,15 +58,16 @@ export async function runCleanup(env) {
     db.prepare("DELETE FROM pairs WHERE status='closed' AND (json_extract(ratings,'$._closedAt') < ? OR (json_extract(ratings,'$._closedAt') IS NULL AND created < ?))").bind(threeDays, threeDays),
   ]);
 
-  // 2.0 试音录音兜底强删：正常情况下对方一提交评价就物理删除，
-  // 这里只兜底「录了没人听」的孤儿录音（2 小时过期）和已消失房间的残留。
-  await run('voice', [
-    db.prepare('DELETE FROM voice_chunks WHERE clip_id IN (SELECT id FROM voice_clips WHERE expires < ?)').bind(now),
-    db.prepare('DELETE FROM voice_clips WHERE expires < ?').bind(now),
-    db.prepare('DELETE FROM voice_chunks WHERE clip_id NOT IN (SELECT id FROM voice_clips)'),
-    db.prepare('DELETE FROM voice_clips WHERE pair_id NOT IN (SELECT id FROM pairs)'),
-    db.prepare('DELETE FROM voice_reviews WHERE pair_id NOT IN (SELECT id FROM pairs)'),
-  ]);
+  // 2.0 试音录音兜底强删：录音本体在 R2（clips/{id}），D1 只留元数据。
+  // 正常情况下对方一提交评价就物理删除；这里兜底「录了没人听」的孤儿录音（2 小时过期）与已消失房间的残留。
+  // R2 生命周期规则（1 天）是最后一道保险：即使本清理失败，录音也会到期自毁。
+  try {
+    const expRows = await db.prepare('SELECT id FROM voice_clips WHERE expires < ? OR pair_id NOT IN (SELECT id FROM pairs)').bind(now).all();
+    await purgeVoiceIds(((expRows && expRows.results) || []).map(r => r.id));
+    await db.prepare('DELETE FROM voice_reviews WHERE pair_id NOT IN (SELECT id FROM pairs)').run();
+    // 旧版分片协议遗留的 voice_chunks 数据（若有）一并清掉
+    await db.prepare('DELETE FROM voice_chunks WHERE clip_id NOT IN (SELECT id FROM voice_clips)').run();
+  } catch (e) { /* 表未建：无录音可清 */ }
   // 主动结算：到期仍未关的房间（退出 60s / 双方互评完 5 分钟）直接关房并清对话。
   // 兜底用——即便没人开着页面轮询，每日定时清理也会把过期房间结清，不留残留对话。
   // dissolve_at/closed_at 列可能未 ALTER：先尝试用 json_set 写 _closedAt（保留其它字段），失败则退化仅关房
@@ -75,11 +84,11 @@ export async function runCleanup(env) {
       ]);
     } catch (e2) { /* 列未 ALTER：运行时已由 ratings.at 兜底自动结算，忽略 */ }
   }
-  // 已关闭房间里若还残留录音，一并焚毁（云端不留存）
-  await run('voiceClosed', [
-    db.prepare("DELETE FROM voice_chunks WHERE clip_id IN (SELECT id FROM voice_clips WHERE pair_id IN (SELECT id FROM pairs WHERE status='closed'))"),
-    db.prepare("DELETE FROM voice_clips WHERE pair_id IN (SELECT id FROM pairs WHERE status='closed')"),
-  ]);
+  // 已关闭房间里若还残留录音，一并焚毁（云端不留存：R2 对象 + D1 元数据）
+  try {
+    const closedRows = await db.prepare("SELECT id FROM voice_clips WHERE pair_id IN (SELECT id FROM pairs WHERE status='closed')").all();
+    await purgeVoiceIds(((closedRows && closedRows.results) || []).map(r => r.id));
+  } catch (e) { /* 表未建：无录音可清 */ }
   // 2.1 面试间：对话稿属于敏感内容，房间一关就删；信令是纯瞬时数据，10 分钟即弃。
   // 另外清掉已不存在房间的孤儿行（表未建时整段跳过，不影响其它清理）。
   await run('interview', [

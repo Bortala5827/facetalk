@@ -19,6 +19,12 @@ database_name = "mianshi-dazi-d1"
 database_id = "f93a89d7-ef5f-49c5-863d-5f1611e1a7f4"
 migrations_dir = "migrations"
 
+# R2 对象存储绑定：试音录音（voice clips）本体存这里（阅后即焚，1 天生命周期自动焚毁），
+# D1 只保留 voice_clips 元数据（时长/回听次数/ready）。见 functions/api/voice.js 的 env.VOICE。
+[[r2_buckets]]
+binding = "VOICE"
+bucket_name = "facetalk-voice"
+
 # 管理员密码（超频解锁用，见 functions/_shared.js isAdmin）
 # 生产环境务必改用 secret 注入，勿明文提交：
 #   wrangler pages secret put MS_ADMIN_KEY --project-name mianshi-dazi
