@@ -209,8 +209,8 @@
       <p class="list-empty" id="browse-empty-own" hidden style="margin-top:8px" data-i18n="browseOwnHint">你已发布意图，这里只看别人的。刷新可见新上线的搭子。</p>
     </section>
 
-    <!-- 我的搭子：默认折叠（工具思维——不追溯历史，只显动作）；有未处理申请时 JS 自动展开 + 红点 -->
-    <details class="b-collapse" id="my-status">
+    <!-- 我的搭子：默认展开（用户要求不自动折叠）；有未处理申请时红点仍会亮起 -->
+    <details class="b-collapse" id="my-status" open>
       <summary class="b-sum">
         <span class="b-ttl" data-i18n="myStatus">我的搭子</span>
         <span class="b-dot" id="statusDot" hidden></span>

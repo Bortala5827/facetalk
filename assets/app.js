@@ -387,7 +387,7 @@
           actions = '<button class="btn-mini grey" data-cancel-app="' + esc(o.appId) + '">' + t('withdraw') + '</button>';
         } else if (o.status === 'a_accepted') {
           s = dissolved ? t('roomDissolved') : t('peerApproved');
-          actions = dissolved ? '' : '<button class="btn-mini ok" data-bacc="' + esc(o.appId) + '">' + t('iAgreeToo') + '</button>' +
+          actions = dissolved ? '' : '<button class="btn-primary iagree-cta" data-bacc="' + esc(o.appId) + '">' + t('iAgreeToo') + '</button>' +
                     '<button class="btn-mini grey" data-cancel-app="' + esc(o.appId) + '">' + t('withdraw') + '</button>';
         } else if (o.status === 'both_accepted' || o.status === 'accepted') {
           s = dissolved ? t('roomDissolved') : t('matchedDone');

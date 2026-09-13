@@ -19,6 +19,7 @@ import { json, err, genId, requireToken, getDB, nowSec, rateLimit, getIp, adminB
 const MIN_SEC = 30;                 // 服务端下限 30 秒（前端 30 秒解锁停止键；留 2 秒容错在 done 校验里由 dur 真实值兜底）
 const MAX_SEC = 90;                 // 上限 90 秒（前端满 90 秒自动停止），留容错
 const MAX_B64 = 900 * 1024;         // 单段录音 base64 上限 ≈ 675KB 原始音频
+const MAX_RAW = 700 * 1024;         // 单段录音原始字节上限（二进制直传用，≈525KB，含 opus 容器头余量）
 const MAX_PLAYS = 2;                // 每段对方最多回听 2 次
 const MAX_ATTEMPTS = 2;             // 每人最多 2 段试音（首录 + 1 次追加），对方可全听到
 const CLIP_TTL = 24 * 3600;         // 无人评价时 1 天兜底强删（与房间 ROOM_TTL 对齐，跨腾讯会议长时对练也不会中途丢录音）
@@ -214,13 +215,19 @@ export async function onRequest(context) {
 
   // ─────────────── POST：录制 / 上传 / 评价 ───────────────
   if (request.method === 'POST') {
-    let body;
-    try { body = await request.json(); } catch (e) { return err('bad_json'); }
-    const pairId = String(body.pair || body.pairId || '');
-    const m = await memberCheck(body.me, pairId);
+    const ct = (request.headers.get('content-type') || '').toLowerCase();
+    let body = {};
+    // 二进制直传（移动端优化）：body 为空，me/pair/clipId/dur/mime 走 header，避免 base64 体积膨胀 + 主线程编码卡顿
+    if (ct.indexOf('application/json') >= 0) {
+      try { body = await request.json(); } catch (e) { return err('bad_json'); }
+    }
+    const isBinary = ct.indexOf('application/octet-stream') >= 0;
+    const me = body.me || request.headers.get('x-voice-me') || '';
+    const pairId = String(body.pair || body.pairId || request.headers.get('x-voice-pair') || '');
+    const m = await memberCheck(me, pairId);
     if (m.error) return err(m.error, m.status);
     if (!await voiceReady(env, db)) return err('voice_not_ready', 503);
-    const action = body.action;
+    const action = body.action || (isBinary ? 'upload' : '');
     const now = nowSec();
 
     // 已出结果的房间不允许再动试音
@@ -251,28 +258,40 @@ export async function onRequest(context) {
       return json({ ok: true, clipId: id, topic: topicFor(pairId, body.lang || 'en'), minSec: MIN_SEC, maxSec: MAX_SEC, attempt: mineRows.length + 1 });
     }
 
-    // 2) 上传：一次提交整段 base64（≤ MAX_B64 字符），解码后直写 R2 单对象。
-    //    旧版 chunk 分片协议已废弃（那是为绕 D1 单值上限而设计；R2 是对象存储，无需分片）。
+    // 2) 上传：直写 R2 单对象。
+    //    旧版 chunk 分片协议已废弃；现支持两条上传通道：
+    //      a) JSON：整段 base64 一次提交（≤ MAX_B64 字符），服务端解码后写 R2（兼容旧前端）；
+    //      b) 二进制直传：content-type=application/octet-stream，raw 音频直接作为 body，
+    //         省去 base64 体积膨胀（≈+33%）与主线程编码卡顿——这是手机端迟滞的关键优化。
+    //    两条通道共用下方校验 + R2 put，保证行为一致。
     if (action === 'upload') {
-      const clipId = String(body.clipId || '');
+      const clipId = String((isBinary ? request.headers.get('x-voice-clip') : body.clipId) || '');
       const c = await db.prepare('SELECT * FROM voice_clips WHERE id=? AND pair_id=? AND owner=?').bind(clipId, pairId, m.r.id).first();
       if (!c) return err('clip_gone', 404);
       if (c.ready) return err('clip_finalized', 409);
-      const data = String(body.data || '');
-      const dur = Math.round(Number(body.dur) || 0);
-      if (!data) return err('empty_audio', 400);
-      if (data.length > MAX_B64) return err('clip_too_big', 413);
-      if (dur < MIN_SEC) { await dropClip(env, db, clipId); return err('too_short', 400); }
-      if (dur > MAX_SEC) { await dropClip(env, db, clipId); return err('too_long', 400); }
-      let bin;
-      try { bin = b64ToBytes(data); } catch (e) { return err('bad_b64', 400); }
-      if (!bin || !bin.length) { await dropClip(env, db, clipId); return err('no_audio', 400); }
+      let bin, dur, byteLen;
+      if (isBinary) {
+        dur = Math.round(Number(request.headers.get('x-voice-dur')) || 0);
+        try { const ab = await request.arrayBuffer(); bin = new Uint8Array(ab); } catch (e) { return err('bad_body', 400); }
+        byteLen = bin ? bin.length : 0;
+      } else {
+        const data = String(body.data || '');
+        dur = Math.round(Number(body.dur) || 0);
+        if (!data) return err('empty_audio', 400);
+        if (data.length > MAX_B64) return err('clip_too_big', 413);
+        try { bin = b64ToBytes(data); } catch (e) { return err('bad_b64', 400); }
+        byteLen = bin ? bin.length : 0;
+      }
+      if (!bin || !byteLen) { if (!isBinary) await dropClip(env, db, clipId); return err('no_audio', 400); }
+      if (byteLen > MAX_RAW) { if (!isBinary) await dropClip(env, db, clipId); return err('clip_too_big', 413); }
+      if (dur < MIN_SEC) { if (!isBinary) await dropClip(env, db, clipId); return err('too_short', 400); }
+      if (dur > MAX_SEC) { if (!isBinary) await dropClip(env, db, clipId); return err('too_long', 400); }
       const bucket = getBucket(env);
       if (!bucket) return err('voice_not_ready', 503);
       try {
         await bucket.put(VOICE_KEY(clipId), bin, { httpMetadata: { contentType: c.mime || 'audio/webm' } });
       } catch (e) { return err('store_fail', 503); }
-      await db.prepare('UPDATE voice_clips SET ready=1, dur=?, bytes=? WHERE id=?').bind(dur, data.length, clipId).run();
+      await db.prepare('UPDATE voice_clips SET ready=1, dur=?, bytes=? WHERE id=?').bind(dur, byteLen, clipId).run();
       return json({ ok: true, dur });
     }
 

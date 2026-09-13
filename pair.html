@@ -218,6 +218,7 @@
     // 互评提交态：本地记住「我已提交」，防止 tick/render 反复开合评价卡造成"来回闪退"
     var myRated = false;        // 我已成功提交评价
     var rateWaitShown = false;  // 提交后等待界面已接管 rate-card（render 不再碰它）
+    var homeScheduled = false;  // 时间结束后双方评完 → 已排程回主界面（防每轮轮询重复调度）
 
 
     function render(p){
@@ -288,15 +289,21 @@
           if (ds <= 0) { clearInterval(dissolveTimer); dissolveTimer = null; closeRoom(p.pairId); }
         }, 1000);
       } else if (p.status === 'done' && p.autoCloseIn > 0) {
-        // 双方互评完成 → 5 分钟宽限后自动清空房间 + 对话
         dtip.hidden = false;
         var ac = p.autoCloseIn;
-        dtip.textContent = t('ratedAutoClose', [Math.max(0, ac)]);
-        if (ac <= 0) closeRoom(p.pairId);
-        else dissolveTimer = setInterval(function () {
-          ac--; dtip.textContent = t('ratedAutoClose', [Math.max(0, ac)]);
-          if (ac <= 0) { clearInterval(dissolveTimer); dissolveTimer = null; closeRoom(p.pairId); }
-        }, 1000);
+        if (remain <= 0) {
+          // 会话时间已结束 + 双方评完 → 直接回主界面（不再挂 5 分钟宽限），解决「评完卡在房间不回主页」
+          dtip.textContent = t('ratedDoneBackHome');
+          if (!homeScheduled) { homeScheduled = true; setTimeout(function () { closeRoom(p.pairId); }, 2500); }
+        } else {
+          // 仍在会话时长内 → 保留 5 分钟宽限，方便继续聊 / 再约
+          dtip.textContent = t('ratedAutoClose', [Math.max(0, ac)]);
+          if (ac <= 0) closeRoom(p.pairId);
+          else dissolveTimer = setInterval(function () {
+            ac--; dtip.textContent = t('ratedAutoClose', [Math.max(0, ac)]);
+            if (ac <= 0) { clearInterval(dissolveTimer); dissolveTimer = null; closeRoom(p.pairId); }
+          }, 1000);
+        }
       } else if (p.status === 'done' && !p.rated && !myRated) {
         // 房间 done、我还没评、也没提交过 → 展示评价卡（myRated 防已提交后轮询又把它弹回来）
         document.getElementById('rate-card').hidden = false;
@@ -415,6 +422,18 @@
     // 本地不写 localStorage/IndexedDB，播放用 Blob URL，用完即 revoke。
     var MIN_SEC = 30, MAX_SEC = 90;
     var vMeta = null, vGate = 'skip', vRec = null, vStream = null, vParts = [], vT0 = 0, vTimer = null, vBlobUrl = null, vBusy = false, vAppendMode = false, vPassedScrolled = false;
+    // 提交失败时保留录音副本，让用户「重试」而非整段重录（手机弱网关键体验）
+    var vPendingBlob = null, vPendingDur = 0, vPendingMime = 'audio/webm';
+
+    function isMobile() {
+      try { if (window.matchMedia('(max-width: 768px)').matches) return true; } catch (e) {}
+      return /Mobi|Android|iPhone|iPad|iPod|Windows Phone|HarmonyOS/i.test(navigator.userAgent || '');
+    }
+    function abortWithTimeout(ms) {
+      var ac = ('AbortController' in window) ? new AbortController() : null;
+      var id = setTimeout(function () { if (ac) try { ac.abort(); } catch (e) {} }, ms);
+      return { signal: ac ? ac.signal : null, clear: function () { clearTimeout(id); } };
+    }
 
     function vGet(extra) {
       var u = new URL('/api/voice', location.origin);
@@ -458,7 +477,9 @@
       document.getElementById('v-topic').textContent = vMeta.topic || '';
       // 只在用户能操作的阶段（record / review）保持展开；其它阶段自动折叠成一行摘要
       // 给面试间留出更多屏幕空间，避免长篇试音流程把屏幕占满。
+      // 手机用户例外：配对/试音状态不自动折叠，始终可见（小屏折叠后状态被藏、易误判卡死）。
       var shouldCollapse = (vGate === 'wait_review' || vGate === 'result' || vGate === 'passed');
+      if (isMobile()) shouldCollapse = false;
       setVoiceCollapsed(shouldCollapse);
       if (vGate === 'record') {
         vShow('v-record');
@@ -550,6 +571,7 @@
     }
     async function vStart() {
       if (vBusy || vRec) return;
+      var rb = document.getElementById('v-retry'); if (rb) rb.remove();   // 重新开录即放弃旧重试入口
       if (!navigator.mediaDevices || !window.MediaRecorder) { toast(t('vNoRecorder'), true); return; }
       try {
         vStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
@@ -586,41 +608,104 @@
       var type = (vRec && vRec.mimeType) || 'audio/webm';
       var blob = new Blob(vParts, { type: type });
       vParts = []; vRec = null;
-      document.getElementById('v-start').hidden = false;
-      document.getElementById('v-stop').hidden = true;
-      document.getElementById('v-time').textContent = '00:00';
-      document.getElementById('v-fill').style.width = '0%';
-      if (dur < MIN_SEC) { toast(t('vMin30', [MIN_SEC]), true); vAppendMode = false; return; }
-      await vUpload(blob, Math.min(dur, MAX_SEC), vAppendMode);
+      // 进入「提交中」锁定态：不立刻恢复成可录状态，避免手机端误以为卡死而反复重录
+      showSubmitting();
+      if (dur < MIN_SEC) { clearSubmitting(); toast(t('vMin30', [MIN_SEC]), true); vAppendMode = false; return; }
+      if (blob.size > 700 * 1024) { clearSubmitting(); toast(t('vTooLarge'), true); vAppendMode = false; return; }
+      vPendingBlob = blob; vPendingDur = Math.min(dur, MAX_SEC); vPendingMime = type || 'audio/webm';
+      var ok = await vUpload(vPendingBlob, vPendingDur, vPendingMime, vAppendMode);
       vAppendMode = false;
+      if (ok) clearSubmitting();
+      else showRetry();   // 保留录音，让用户「重试」而非整段重录
     }
-    function blobToB64(blob) {
-      return blob.arrayBuffer().then(function (buf) {
-        var b = new Uint8Array(buf), s = '', CH = 0x8000;
-        for (var i = 0; i < b.length; i += CH) s += String.fromCharCode.apply(null, b.subarray(i, i + CH));
-        return btoa(s);
-      });
-    }
-    async function vUpload(blob, dur, append) {
+    // 「提交中」锁定态：禁用开始键、显示转圈，阻止用户在上传期间误点/误判卡死
+    function showSubmitting() {
       vBusy = true;
-      var hint = document.getElementById('v-hint'), old = hint.innerHTML;
-      hint.textContent = t('vUploading', [0]);
-      try {
-        var b64 = await blobToB64(blob);
-        if (b64.length > 1500000) { toast(t('vTooLarge'), true); return; }
-        var init = await vPost({ action: 'init', mime: blob.type || 'audio/webm', append: !!append });
-        if (!init.ok) {
-          if (init.error === 'max_attempts') toast(t('vMaxAttempts'), true);
-          else toast(t('vUploadFail') + (init.error || ''), true);
-          return;
-        }
-        // 整段 base64 一次上传：R2 对象存储，无需分片
-        hint.textContent = t('vUploading', [100]);
-        var d = await vPost({ action: 'upload', clipId: init.clipId, data: b64, dur: dur });
-        if (!d.ok) { toast(d.error === 'too_short' ? t('vTooShort') : (t('voiceSubmitFail') + (d.error || '')), true); return; }
-        toast(t('vSubmitOk'));
-        await loadVoice();
-      } finally { vBusy = false; hint.innerHTML = old; }
+      var stop = document.getElementById('v-stop'); if (stop) stop.hidden = true;
+      var tm = document.getElementById('v-time'); if (tm) tm.textContent = '00:00';
+      var fl = document.getElementById('v-fill'); if (fl) fl.style.width = '0%';
+      var start = document.getElementById('v-start');
+      if (start) { start.hidden = false; start.disabled = true; start.textContent = t('voiceSubmitting'); }
+      var host = document.getElementById('v-record');
+      if (host && !document.getElementById('v-submit-spin')) {
+        var sp = document.createElement('span');
+        sp.id = 'v-submit-spin';
+        sp.className = 'v-submit-spin';
+        sp.innerHTML = '<span class="v-spin"></span> ' + t('voiceSubmitting');
+        host.appendChild(sp);
+      }
+    }
+    function clearSubmitting() {
+      vBusy = false;
+      var start = document.getElementById('v-start');
+      if (start) { start.hidden = false; start.disabled = false; start.textContent = t('voiceStart'); }
+      var sp = document.getElementById('v-submit-spin'); if (sp) sp.remove();
+      var rb = document.getElementById('v-retry'); if (rb) rb.remove();   // 提交成功后清理重试入口
+    }
+    // 上传失败兜底：保留录音，显示「重试」按钮（点一次即重传，不用重新录 30 秒）
+    function showRetry() {
+      vBusy = false;
+      var start = document.getElementById('v-start');
+      if (start) { start.hidden = false; start.disabled = false; start.textContent = t('voiceStart'); }
+      var sp = document.getElementById('v-submit-spin'); if (sp) sp.remove();
+      var host = document.getElementById('v-record');
+      var btn = document.getElementById('v-retry');
+      if (!btn && host) {
+        btn = document.createElement('button');
+        btn.id = 'v-retry'; btn.type = 'button'; btn.className = 'btn-mini';
+        btn.textContent = t('voiceRetry');
+        btn.addEventListener('click', async function () {
+          if (!vPendingBlob) return;
+          btn.hidden = true; btn.disabled = true;
+          showSubmitting();
+          var ok = await vUpload(vPendingBlob, vPendingDur, vPendingMime, vAppendMode);
+          vAppendMode = false;
+          if (ok) clearSubmitting(); else showRetry();
+        });
+        host.appendChild(btn);
+      } else if (btn) { btn.hidden = false; btn.disabled = false; }
+    }
+    async function vUpload(blob, dur, mime, append) {
+      showSubmitting();
+      var lastErr = '';
+      // 手机弱网自动重试：最多 3 次；网络/网关类错误继续重试，业务错误（时长/超限）直接返回
+      for (var attempt = 0; attempt < 3; attempt++) {
+        try {
+          var init = await vPost({ action: 'init', mime: mime || 'audio/webm', append: !!append });
+          if (!init.ok) {
+            if (init.error === 'max_attempts') { toast(t('vMaxAttempts'), true); return false; }
+            lastErr = init.error || 'init_fail'; continue;
+          }
+          // 二进制直传 R2：省去 base64 体积膨胀 + 主线程编码卡顿（手机端关键优化）
+          var ctype = blob.type || 'audio/webm';
+          var to = abortWithTimeout(25000);
+          var up = await fetch('/api/voice', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/octet-stream',
+              'x-voice-clip': init.clipId,
+              'x-voice-dur': String(dur),
+              'x-voice-mime': ctype,
+              'x-voice-me': me,
+              'x-voice-pair': pairId
+            },
+            body: blob,
+            signal: to.signal
+          }).then(function (r) { return r.json().catch(function () { return {}; }); });
+          to.clear();
+          if (!up.ok) {
+            if (up.error === 'too_short') { toast(t('vTooShort'), true); return false; }
+            if (up.error === 'too_long') { toast(t('vTooLong'), true); return false; }
+            if (up.error === 'clip_too_big') { toast(t('vTooLarge'), true); return false; }
+            lastErr = up.error || 'up_fail'; continue;   // 网络/网关错误 → 重试
+          }
+          toast(t('vSubmitOk'));
+          await loadVoice();
+          return true;
+        } catch (e) { lastErr = 'net'; continue; }
+      }
+      toast(t('vUploadFail') + (lastErr ? ' (' + lastErr + ')' : ''), true);
+      return false;
     }
     // ── 渲染自己的试音段列表（支持多段：首录 + 追加；自己的可随时回听，不计次）──
     function renderMineClips() {
