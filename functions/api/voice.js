@@ -26,65 +26,95 @@ const CLIP_TTL = 24 * 3600;         // 无人评价时 1 天兜底强删（与�
 const VOICE_KEY = (id) => 'clips/' + id;   // R2 对象 key：clips/{clipId}
 
 // 试音题库：同一房间双方抽到同一道题（按 pairId 哈希，零存储、确定性）
-// v2.11 起按语言本地化：通用结构化 + 近期 AI/科技话题观点题（海外优先，暂不加入自定义话题）。
-const TOPICS = {
-  zh: [
-    '请做一下自我介绍，重点突出与目标岗位匹配的经历。',
-    '你最近做过最难的一个决定是什么？当时是怎么权衡的？',
-    '讲一件你经历过的失败，你从中学到了什么？',
-    '你的优点和缺点分别是什么？缺点你打算怎么改进？',
-    '为什么选择现在这个职业方向？未来 3 年的规划是什么？',
-    '说说你对 AI 改变工作的看法：机会和风险分别在哪里？',
-    '如果 AI 能完成你一半的工作，你会把省下的时间花在哪里？',
-    'AI 时代你怎么理解终身学习？如何保持竞争力？',
-    '你最近在关注什么新技术或新趋势？为什么？',
-    '团队里意见出现分歧时你会怎么做？举个具体例子。',
-    '你如何应对压力和高强度的工作节奏？',
-    '讲一件你主动推动改变（流程、工具或想法）的经历。',
-    '你怎样判断一份工作适不适合自己？',
-    '远程协作和办公室协作你更倾向哪种？为什么？',
-    '如果 AI 面试官来面你，你会怎么准备？',
-  ],
-  en: [
-    'Please introduce yourself, highlighting experience relevant to the target role.',
-    'What is the hardest decision you have made recently, and how did you weigh it?',
-    'Tell me about a failure you have experienced and what you learned from it.',
-    'What are your strengths and weaknesses? How are you working on the latter?',
-    'Why did you choose your current career path? Where do you see yourself in 3 years?',
-    'How do you think AI will change the way we work — opportunities and risks?',
-    'If AI could do half of your job, where would you spend the time you save?',
-    'What does lifelong learning mean in the AI era, and how do you stay competitive?',
-    'What new technology or trend are you following recently, and why?',
-    'How do you handle disagreement within a team? Give a concrete example.',
-    'How do you manage pressure and high-intensity workloads?',
-    'Tell me about a time you proactively drove a change (process, tool, or idea).',
-    'How do you judge whether a job is a good fit for you?',
-    'Do you prefer remote or in-office collaboration? Why?',
-    'If an AI interviewer interviewed you, how would you prepare?',
-  ],
-  ja: [
-    '自己紹介をお願いします。応募職種に合う経験を中心に話してください。',
-    '最近下した最も難しい決断と、その判断の仕方を教えてください。',
-    'これまでの失敗経験と、そこから学んだことを教えてください。',
-    'あなたの長所と短所は？短所はどう改善していますか？',
-    '今のキャリアを選んだ理由と、3年後の計画は？',
-    'AIは働き方をどう変えると思いますか？チャンスとリスクは？',
-    'AIが仕事の半分をこなせるとしたら、空いた時間を何に使いますか？',
-    'AI時代の生涯学習とは？競争力をどう保ちますか？',
-    '最近注目している技術やトレンドは？その理由は？',
-    'チーム内で意見が割れたらどうしますか？具体例を挙げてください。',
-    'プレッシャーやハードな仕事量にはどう対応しますか？',
-    '自分から改善（プロセス・ツール・アイデア）を推進した経験はありますか？',
-    '仕事が自分に合っているかどうか、どう判断しますか？',
-    'リモートとオフィス、どちらを好みますか？理由は？',
-    'AI面接官に面接されるなら、どう準備しますか？',
-  ],
+// v2.13 起改为统一均衡题库：所有岗位共用一份角色中立的通用结构化面试题，
+//   不再按岗位分池（用户希望「随便练练、不分那么细」）。三语本地化 zh/en/ja，按前端 lang 取。
+const TOPIC_BANK = {
+  generic: {
+    zh: [
+      '请做一下自我介绍，重点突出与目标岗位匹配的经历。',
+      '你最近做过最难的一个决定是什么？当时是怎么权衡的？',
+      '讲一件你经历过的失败，你从中学到了什么？',
+      '你的优点和缺点分别是什么？缺点你打算怎么改进？',
+      '为什么选择现在这个职业方向？未来 3 年的规划是什么？',
+      '你遇到过最棘手的一次人际冲突是什么？怎么化解的？',
+      '你会怎么向一个完全外行的人讲清楚你做的事？',
+      '回顾过去一年，你最大的成长是什么？',
+      '你最不能接受的工作氛围或管理方式是什么？',
+      '团队里意见出现分歧时你会怎么做？举个具体例子。',
+      '你如何应对压力和高强度的工作节奏？',
+      '讲一件你主动推动改变（流程、工具或想法）的经历。',
+      '你怎样判断一份工作适不适合自己？',
+      '远程协作和办公室协作你更倾向哪种？为什么？',
+      '如果 AI 面试官来面你，你会怎么准备？',
+      '请描述一次你必须在信息不全时做决定的经历，结果如何？',
+      '你和同事对一项工作的优先级判断相反，你如何推动对齐落地？',
+      '上级临时交给你一个不熟悉领域的紧急任务，你从哪几步入手？',
+      '你如何组织一场 30 人的线下活动，确保不出乱子？',
+      '别人当面指出你方案里的明显漏洞，你的第一反应是什么？',
+      '你最近一次主动学一项新技能是什么？怎么坚持下来的？',
+      '如果给你一周完全自由安排，你会用来提升哪方面？',
+    ],
+    en: [
+      'Please introduce yourself, highlighting experience relevant to the target role.',
+      'What is the hardest decision you have made recently, and how did you weigh it?',
+      'Tell me about a failure you have experienced and what you learned from it.',
+      'What are your strengths and weaknesses? How are you working on the latter?',
+      'Why did you choose your current career path? Where do you see yourself in 3 years?',
+      'What is the toughest interpersonal conflict you have faced, and how did you resolve it?',
+      'How would you explain what you do to someone with zero background in it?',
+      'Looking back over the past year, what has been your biggest growth?',
+      'What kind of work atmosphere or management style do you find hardest to accept?',
+      'How do you handle disagreement within a team? Give a concrete example.',
+      'How do you manage pressure and high-intensity workloads?',
+      'Tell me about a time you proactively drove a change (process, tool, or idea).',
+      'How do you judge whether a job is a good fit for you?',
+      'Do you prefer remote or in-office collaboration? Why?',
+      'If an AI interviewer interviewed you, how would you prepare?',
+      'Describe a time you had to make a decision with incomplete information. What happened?',
+      'You and a colleague rank a task priority oppositely. How do you drive alignment and execution?',
+      'Your manager urgently hands you a task in an unfamiliar domain. What are your first steps?',
+      'How would you organize an offline event for 30 people without things falling apart?',
+      'When someone points out an obvious flaw in your plan to your face, what is your first reaction?',
+      'What is the most recent new skill you proactively learned, and how did you stick with it?',
+      'If you had one free week to spend entirely as you like, what would you use it to improve?',
+    ],
+    ja: [
+      '自己紹介をお願いします。応募職種に合う経験を中心に話してください。',
+      '最近下した最も難しい決断と、その判断の仕方を教えてください。',
+      'これまでの失敗経験と、そこから学んだことを教えてください。',
+      'あなたの長所と短所は？短所はどう改善していますか？',
+      '今のキャリアを選んだ理由と、3年後の計画は？',
+      'これまでで最も手強かった対人間の衝突は何で、どう解決しましたか？',
+      '専門知識のない人に、自分の仕事をどう説明しますか？',
+      'この1年を振り返って、最も大きな成長は何でしたか？',
+      '受け入れがたいと感じる職場の雰囲気やマネジメントのスタイルは何ですか？',
+      'チーム内で意見が割れたらどうしますか？具体例を挙げてください。',
+      'プレッシャーやハードな仕事量にはどう対応しますか？',
+      '自分から改善（プロセス・ツール・アイデア）を推進した経験はありますか？',
+      '仕事が自分に合っているかどうか、どう判断しますか？',
+      'リモートとオフィス、どちらを好みますか？理由は？',
+      'AI面接官に面接されるなら、どう準備しますか？',
+      '情報が不十分なまま決断しなければならなかった経験を話してください。結果はどうでしたか？',
+      '同僚とある仕事の優先順位の判断が逆だった場合、どう合意形成し実行しますか？',
+      '上司から見知らぬ分野の緊急課題を突然任されたとき、最初に何をしますか？',
+      '30人規模の対面イベントを、トラブルなくどう企画・運営しますか？',
+      '目の前で誰かに自分の計画の明らかな欠陥を指摘されたとき、最初の反応は？',
+      '最近自ら習得した新しいスキルは何ですか？どう続けましたか？',
+      '好きなように使える1週間があれば、何を磨きに使いますか？',
+    ],
+  },
+
+
+
+
+
 };
 
+// 统一题库：所有房间共用，忽略岗位（v2.13）。
 function topicFor(pairId, lang) {
+  const list = TOPIC_BANK.generic[lang] || TOPIC_BANK.generic.en;
   let h = 2166136261;
   for (let i = 0; i < pairId.length; i++) { h ^= pairId.charCodeAt(i); h = Math.imul(h, 16777619); }
-  const list = TOPICS[lang] || TOPICS.en;
   return list[(h >>> 0) % list.length];
 }
 function safeParse(s) { try { return JSON.parse(s || '{}') || {}; } catch (e) { return {}; } }
