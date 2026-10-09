@@ -428,8 +428,31 @@
     var r = await api('POST', '/api/pair', { action: 'b-accept', appId: appId });
     if (r.status === 200 && r.data.ok) {
       toast(t('matchedEnter'));
+      showMatchOverlay(r.data.pairId || null);
       loadInbox(); loadOut(); checkPair();
     } else toast(t('agreeFail') + (r.data.error || r.status), true);
+  }
+
+  // ======================== 互选成功时刻：全屏庆祝（A 方案） ========================
+  function showMatchOverlay(pairId) {
+    var ov = document.getElementById('match-overlay');
+    if (!ov || ov.classList.contains('open')) return;
+    var key = 'ft_match_shown_' + (pairId || '');
+    try {
+      if (pairId && sessionStorage.getItem(key)) return;
+      if (pairId) sessionStorage.setItem(key, '1');
+    } catch (e) {}
+    var enter = document.getElementById('mo-enter');
+    if (enter && pairId && me) {
+      enter.href = '/pair.html?pair=' + encodeURIComponent(pairId) + '&me=' + encodeURIComponent(me);
+    }
+    var later = document.getElementById('mo-later');
+    if (later) {
+      later.onclick = function () { ov.classList.remove('open'); ov.hidden = true; };
+    }
+    ov.hidden = false;
+    void ov.offsetWidth; // 强制 reflow，确保过渡/动画生效
+    ov.classList.add('open');
   }
 
   // ======================== 我发布的需求 ========================
@@ -531,6 +554,9 @@
     var rated = p && p.rated;
     var left = p && p.left;
     if (p && !rated && !left) {
+      if (p.pairId && !(function(){ try { return sessionStorage.getItem('ft_match_shown_' + p.pairId); } catch(e){ return null; } })()) {
+        showMatchOverlay(p.pairId);
+      }
       $('room-card').hidden = false;
       $('room-enter').href = '/pair.html?pair=' + encodeURIComponent(p.pairId) + '&me=' + encodeURIComponent(me);
       $('room-enter').style.display = '';

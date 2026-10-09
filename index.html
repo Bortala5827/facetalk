@@ -7,7 +7,7 @@
   <link rel="canonical" href="https://facetalk.955827.xyz/" />
   <meta name="description" data-i18n-content="metaDesc" content="Facetalk 是一款主打零社交压力的陌生人面试与口语协作工具。无需加好友，通过60秒短语音互听互评，快速筛选合拍队友，专注纯粹的组队练习。" />
   <meta name="keywords" content="面试口语对练,60秒试音,AI面试筛选,陌生人协作练习,免社交口语练习,雅思模拟面试,无压力模拟面试,免社交口语对练" />
-  <script src="/assets/i18n.js?v=20260901e"></script>
+  <script src="/assets/i18n.js?v=20261010a"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -243,6 +243,21 @@
       </div>
     </details>
 
+    <!-- 互选成功时刻：全屏庆祝 -->
+    <div class="match-overlay" id="match-overlay" aria-live="polite" role="dialog" aria-modal="true" hidden>
+      <div class="mo-inner">
+        <div class="mo-ring"></div>
+        <div class="mo-ring r2"></div>
+        <div class="mo-emblem">🤝</div>
+        <h2 class="mo-title" data-i18n="matchOverlayTitle">你们互相选中了彼此</h2>
+        <p class="mo-sub" data-i18n="matchOverlaySub">双向都愿意，才开始对练。60 秒试音走起。</p>
+        <div class="mo-actions">
+          <a class="mo-cta" id="mo-enter" href="#" data-i18n="matchOverlayCta">进入互练 →</a>
+          <button class="mo-later" id="mo-later" type="button" data-i18n="matchOverlayLater">稍后再说</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 互练入口 -->
     <section class="card" id="room-card" hidden>
       <h2 class="sec-title" data-i18n="roomDoneTitle">FaceTalk 筛选完成</h2>
@@ -330,6 +345,77 @@
       #hero-title, .hero-eyebrow, .hero-kicker { animation: none; }
       .entry-card.pair { transition: none; }
     }
+
+    /* ── 互选成功时刻：全屏庆祝（A 方案） ── */
+    .match-overlay {
+      position: fixed; inset: 0; z-index: 90;
+      display: flex; align-items: center; justify-content: center;
+      background:
+        radial-gradient(closest-side, rgba(255,255,255,.16), rgba(255,255,255,0) 72%),
+        linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      text-align: center; color: #fff;
+      opacity: 0; visibility: hidden;
+      transition: opacity .35s ease, visibility .35s;
+    }
+    .match-overlay.open { opacity: 1; visibility: visible; }
+    .match-overlay .mo-inner { position: relative; padding: 24px; max-width: 420px; width: 100%; }
+    .mo-ring {
+      position: absolute; left: 50%; top: 86px; width: 120px; height: 120px;
+      border-radius: 50%; border: 2px solid rgba(255,255,255,.65);
+      transform: translate(-50%, -50%) scale(.4); opacity: 0; pointer-events: none;
+    }
+    .mo-ring.r2 { border-color: rgba(255,255,255,.35); }
+    .mo-emblem {
+      position: relative; z-index: 2;
+      width: 120px; height: 120px; margin: 0 auto 22px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 52px;
+      animation: moPop .55s cubic-bezier(.22,.61,.36,1) both;
+      box-shadow: 0 18px 44px rgba(15,23,42,.28);
+    }
+    .match-overlay.open .mo-ring { animation: moRing 1.5s cubic-bezier(.22,.61,.36,1) .25s both; }
+    .match-overlay.open .mo-ring.r2 { animation-delay: .65s; }
+    .mo-title {
+      font-size: clamp(1.35rem, 4.6vw, 1.7rem); font-weight: 800; letter-spacing: -0.4px; margin: 0 0 10px;
+      animation: moUp .6s cubic-bezier(.22,.61,.36,1) .3s both;
+    }
+    .mo-sub {
+      font-size: .94rem; opacity: .82; line-height: 1.7; margin: 0 auto 26px; max-width: 300px;
+      animation: moUp .6s cubic-bezier(.22,.61,.36,1) .45s both;
+    }
+    .mo-actions { animation: moUp .6s cubic-bezier(.22,.61,.36,1) .6s both; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .mo-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #fff; color: #4338ca;
+      padding: 14px 34px; border-radius: 999px; font-weight: 800; font-size: 1.02rem;
+      box-shadow: 0 10px 30px rgba(15,23,42,.28);
+      transition: transform .15s ease, box-shadow .15s ease;
+      text-decoration: none;
+    }
+    .mo-cta:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(15,23,42,.34); }
+    .mo-later {
+      background: none; border: none; color: rgba(255,255,255,.7);
+      font-size: .84rem; cursor: pointer; padding: 6px 12px; text-decoration: none;
+      transition: color .15s;
+    }
+    .mo-later:hover { color: #fff; }
+    @keyframes moRing {
+      0% { transform: translate(-50%, -50%) scale(.4); opacity: 0; }
+      30% { opacity: .9; }
+      100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+    }
+    @keyframes moPop {
+      0% { transform: scale(.55); opacity: 0; }
+      60% { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes moUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      .mo-ring, .mo-emblem, .mo-title, .mo-sub, .mo-actions { animation: none !important; }
+    }
   </style>
   <script>
     // FaceTalk Hero — 入口卡磁吸 + 滚动淡化（原生实现，替代 GSAP）
@@ -361,7 +447,7 @@
   <script src="/assets/ft-util.js?v=20260901d"></script>
   <script src="/assets/wall.js?v=20260901d"></script>
   <script src="/assets/settings.js?v=20260901d"></script>
-  <script src="/assets/app.js?v=20260901d"></script>
+  <script src="/assets/app.js?v=20261010a"></script>
   <script>
     // 从 RCJ 任一站点（955827.xyz 任意子域）进来时，显示「← 返回」并跳回来源页，形成产品矩阵闭环
     (function () {
