@@ -12,6 +12,14 @@ you pair up — then do a short voice-first practice (deep-link to a meeting app
 rate each other, and unlock a rematch. Three reports auto-ban; reputation carries
 across sessions.
 
+## Core mechanics (核心原理)
+
+- **双向互选 = 信任门槛**：post 匿名意向 → 浏览 / 申请 → **双方都同意才配对**（避免单方骚扰），配对后才是限时语音练习（会议 App 深链）。配对即付费/声誉的锚点。
+- **匿名 + 声誉制**：默认不登录、不暴露身份；声誉跨会话累积，**3 次举报自动禁言**——匿名不是免责，声誉就是信用。
+- **语音即资产，阅后即焚**：60s 试音存 R2 桶 `facetalk-voice`，**1 天生命周期规则自动销毁**（prefix `clips/`），D1 只存元数据，控制成本与隐私。
+- **零服务器**：Pages Functions + D1 + R2，全部 Cloudflare 边缘；PWA + WebView APK（GitHub Actions 构建发布到 Releases）绕过微信 / QQ 内的 `.xyz` 拦截。
+- **三语一源**：EN / 日本語 / 中文由前端 i18n 字典驱动，单文件切换。
+
 ## Interaction loop
 
 post anonymous intent → browse / apply → **two-way mutual selection**
