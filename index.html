@@ -192,7 +192,7 @@
       </a>
       <div class="bar-right">
         <button class="mode-switch" id="mode-switch" type="button" aria-label="切换模式">
-          <span class="ms-emoji">🌙</span><span class="ms-label" id="ms-label">Late Talk</span>
+          <span class="ms-emoji">💬</span><span class="ms-label" id="ms-label">Chat</span>
         </button>
         <div class="bar-lang" data-lang-slot></div>
 
@@ -370,8 +370,8 @@
     <!-- ── Late Talk 模式视图 ── -->
     <div id="talk-view" class="mode-view" hidden>
       <section class="lt-hero">
-        <p class="lt-eyebrow">Late Talk</p>
-        <h1 class="lt-title">深夜话题，随机匹配</h1>
+        <p class="lt-eyebrow">Chat Mode</p>
+        <h1 class="lt-title">随机话题，语音匹配</h1>
         <p class="lt-sub">转盘抽一个话题，遇到同样在聊这个的人，60 秒语音聊透它。</p>
       </section>
 
@@ -692,7 +692,7 @@
     } else {
       iv.hidden = false; tv.hidden = true;
       btn.classList.remove('talk');
-      label.textContent = '🌙 Late Talk';
+      label.textContent = '💬 Chat';
     }
   }
   function fromHash(){

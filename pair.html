@@ -51,7 +51,7 @@
       </div>
 
       <div id="talk-topic" class="talk-topic" hidden>
-        <span class="tt-label">🌙 今日话题</span>
+        <span class="tt-label">💬 话题</span>
         <span class="tt-text" id="talk-topic-text"></span>
       </div>
 
@@ -240,7 +240,7 @@
       // 房间已被服务端结算关闭（退出 60s / 互评完 5 分钟）→ 直接回首页
       if(p.status === 'closed'){ toast(t('roomClosed')); setTimeout(function(){ location.href = '/'; }, 500); return; }
       if (p.otherRep != null) document.getElementById('other-rep').textContent = p.otherRep;
-      if (p.mode) document.getElementById('room-mode').textContent = p.mode === 'video' ? t('modeVideoShort') : p.mode === 'talk' ? '🌙 Talk' : t('modeVoiceFirst');
+      if (p.mode) document.getElementById('room-mode').textContent = p.mode === 'video' ? t('modeVideoShort') : p.mode === 'talk' ? '💬 Chat' : t('modeVoiceFirst');
 
       // Talk 模式：显示话题横幅
       var tt = document.getElementById('talk-topic');
