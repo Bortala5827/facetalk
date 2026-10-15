@@ -104,11 +104,11 @@
     .mode-view[hidden] { display: none; }
     @keyframes ftViewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ── Chat 深夜烛光视图（Mio 式：暗底暖字，唯一发光锚点） ── */
+    /* ── Chat 深夜烛光视图（暖棕黑烛光感） ── */
     #talk-view {
       position: relative;
       padding-bottom: 60px;
-      background: #0D0D12;
+      background: #131110;
       min-height: 100vh;
     }
     #talk-view::before {
@@ -120,14 +120,14 @@
     #talk-view > * { position: relative; z-index: 1; }
 
     .lt-hero { text-align: center; padding: 56px 0 24px; }
-    .lt-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: .25em; color: #8b7ec8; text-transform: uppercase; }
-    .lt-title { font-size: 24px; font-weight: 600; color: #E8E4DF; margin: 12px 0 10px; letter-spacing: -0.01em; }
-    .lt-sub { font-size: 13px; color: #9b95a8; max-width: 340px; margin: 0 auto; line-height: 1.7; }
+    .lt-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: .25em; color: #b08968; text-transform: uppercase; }
+    .lt-title { font-size: 24px; font-weight: 600; color: #F3EDE5; margin: 12px 0 10px; letter-spacing: -0.01em; }
+    .lt-sub { font-size: 13px; color: #a89f93; max-width: 340px; margin: 0 auto; line-height: 1.7; }
 
     .lt-drum {
       max-width: 380px; margin: 36px auto; padding: 44px 32px;
-      background: linear-gradient(165deg, #1a1625 0%, #2d1b4e 50%, #3b1f5e 100%);
-      border-radius: 24px; color: #E8E4DF; text-align: center;
+      background: linear-gradient(165deg, #1f1a17 0%, #2d1f3d 50%, #3b2548 100%);
+      border-radius: 24px; color: #F3EDE5; text-align: center;
       position: relative; overflow: hidden;
       animation: ltBreathe 4s ease-in-out infinite;
     }
@@ -169,16 +169,16 @@
     .lt-chip {
       background: rgba(139,126,200,.1) !important;
       border: 1px solid rgba(139,126,200,.2) !important;
-      color: #c8c0d8 !important;
+      color: #c4b9a8 !important;
     }
     .lt-chip:hover { background: rgba(167,139,250,.12); border-color: rgba(167,139,250,.3); color: #E8E4DF; }
 
     /* Chat 模式下整个页面都变暗 */
     body:has(#talk-view:not([hidden])) {
-      background: #0D0D12;
+      background: #131110;
     }
     body:has(#talk-view:not([hidden])) .topbar {
-      background: #0D0D12; border-bottom-color: rgba(139,126,200,.1);
+      background: #131110; border-bottom-color: rgba(243,237,229,.08);
     }
     body:has(#talk-view:not([hidden])) .brand-text,
     body:has(#talk-view:not([hidden])) .mode-switch {
