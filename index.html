@@ -160,6 +160,26 @@
       transition: all .15s;
     }
     .lt-chip:hover { background: #eef2ff; border-color: #4f46e5; color: #4f46e5; }
+
+    /* ── Late Talk 移动端适配 ── */
+    @media (max-width: 640px) {
+      .mode-switch { padding: 5px 10px; font-size: 12px; gap: 4px; }
+      .mode-switch .ms-emoji { font-size: 13px; }
+      .bar-lang { display: none; }
+
+      .lt-hero { padding: 24px 0 16px; }
+      .lt-title { font-size: 22px; }
+      .lt-sub { font-size: 13px; padding: 0 16px; }
+
+      .lt-drum { margin: 20px 12px; padding: 24px 18px; border-radius: 18px; }
+      .lt-topic { font-size: 17px; min-height: 50px; margin: 12px 0 18px; }
+      .lt-spin { padding: 11px 24px; font-size: 14px; width: 100%; justify-content: center; }
+      .lt-go { width: 100%; padding: 13px; font-size: 15px; }
+
+      .lt-trending { margin: 0 12px 32px; }
+      .lt-chips { gap: 6px; }
+      .lt-chip { padding: 7px 12px; font-size: 12px; }
+    }
   </style>
 </head>
 <body>
