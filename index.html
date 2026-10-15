@@ -139,6 +139,16 @@
     }
     .lt-spin:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.2); }
     .lt-spin:disabled { opacity: .6; cursor: wait; transform: none; }
+    .lt-go[hidden] { display: none; }
+    .lt-go {
+      display: block; margin: 16px auto 0;
+      padding: 12px 32px; border-radius: 999px;
+      background: linear-gradient(135deg, #818cf8, #c084fc);
+      color: #fff; font-size: 15px; font-weight: 700;
+      border: none; cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .lt-go:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(129,140,248,.4); }
 
     .lt-trending { max-width: 420px; margin: 0 auto 40px; }
     .lt-trending h3 { font-size: 13px; font-weight: 700; color: var(--ink-3); margin-bottom: 12px; letter-spacing: .05em; }
@@ -313,6 +323,61 @@
       </div>
     </details>
 
+
+
+  <!-- 全站公开留言墙（2026-08-08 改默认折叠，移动端友好）：首页可见，7 天自动清理 -->
+  <details class="wall" id="wall">
+    <summary class="wall-head">
+      <div class="wall-ttl">
+        <h2 data-i18n="wallTitle">留言墙</h2>
+        <span class="wall-badge" data-i18n="wallAutoClean">7 天自动清理</span>
+      </div>
+      <div class="wall-head-right">
+        <button class="wall-manage" id="wallManage" type="button" data-i18n="wallManage">管理</button>
+        <span class="wall-caret" aria-hidden="true">▾</span>
+      </div>
+    </summary>
+    <div class="wall-inner">
+      <p class="wall-sub" data-i18n-html="wallSub">文明留言，禁止广告与不良信息。为彼此安全，<b>勿留手机号、微信等联系方式</b>，防骗；FaceTalk 仅用于面试筛选，录音阅后即焚。</p>
+      <div class="wall-form">
+        <div class="wall-form-row">
+          <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名用户」）" maxlength="20" data-i18n-ph="wallNamePh">
+          <button class="wall-post" id="wallPost" data-i18n="wallPostBtn">发布留言</button>
+        </div>
+        <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300" data-i18n-ph="wallTextPh"></textarea>
+      </div>
+      <div class="wall-list" id="wallList"><div class="wall-empty"><span data-i18n="wallLoading">正在加载留言…</span></div></div>
+    </div>
+  </details>
+
+    </div><!-- /interview-view -->
+
+    <!-- ── Late Talk 模式视图 ── -->
+    <div id="talk-view" class="mode-view" hidden>
+      <section class="lt-hero">
+        <p class="lt-eyebrow">Late Talk</p>
+        <h1 class="lt-title">深夜话题，随机匹配</h1>
+        <p class="lt-sub">转盘抽一个话题，遇到同样在聊这个的人，60 秒语音聊透它。</p>
+      </section>
+
+      <div class="lt-drum">
+        <p class="lt-topic-label">Your Topic</p>
+        <p class="lt-topic" id="lt-topic">点下面按钮，抽一个深夜话题</p>
+        <button class="lt-spin" id="lt-spin" type="button">🎲 抽个话题</button>
+        <button class="lt-go" id="lt-go" type="button" hidden>开始匹配 →</button>
+      </div>
+
+      <div class="lt-trending">
+        <h3>🔥 热门话题</h3>
+        <div class="lt-chips" id="lt-chips">
+          <span class="lt-chip">你最后一次哭是什么时候？</span>
+          <span class="lt-chip">如果能重来，你会选另一条路吗？</span>
+          <span class="lt-chip">你最怕别人发现你的什么？</span>
+          <span class="lt-chip">今晚你最想吐槽谁？</span>
+        </div>
+      </div>
+    </div><!-- /talk-view -->
+
     <!-- 互选成功时刻：全屏庆祝 -->
     <div class="match-overlay" id="match-overlay" aria-live="polite" role="dialog" aria-modal="true" hidden>
       <div class="mo-inner">
@@ -363,58 +428,6 @@
     </section>
 
     <p class="foot-note" data-i18n="footPrivacy">隐私提醒：勿留身份证、住址等敏感信息；连麦走腾讯会议。</p>
-
-  <!-- 全站公开留言墙（2026-08-08 改默认折叠，移动端友好）：首页可见，7 天自动清理 -->
-  <details class="wall" id="wall">
-    <summary class="wall-head">
-      <div class="wall-ttl">
-        <h2 data-i18n="wallTitle">留言墙</h2>
-        <span class="wall-badge" data-i18n="wallAutoClean">7 天自动清理</span>
-      </div>
-      <div class="wall-head-right">
-        <button class="wall-manage" id="wallManage" type="button" data-i18n="wallManage">管理</button>
-        <span class="wall-caret" aria-hidden="true">▾</span>
-      </div>
-    </summary>
-    <div class="wall-inner">
-      <p class="wall-sub" data-i18n-html="wallSub">文明留言，禁止广告与不良信息。为彼此安全，<b>勿留手机号、微信等联系方式</b>，防骗；FaceTalk 仅用于面试筛选，录音阅后即焚。</p>
-      <div class="wall-form">
-        <div class="wall-form-row">
-          <input type="text" class="wall-name" id="wallName" placeholder="昵称（留空为「匿名用户」）" maxlength="20" data-i18n-ph="wallNamePh">
-          <button class="wall-post" id="wallPost" data-i18n="wallPostBtn">发布留言</button>
-        </div>
-        <textarea class="wall-text" id="wallText" placeholder="说点什么…（例如：今晚想练结构化，求个搭子互评）" maxlength="300" data-i18n-ph="wallTextPh"></textarea>
-      </div>
-      <div class="wall-list" id="wallList"><div class="wall-empty"><span data-i18n="wallLoading">正在加载留言…</span></div></div>
-    </div>
-  </details>
-
-    </div><!-- /interview-view -->
-
-    <!-- ── Late Talk 模式视图 ── -->
-    <div id="talk-view" class="mode-view" hidden>
-      <section class="lt-hero">
-        <p class="lt-eyebrow">Late Talk</p>
-        <h1 class="lt-title">深夜话题，随机匹配</h1>
-        <p class="lt-sub">转盘抽一个话题，遇到同样在聊这个的人，60 秒语音聊透它。</p>
-      </section>
-
-      <div class="lt-drum">
-        <p class="lt-topic-label">Your Topic</p>
-        <p class="lt-topic" id="lt-topic">点下面按钮，抽一个深夜话题</p>
-        <button class="lt-spin" id="lt-spin" type="button">🎲 抽个话题</button>
-      </div>
-
-      <div class="lt-trending">
-        <h3>🔥 热门话题</h3>
-        <div class="lt-chips" id="lt-chips">
-          <span class="lt-chip">你最后一次哭是什么时候？</span>
-          <span class="lt-chip">如果能重来，你会选另一条路吗？</span>
-          <span class="lt-chip">你最怕别人发现你的什么？</span>
-          <span class="lt-chip">今晚你最想吐槽谁？</span>
-        </div>
-      </div>
-    </div><!-- /talk-view -->
 
   </main>
 
@@ -692,22 +705,32 @@
   ];
   var spin = document.getElementById('lt-spin');
   var topic = document.getElementById('lt-topic');
+  var goBtn = document.getElementById('lt-go');
+  function setTopic(t) {
+    topic.textContent = t;
+    topic.classList.remove('rolling');
+    if (goBtn) goBtn.hidden = false;
+  }
   if (spin && topic) {
     spin.addEventListener('click', function(){
       spin.disabled = true;
       topic.classList.add('rolling');
       topic.textContent = '…';
       fetch('/api/topic', {method:'POST'}).then(function(r){ return r.json(); }).then(function(d){
-        if (d && d.topic) { topic.textContent = d.topic; }
-        else { topic.textContent = TOPICS[Math.floor(Math.random()*TOPICS.length)]; }
+        if (d && d.topic) { setTopic(d.topic); }
+        else { setTopic(TOPICS[Math.floor(Math.random()*TOPICS.length)]); }
       }).catch(function(){
-        topic.textContent = TOPICS[Math.floor(Math.random()*TOPICS.length)];
+        setTopic(TOPICS[Math.floor(Math.random()*TOPICS.length)]);
       }).finally(function(){
-        topic.classList.remove('rolling');
         spin.disabled = false;
       });
     });
   }
+  // 热门话题 chips 点击直接选
+  var chips = document.querySelectorAll('.lt-chip');
+  chips.forEach(function(ch){
+    ch.addEventListener('click', function(){ setTopic(ch.textContent.trim()); });
+  });
 })();
 </script>
 <script>fetch("https://955827.xyz/api/track?site=facetalk",{method:"POST",mode:"no-cors"}).catch(function(){});</script>
