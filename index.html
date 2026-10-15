@@ -694,6 +694,9 @@
       btn.classList.remove('talk');
       label.textContent = '💬 Chat';
     }
+    // Chat 模式隐藏面试相关的 foot-note
+    var fn = document.querySelector('.foot-note');
+    if (fn) fn.hidden = (mode === 'talk');
   }
   function fromHash(){
     var h = location.hash || '';

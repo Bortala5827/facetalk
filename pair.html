@@ -253,6 +253,16 @@
         if (tt) tt.hidden = true;
       }
 
+      // Chat 模式：隐藏腾讯会议卡片，改语音提示
+      var infoCard = document.getElementById('info-card');
+      var voiceTip = document.querySelector('.voice-tip');
+      if (p.mode === 'talk') {
+        if (infoCard) infoCard.hidden = true;
+        if (voiceTip) voiceTip.innerHTML = '🎙 <strong>60 秒语音</strong>：围绕上面的话题聊，互听互评。';
+      } else {
+        if (infoCard) infoCard.hidden = false;
+      }
+
       // 会话倒计时：只在本轮数据显式携带 remaining 时更新。
       // SSE 的 pair 事件可能缺该字段，缺了就保持原值，避免 remain 被清零 → tick 误弹「时间到请打分」造成闪退。
       if (p.remaining != null) {
