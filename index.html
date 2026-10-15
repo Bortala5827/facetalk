@@ -731,6 +731,34 @@
   chips.forEach(function(ch){
     ch.addEventListener('click', function(){ setTopic(ch.textContent.trim()); });
   });
+
+  // 开始匹配：发 mode=talk 的 intent
+  if (goBtn) {
+    goBtn.addEventListener('click', async function(){
+      var t = topic.textContent.trim();
+      if (!t || t.indexOf('点下面') >= 0) return;
+      goBtn.disabled = true; goBtn.textContent = '发布中…';
+      var me = (new URLSearchParams(location.search).get('me')) || (window.FTMe ? window.FTMe.get() : null) || localStorage.getItem('ft_me') || '';
+      try {
+        var r = await fetch('/api/intents', {
+          method: 'POST',
+          headers: {'content-type': 'application/json'},
+          body: JSON.stringify({ me: me, role: t, city: '', mode: 'talk', note: '' })
+        });
+        var d = await r.json();
+        if (d.ok) {
+          goBtn.textContent = '已发布，等待匹配 ✓';
+          setTimeout(function(){ location.hash = '/interview'; }, 800);
+        } else {
+          goBtn.textContent = '发布失败，重试';
+          goBtn.disabled = false;
+        }
+      } catch(e) {
+        goBtn.textContent = '网络错误，重试';
+        goBtn.disabled = false;
+      }
+    });
+  }
 })();
 </script>
 <script>fetch("https://955827.xyz/api/track?site=facetalk",{method:"POST",mode:"no-cors"}).catch(function(){});</script>

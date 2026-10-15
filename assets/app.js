@@ -1,4 +1,4 @@
-// FaceTalk v2.1 前端：找搭子大厅 + 在线心跳 + 房间试音互评
+﻿// FaceTalk v2.1 前端：找搭子大厅 + 在线心跳 + 房间试音互评
 (function () {
   'use strict';
   var me = null;
@@ -10,7 +10,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
   }); }
-  function modeLabel(m) { return m === 'video' ? t('modeVideoShort') : t('modeVoiceShort'); }
+  function modeLabel(m) { if (m === 'talk') return '🌙 Talk'; return m === 'video' ? t('modeVideoShort') : t('modeVoiceShort'); }
   function t(key, args) { return window.FTI18N ? FTI18N.t(key, args) : key; }
   function localeOf() {
     var L = window.FTI18N ? FTI18N.getLang() : 'zh';

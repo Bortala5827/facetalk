@@ -1,6 +1,6 @@
-import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass } from '../_shared.js';
+﻿import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass } from '../_shared.js';
 
-const MODES = ['voice', 'video'];
+const MODES = ['voice', 'video', 'talk'];
 
 // 意图：POST 发布（语音优先）；GET 浏览他人开放意图
 export async function onRequest(context) {
@@ -18,7 +18,7 @@ export async function onRequest(context) {
     if (!await rateLimit(db, 'rl:intent:' + ip, 30, 3600) && !adminBypass(env, request, body)) return err('rate_limited', 429);
     if (!await rateLimit(db, 'rl:intent:u:' + r.id, 10, 3600) && !adminBypass(env, request, body)) return err('too_many_intents', 429);
 
-    const role = String(body.role || '').slice(0, 20) || '其他';
+    const role = String(body.role || '').slice(0, 80) || '其他';
     const city = String(body.city || '').slice(0, 20);
     const mode = MODES.includes(body.mode) ? body.mode : 'voice'; // 默认语音优先
     const note = String(body.note || '').slice(0, 140);

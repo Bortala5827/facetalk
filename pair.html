@@ -1,14 +1,23 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="pairTitle">FaceTalk · 面试间</title>
+  <meta name="description" content="FaceTalk 面试间：按岗位/学历/年级匹配面试搭子，60 秒试音、双向互选、阅后即焚。" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://facetalk.955827.xyz/pair.html" />
   <meta name="theme-color" content="#4f46e5" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <script src="/assets/i18n.js?v=20260901e"></script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='system-ui' font-size='30' font-weight='800' fill='white'%3E%46%54%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="/assets/style.css?v=20260901d" />
+<style>
+    .talk-topic { margin:14px 0; padding:14px 18px; background:linear-gradient(135deg,#1e1b4b,#312e81); border-radius:14px; color:#fff; display:flex; flex-direction:column; gap:6px; }
+    .talk-topic[hidden] { display:none; }
+    .talk-topic .tt-label { font-size:12px; letter-spacing:.1em; color:#a5b4fc; }
+    .talk-topic .tt-text { font-size:16px; font-weight:700; line-height:1.5; }
+</style>
 </head>
 <body>
   <header class="topbar">
@@ -39,6 +48,11 @@
         <div><span class="muted" data-i18n="roomMetaRep">对方信誉</span> <strong id="other-rep">--</strong></div>
         <div><span class="muted" data-i18n="pubMode">模式</span> <strong id="room-mode">--</strong></div>
         <div><span class="muted" data-i18n="roomMetaRemain">剩余时间</span> <strong id="timer" class="timer">--:--</strong></div>
+      </div>
+
+      <div id="talk-topic" class="talk-topic" hidden>
+        <span class="tt-label">🌙 今日话题</span>
+        <span class="tt-text" id="talk-topic-text"></span>
       </div>
 
       <p id="dissolve-tip" class="dissolve-tip" hidden></p>
@@ -226,7 +240,18 @@
       // 房间已被服务端结算关闭（退出 60s / 互评完 5 分钟）→ 直接回首页
       if(p.status === 'closed'){ toast(t('roomClosed')); setTimeout(function(){ location.href = '/'; }, 500); return; }
       if (p.otherRep != null) document.getElementById('other-rep').textContent = p.otherRep;
-      if (p.mode) document.getElementById('room-mode').textContent = p.mode === 'video' ? t('modeVideoShort') : t('modeVoiceFirst');
+      if (p.mode) document.getElementById('room-mode').textContent = p.mode === 'video' ? t('modeVideoShort') : p.mode === 'talk' ? '🌙 Talk' : t('modeVoiceFirst');
+
+      // Talk 模式：显示话题横幅
+      var tt = document.getElementById('talk-topic');
+      var ttText = document.getElementById('talk-topic-text');
+      if (p.mode === 'talk') {
+        var topicText = p.role || p.intentRole || p.note || '';
+        if (ttText) ttText.textContent = topicText;
+        if (tt) tt.hidden = false;
+      } else {
+        if (tt) tt.hidden = true;
+      }
 
       // 会话倒计时：只在本轮数据显式携带 remaining 时更新。
       // SSE 的 pair 事件可能缺该字段，缺了就保持原值，避免 remain 被清零 → tick 误弹「时间到请打分」造成闪退。

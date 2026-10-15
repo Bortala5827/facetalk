@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips } from '../_shared.js';
+﻿import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips } from '../_shared.js';
 
 // 单次互练「建议时长」软上限 20 分钟（秒）：倒计时归零只提示 + 弹评价卡，**不关房间**，
 // 双方在腾讯会议 / 飞书会议里练多久都行，回来照样能提交评价。
@@ -51,6 +51,9 @@ export async function onRequest(context) {
       const other = r.id === p.a ? p.b : p.a;
       const o = await db.prepare('SELECT rep FROM users WHERE id=?').bind(other).first();
       const otherRep = o ? (o.rep | 0) : 50;
+      // Talk 模式：取话题（intent.role）
+      let intentRole = '';
+      try { const it = await db.prepare('SELECT role FROM intents WHERE id=?').bind(p.intent_id).first(); intentRole = it ? it.role : ''; } catch(e) {}
       // （已移除：对方 IP 地理 / 在线状态展示）
       const rated = !!ratings[r.id];
       const left = !!(ratings[r.id] && ratings[r.id].left);
@@ -70,7 +73,7 @@ export async function onRequest(context) {
     return json({
       ok: true,
       pair: {
-        pairId: p.id, otherRep, meet: p.meet, mode: p.mode, status: p.status,
+        pairId: p.id, otherRep, meet: p.meet, mode: p.mode, status: p.status, role: intentRole,
         infoMine, infoPeer,
         ratingsCount: Object.keys(ratings || {}).length, remaining, rated, left,
         dissolving, dissolveIn, autoCloseIn, soloGraceIn,
