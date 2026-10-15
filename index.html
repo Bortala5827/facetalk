@@ -104,32 +104,51 @@
     .mode-view[hidden] { display: none; }
     @keyframes ftViewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ── Late Talk 转盘视图 ── */
-    .lt-hero { text-align: center; padding: 40px 0 24px; }
-    .lt-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .1em; color: #818cf8; text-transform: uppercase; }
-    .lt-title { font-size: 28px; font-weight: 800; color: var(--ink); margin: 8px 0 6px; }
-    .lt-sub { font-size: 14px; color: var(--ink-3); max-width: 420px; margin: 0 auto; line-height: 1.6; }
+    /* ── Chat 情绪氛围视图 ── */
+    #talk-view {
+      position: relative;
+      padding-bottom: 60px;
+    }
+    #talk-view::before {
+      content: ""; position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(129,140,248,.15), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(192,132,252,.08), transparent),
+        linear-gradient(180deg, #fafaff 0%, #f5f3ff 100%);
+    }
+
+    .lt-hero { text-align: center; padding: 48px 0 20px; }
+    .lt-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .2em; color: #a78bfa; text-transform: uppercase; }
+    .lt-title { font-size: 26px; font-weight: 700; color: #1e1b4b; margin: 10px 0 8px; letter-spacing: -0.02em; }
+    .lt-sub { font-size: 14px; color: #6b7280; max-width: 380px; margin: 0 auto; line-height: 1.7; }
 
     .lt-drum {
-      max-width: 420px; margin: 28px auto; padding: 32px 24px;
-      background: linear-gradient(160deg, #1e1b4b, #312e81);
-      border-radius: 24px; color: #fff; text-align: center;
-      box-shadow: 0 20px 60px rgba(49,46,129,.35);
+      max-width: 400px; margin: 32px auto; padding: 40px 28px;
+      background: linear-gradient(165deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+      border-radius: 28px; color: #fff; text-align: center;
       position: relative; overflow: hidden;
+      animation: ltBreathe 4s ease-in-out infinite;
+    }
+    @keyframes ltBreathe {
+      0%, 100% { box-shadow: 0 20px 60px rgba(76,29,149,.3), 0 0 0 0 rgba(167,139,250,.2); }
+      50% { box-shadow: 0 24px 70px rgba(76,29,149,.4), 0 0 0 12px rgba(167,139,250,.05); }
     }
     .lt-drum::before {
       content: ""; position: absolute; inset: 0;
-      background: radial-gradient(circle at 30% 20%, rgba(167,139,250,.25), transparent 60%);
+      background:
+        radial-gradient(circle at 25% 15%, rgba(196,181,253,.3), transparent 50%),
+        radial-gradient(circle at 75% 85%, rgba(167,139,250,.15), transparent 50%);
       pointer-events: none;
     }
-    .lt-topic-label { font-size: 12px; letter-spacing: .15em; color: #a5b4fc; text-transform: uppercase; }
+    .lt-topic-label { font-size: 11px; letter-spacing: .2em; color: #a5b4fc; text-transform: uppercase; font-weight: 500; }
     .lt-topic {
-      font-size: 20px; font-weight: 700; line-height: 1.5;
-      margin: 16px 0 24px; min-height: 60px;
+      font-size: 20px; font-weight: 600; line-height: 1.6;
+      margin: 18px 0 28px; min-height: 64px;
       display: flex; align-items: center; justify-content: center;
-      transition: opacity .15s;
+      text-shadow: 0 2px 12px rgba(167,139,250,.3);
+      transition: opacity .15s, transform .15s;
     }
-    .lt-topic.rolling { opacity: .4; }
+    .lt-topic.rolling { opacity: .5; transform: scale(.98); }
     .lt-spin {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 12px 28px; border-radius: 999px;
@@ -732,16 +751,34 @@
   if (spin && topic) {
     spin.addEventListener('click', function(){
       spin.disabled = true;
+      spin.textContent = '🎲 转动中…';
       topic.classList.add('rolling');
-      topic.textContent = '…';
-      fetch('/api/topic', {method:'POST'}).then(function(r){ return r.json(); }).then(function(d){
-        if (d && d.topic) { setTopic(d.topic); }
-        else { setTopic(TOPICS[Math.floor(Math.random()*TOPICS.length)]); }
-      }).catch(function(){
-        setTopic(TOPICS[Math.floor(Math.random()*TOPICS.length)]);
-      }).finally(function(){
-        spin.disabled = false;
-      });
+
+      // 老虎机滚动效果：快速切换话题，逐渐减速
+      var rollInterval = 60;
+      var rollTimes = 0;
+      var maxRolls = 20;
+      function roll() {
+        topic.textContent = TOPICS[Math.floor(Math.random()*TOPICS.length)];
+        rollTimes++;
+        if (rollTimes < maxRolls) {
+          // 逐渐减速
+          rollInterval = rollTimes < 10 ? 60 : rollTimes < 15 ? 100 : 160;
+          setTimeout(roll, rollInterval);
+        } else {
+          // 滚动结束，请求 AI 话题（失败则保持随机）
+          fetch('/api/topic', {method:'POST'}).then(function(r){ return r.json(); }).then(function(d){
+            if (d && d.topic) setTopic(d.topic);
+          }).catch(function(){})
+          .finally(function(){
+            topic.classList.remove('rolling');
+            spin.disabled = false;
+            spin.textContent = '🎲 再转一次';
+            if (goBtn) goBtn.hidden = false;
+          });
+        }
+      }
+      roll();
     });
   }
   // 热门话题 chips 点击直接选
