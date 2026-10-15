@@ -188,11 +188,11 @@
       <a class="brand" href="/">
         <span class="brand-mark">FT</span>
         <span class="brand-text">FaceTalk</span>
-        <span class="v-badge v-badge-base">v2.9</span>
+        
       </a>
       <div class="bar-right">
         <button class="mode-switch" id="mode-switch" type="button" aria-label="切换模式">
-          <span class="ms-emoji">💬</span><span class="ms-label" id="ms-label">Chat</span>
+          <span class="ms-label" id="ms-label">Chat</span>
         </button>
         <div class="bar-lang" data-lang-slot></div>
 
@@ -688,11 +688,11 @@
     if (mode === 'talk') {
       iv.hidden = true; tv.hidden = false;
       btn.classList.add('talk');
-      label.textContent = '🎯 Interview';
+      label.textContent = 'Interview';
     } else {
       iv.hidden = false; tv.hidden = true;
       btn.classList.remove('talk');
-      label.textContent = '💬 Chat';
+      label.textContent = 'Chat';
     }
     // Chat 模式隐藏面试相关的 foot-note
     var fn = document.querySelector('.foot-note');
