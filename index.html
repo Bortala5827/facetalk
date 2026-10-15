@@ -104,51 +104,82 @@
     .mode-view[hidden] { display: none; }
     @keyframes ftViewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ── Chat 情绪氛围视图 ── */
+    /* ── Chat 深夜烛光视图（Mio 式：暗底暖字，唯一发光锚点） ── */
     #talk-view {
       position: relative;
       padding-bottom: 60px;
+      background: #0D0D12;
+      min-height: 100vh;
     }
     #talk-view::before {
-      content: ""; position: fixed; inset: 0; z-index: -1;
+      content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
       background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(129,140,248,.15), transparent),
-        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(192,132,252,.08), transparent),
-        linear-gradient(180deg, #fafaff 0%, #f5f3ff 100%);
+        radial-gradient(ellipse 60% 40% at 50% 0%, rgba(139,92,246,.08), transparent),
+        radial-gradient(ellipse 50% 30% at 50% 100%, rgba(192,132,252,.05), transparent);
     }
+    #talk-view > * { position: relative; z-index: 1; }
 
-    .lt-hero { text-align: center; padding: 48px 0 20px; }
-    .lt-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .2em; color: #a78bfa; text-transform: uppercase; }
-    .lt-title { font-size: 26px; font-weight: 700; color: #1e1b4b; margin: 10px 0 8px; letter-spacing: -0.02em; }
-    .lt-sub { font-size: 14px; color: #6b7280; max-width: 380px; margin: 0 auto; line-height: 1.7; }
+    .lt-hero { text-align: center; padding: 56px 0 24px; }
+    .lt-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: .25em; color: #8b7ec8; text-transform: uppercase; }
+    .lt-title { font-size: 24px; font-weight: 600; color: #E8E4DF; margin: 12px 0 10px; letter-spacing: -0.01em; }
+    .lt-sub { font-size: 13px; color: #9b95a8; max-width: 340px; margin: 0 auto; line-height: 1.7; }
 
     .lt-drum {
-      max-width: 400px; margin: 32px auto; padding: 40px 28px;
-      background: linear-gradient(165deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
-      border-radius: 28px; color: #fff; text-align: center;
+      max-width: 380px; margin: 36px auto; padding: 44px 32px;
+      background: linear-gradient(165deg, #1a1625 0%, #2d1b4e 50%, #3b1f5e 100%);
+      border-radius: 24px; color: #E8E4DF; text-align: center;
       position: relative; overflow: hidden;
       animation: ltBreathe 4s ease-in-out infinite;
     }
     @keyframes ltBreathe {
-      0%, 100% { box-shadow: 0 20px 60px rgba(76,29,149,.3), 0 0 0 0 rgba(167,139,250,.2); }
-      50% { box-shadow: 0 24px 70px rgba(76,29,149,.4), 0 0 0 12px rgba(167,139,250,.05); }
+      0%, 100% { box-shadow: 0 16px 48px rgba(59,31,94,.4), 0 0 0 0 rgba(167,139,250,.15); }
+      50% { box-shadow: 0 20px 56px rgba(59,31,94,.5), 0 0 0 10px rgba(167,139,250,.04); }
     }
     .lt-drum::before {
       content: ""; position: absolute; inset: 0;
       background:
-        radial-gradient(circle at 25% 15%, rgba(196,181,253,.3), transparent 50%),
-        radial-gradient(circle at 75% 85%, rgba(167,139,250,.15), transparent 50%);
+        radial-gradient(circle at 30% 20%, rgba(196,181,253,.18), transparent 55%),
+        radial-gradient(circle at 70% 90%, rgba(167,139,250,.1), transparent 55%);
       pointer-events: none;
     }
-    .lt-topic-label { font-size: 11px; letter-spacing: .2em; color: #a5b4fc; text-transform: uppercase; font-weight: 500; }
+    .lt-topic-label { font-size: 10px; letter-spacing: .25em; color: #8b7ec8; text-transform: uppercase; font-weight: 500; }
     .lt-topic {
-      font-size: 20px; font-weight: 600; line-height: 1.6;
-      margin: 18px 0 28px; min-height: 64px;
+      font-size: 19px; font-weight: 500; line-height: 1.65;
+      margin: 20px 0 32px; min-height: 60px;
       display: flex; align-items: center; justify-content: center;
-      text-shadow: 0 2px 12px rgba(167,139,250,.3);
+      color: #E8E4DF;
+      text-shadow: 0 0 24px rgba(167,139,250,.25);
       transition: opacity .15s, transform .15s;
     }
-    .lt-topic.rolling { opacity: .5; transform: scale(.98); }
+    .lt-topic.rolling { opacity: .4; transform: scale(.98); }
+
+    .lt-spin {
+      background: rgba(232,228,223,.1) !important; color: #E8E4DF !important;
+      border: 1px solid rgba(167,139,250,.3) !important;
+    }
+    .lt-spin:hover { background: rgba(167,139,250,.15); box-shadow: 0 8px 24px rgba(167,139,250,.15); }
+    .lt-go {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: #fff;
+    }
+    .lt-go:hover { box-shadow: 0 8px 28px rgba(168,85,247,.35); }
+
+    .lt-trending { max-width: 380px; margin: 0 auto 40px; }
+    .lt-trending h3 { font-size: 11px; font-weight: 500; color: #6b6580; margin-bottom: 14px; letter-spacing: .1em; text-transform: uppercase; }
+    .lt-chip {
+      background: rgba(139,126,200,.08); border: 1px solid rgba(139,126,200,.15);
+      color: #b0a8c8;
+    }
+    .lt-chip:hover { background: rgba(167,139,250,.12); border-color: rgba(167,139,250,.3); color: #E8E4DF; }
+
+    /* Chat 模式下 topbar 也变暗 */
+    #talk-view ~ .topbar, body:has(#talk-view:not([hidden])) .topbar {
+      background: #0D0D12; border-bottom-color: rgba(139,126,200,.1);
+    }
+    body:has(#talk-view:not([hidden])) .brand-text,
+    body:has(#talk-view:not([hidden])) .mode-switch {
+      color: #E8E4DF;
+    }
     .lt-spin {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 12px 28px; border-radius: 999px;
@@ -184,7 +215,7 @@
     @media (max-width: 640px) {
       .mode-switch { padding: 5px 10px; font-size: 12px; gap: 4px; }
       .mode-switch .ms-emoji { font-size: 13px; }
-      .bar-lang { display: none; }
+
 
       .lt-hero { padding: 24px 0 16px; }
       .lt-title { font-size: 22px; }
@@ -402,7 +433,7 @@
       </div>
 
       <div class="lt-trending">
-        <h3>🔥 热门话题</h3>
+        <h3>Trending Topics</h3>
         <div class="lt-chips" id="lt-chips">
           <span class="lt-chip">你最后一次哭是什么时候？</span>
           <span class="lt-chip">如果能重来，你会选另一条路吗？</span>
