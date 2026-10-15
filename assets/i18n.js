@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // FaceTalk i18n · 中文 / English / 日本語
 // 无构建步骤的纯前端多语言：字典 + 引擎 + 语言切换器
 //   - 语言偏好存 localStorage('ft_lang')，缺省按浏览器语言探测（zh/en/ja）
@@ -557,6 +557,20 @@
     timeAgoMin: { zh: '{0} 分钟前', en: '{0} min ago', ja: '{0}分前' },
     timeAgoHour: { zh: '{0} 小时前', en: '{0} hr ago', ja: '{0}時間前' },
     timeAgoDay: { zh: '{0} 天前', en: '{0} d ago', ja: '{0}日前' },
+
+    // ───────────── Chat / Talk 深夜话题模式 ─────────────
+    ltEyebrow: { zh: 'CHAT MODE', en: 'CHAT MODE', ja: 'チャットモード' },
+    ltTitle: { zh: '随机话题，语音匹配', en: 'Random Topic, Voice Match', ja: 'ランダム話題・ボイスマッチ' },
+    ltSub: { zh: '转盘抽一个话题，遇到同样在聊这个的人，60 秒语音聊透它。', en: 'Spin the wheel, find someone on the same topic, talk it through in 60s.', ja: 'ルーレットで話題を引き、同じ話をしている人と出会い、60秒で語り尽くそう。' },
+    ltTopicLabel: { zh: 'Your Topic', en: 'Your Topic', ja: 'あなたの話題' },
+    ltTopicPlaceholder: { zh: '点下面按钮，抽一个深夜话题', en: 'Tap the button below to spin a late-night topic', ja: '下のボタンを押して、夜の話題を引こう' },
+    ltSpinBtn: { zh: '抽个话题', en: 'Spin Topic', ja: '話題を引く' },
+    ltGoBtn: { zh: '开始匹配', en: 'Start Matching', ja: 'マッチング開始' },
+    ltTrendingLabel: { zh: 'Trending Topics', en: 'Trending Topics', ja: '人気の話題' },
+    ltTopic1: { zh: '你最后一次哭是什么时候？', en: 'When was the last time you cried?', ja: '最後に泣いたのはいつ？' },
+    ltTopic2: { zh: '如果能重来，你会选另一条路吗？', en: 'If you could start over, would you take a different path?', ja: 'やり直せるなら、別の道を選ぶ？' },
+    ltTopic3: { zh: '你最怕别人发现你的什么？', en: 'What are you most afraid others will discover about you?', ja: '人に知られるのが一番怖いことは？' },
+    ltTopic4: { zh: '今晚你最想吐槽谁？', en: 'Who do you most want to rant about tonight?', ja: '今夜一番愚痴りたい相手は？' },
   };
 
   function detect() {
