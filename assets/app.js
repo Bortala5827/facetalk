@@ -378,6 +378,9 @@
     var box = $('out-list'); var empty = $('out-empty'); box.innerHTML = '';
     if (r.status === 200 && r.data.list && r.data.list.length) {
       empty.hidden = true;
+      // 对方已点头、等我「我也同意」时，自动展开「我发出的申请」折叠区，
+      // 否则该关键按钮藏在默认折叠的 details 里，用户看不到也点不到（双向互选卡点）
+      var hasIAgree = false;
       r.data.list.forEach(function (o) {
         var s = '';
         var actions = '';
@@ -389,6 +392,7 @@
           s = dissolved ? t('roomDissolved') : t('peerApproved');
           actions = dissolved ? '' : '<button class="btn-primary iagree-cta" data-bacc="' + esc(o.appId) + '">' + t('iAgreeToo') + '</button>' +
                     '<button class="btn-mini grey" data-cancel-app="' + esc(o.appId) + '">' + t('withdraw') + '</button>';
+          if (!dissolved) hasIAgree = true;
         } else if (o.status === 'both_accepted' || o.status === 'accepted') {
           s = dissolved ? t('roomDissolved') : t('matchedDone');
           actions = dissolved ? '' : '<button class="btn-mini" data-enter-room>' + t('enterRoom') + '</button>';
@@ -417,6 +421,12 @@
       box.querySelectorAll('[data-enter-room]').forEach(function (b) {
         b.addEventListener('click', enterRoom);
       });
+      // 落地上面的意图：有待我点头的申请时，展开「我发出的申请」子区 + 红点，父级被收起时一并展开
+      var od = $('outDot'); if (od) od.hidden = !hasIAgree;
+      if (hasIAgree) {
+        var odt = $('out-status'); if (odt) odt.open = true;
+        var mst = $('my-status'); if (mst) mst.open = true;
+      }
     } else if (r.status === 200) {
       empty.hidden = false; empty.textContent = t('outEmpty');
     } else {

@@ -351,6 +351,7 @@ a { color: inherit; text-decoration: none; }
 .b-ttl{font-size:16px;font-weight:800;color:var(--ink);}
 .b-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.18);flex:0 0 auto;}
 .b-caret{font-size:15px;color:var(--ink-3);transition:transform .2s ease;}
+.sub-sum{display:flex;align-items:center;gap:8px;}
 .b-collapse[open]>summary .b-caret{transform:rotate(180deg);}
 .b-inner{padding:0 18px 10px;}
 .b-inner .board{margin:14px 0;}

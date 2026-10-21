@@ -276,21 +276,31 @@
 
       var mb = document.getElementById('meet-box');
       if (p.meet !== undefined) {
-      if(p.meet){
-        var link = esc(p.meet);
-        if(p.meet.indexOf('meeting.tencent.com') >= 0){
-          mb.innerHTML = '<a class="btn-primary" href="'+link+'" target="_blank" rel="noopener">' + t('meetJoin') + '</a>' +
-            '<button class="btn-mini" id="copy-meet">' + t('copyMeetLink') + '</button>';
+        var meetHtml;
+        if (p.meet) {
+          var link = esc(p.meet);
+          // 仅 http(s) 且含腾讯会议号才渲染可点链接，其它一律纯文本（防 javascript: 等协议注入）
+          if (p.meet.indexOf('meeting.tencent.com') >= 0 && /^https?:\/\//i.test(p.meet.trim())) {
+            meetHtml = '<a class="btn-primary" href="'+link+'" target="_blank" rel="noopener">' + t('meetJoin') + '</a>' +
+              '<button class="btn-mini" id="copy-meet">' + t('copyMeetLink') + '</button>';
+          } else {
+            meetHtml = '<p class="li-note">' + t('peerMeet') + link + '</p><button class="btn-mini" id="copy-meet">' + t('copyBtn') + '</button>';
+          }
         } else {
-          mb.innerHTML = '<p class="li-note">' + t('peerMeet') + link + '</p><button class="btn-mini" id="copy-meet">' + t('copyBtn') + '</button>';
+          meetHtml = '<p class="muted">' + t('peerNoMeet') + '</p>';
         }
-        var cb = document.getElementById('copy-meet');
-        if(cb) cb.addEventListener('click', function(){ navigator.clipboard.writeText(p.meet).then(function(){toast(t('copied'));}); });
-      } else {
-        mb.innerHTML = '<p class="muted">' + t('peerNoMeet') + '</p>';
-      }
+        // DOM-diff：内容没变就跳过重建，避免 5s 轮询 / SSE 反复重绘导致「一直刷新」、复制按钮反复重绑
+        if (mb.innerHTML !== meetHtml) {
+          mb.innerHTML = meetHtml;
+          var cb = document.getElementById('copy-meet');
+          if (cb) cb.addEventListener('click', function(){ navigator.clipboard.writeText(p.meet).then(function(){toast(t('copied'));}); });
+        }
 
-      if(!infoMineInit){ document.getElementById('info-mine').value = p.infoMine || ''; infoMineInit = true; }
+        // info-mine 首次回填；用户正在输入时跳过本轮，避免覆盖已输入的会议号
+        if (!infoMineInit) {
+          var im = document.getElementById('info-mine');
+          if (im && document.activeElement !== im) { im.value = p.infoMine || ''; infoMineInit = true; }
+        }
       }
       if (p.infoPeer !== undefined) renderPeerInfo(p.infoPeer || '');
 
@@ -356,16 +366,25 @@
 
     function renderPeerInfo(info){
       var pb = document.getElementById('info-peer-box');
-      if(!info){ pb.innerHTML = '<p class="muted">' + t('peerNoInfo') + '</p>'; return; }
-      var link = esc(info);
-      if(info.indexOf('meeting.tencent.com') >= 0){
-        pb.innerHTML = '<a class="btn-primary" href="'+link+'" target="_blank" rel="noopener">' + t('peerTencentMeet') + '</a>' +
-          '<button class="btn-mini" id="copy-peer">' + t('copyMeetLink') + '</button>';
+      var html;
+      if (!info) {
+        html = '<p class="muted">' + t('peerNoInfo') + '</p>';
       } else {
-        pb.innerHTML = '<p class="li-note">' + t('peerInfo') + link + '</p><button class="btn-mini" id="copy-peer">' + t('copyBtn') + '</button>';
+        var link = esc(info);
+        // 仅 http(s) 且含腾讯会议号才渲染可点链接（防 javascript: 等协议注入）
+        if (info.indexOf('meeting.tencent.com') >= 0 && /^https?:\/\//i.test(info.trim())) {
+          html = '<a class="btn-primary" href="'+link+'" target="_blank" rel="noopener">' + t('peerTencentMeet') + '</a>' +
+            '<button class="btn-mini" id="copy-peer">' + t('copyMeetLink') + '</button>';
+        } else {
+          html = '<p class="li-note">' + t('peerInfo') + link + '</p><button class="btn-mini" id="copy-peer">' + t('copyBtn') + '</button>';
+        }
       }
-      var cp = document.getElementById('copy-peer');
-      if(cp) cp.addEventListener('click', function(){ navigator.clipboard.writeText(info).then(function(){toast(t('copied'));}); });
+      // DOM-diff：内容没变就跳过重建，避免轮询反复重绘
+      if (pb.innerHTML !== html) {
+        pb.innerHTML = html;
+        var cp = document.getElementById('copy-peer');
+        if (cp) cp.addEventListener('click', function(){ navigator.clipboard.writeText(info).then(function(){toast(t('copied'));}); });
+      }
     }
 
     function tick(){
