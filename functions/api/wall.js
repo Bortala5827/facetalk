@@ -1,13 +1,13 @@
 // FaceTalk 全站公开留言墙 API（Cloudflare Pages Functions + D1）
 // GET    /api/wall                 -> 留言列表（最新在前）
 // POST   /api/wall                 -> 发帖（body: {name, text}），60s + 每日 20 条限流，敏感词过滤，5min 去重
-// DELETE /api/wall?id=xxx&admin=口令 -> 管理员删除（口令统一取以下任一即视为通过，避免多套密码割裂：
+// DELETE /api/wall?id=xxx&admin=口令 -> 管理员删除（口令取以下任一即视为通过，避免多套密码割裂：
 // env.MS_ADMIN_KEY（全站限流解锁密码，同 cf-manual-steps 文档）、env.ADMIN_KEY（管理后台 admin.html 同款）、
-// 旧名 env.WALL_ADMIN，最后默认 rcj9527。任一匹配即通过）
+// 旧名 env.WALL_ADMIN。任一匹配即通过；未配置任何口令时拒绝删除（无硬编码默认后门）
 const adminPassOk = function(env, admin) {
   const a = String(admin || '').trim();
   if (!a) return false;
-  const list = [env && env.MS_ADMIN_KEY, env && env.ADMIN_KEY, env && env.WALL_ADMIN, 'rcj9527']
+  const list = [env && env.MS_ADMIN_KEY, env && env.ADMIN_KEY, env && env.WALL_ADMIN]
     .map(s => s && String(s)).filter(Boolean);
   return list.includes(a);
 };
@@ -74,16 +74,10 @@ export async function onRequestGet(context) {
   const db = getDB(context.env);
   if (!db) return json({ ok: false, error: "DB_NOT_BOUND", items: [] }, 503);
   try {
-    // 兼容旧表（无 ip 列）：用 PRAGMA 探测，缺列时降级只取基础字段
-    let cols = [];
-    try { const info = await db.prepare("PRAGMA table_info(wall)").all(); cols = (info.results || []).map(r => r.name); } catch (e) {}
-    const hasIp = cols.includes("ip");
-    const sql = hasIp
-      ? "SELECT id,name,text,created_at,ip FROM wall ORDER BY created_at DESC LIMIT ?"
-      : "SELECT id,name,text,created_at FROM wall ORDER BY created_at DESC LIMIT ?";
-    const { results } = await db.prepare(sql).bind(MAX_ITEMS).all();
+    // 公网列表只返回展示字段；ip 仅存库供内部排查，不下发给前端（隐私）
+    const { results } = await db.prepare("SELECT id,name,text,created_at FROM wall ORDER BY created_at DESC LIMIT ?").bind(MAX_ITEMS).all();
     const items = (results || []).map(function (r) {
-      return { id: r.id, name: r.name, text: r.text, createdAt: r.created_at, ip: r.ip || "" };
+      return { id: r.id, name: r.name, text: r.text, createdAt: r.created_at };
     });
     return json({ ok: true, items: items });
   } catch (e) {

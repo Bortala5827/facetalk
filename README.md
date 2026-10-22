@@ -53,6 +53,26 @@ If the bucket is missing, the voice tryout auto-skips without breaking v1.0.
 
 Enable `.github/workflows/d1-cleanup.yml` for scheduled cleanup.
 
+### 强会话 token（可选加固，过渡式）
+
+默认（未配置）：身份 token 就是裸用户 id，行为与现状完全一致。
+配置环境变量 `FACETALK_SESSION_SECRET`（≥32 字节随机串）后，`POST /api/identity`
+改为签发 `id.exp.sig` 三段式签名 token（HMAC-SHA256，7 天过期），`requireToken`
+先验签再查库；此时旧的裸 id token 会被 401 拒绝，前端无感重新获取身份即可。
+前端把 token 当不透明字符串存取，格式变化对页面透明。
+
+```bash
+# 1) 生成随机密钥
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+
+# 2) 写入 Pages 生产环境（wrangler；或在控制台 Settings → Environment variables 手动加）
+npx wrangler pages secret put FACETALK_SESSION_SECRET --project-name=facetalk
+# 粘贴上一步生成的值，部署后生效
+```
+
+> 未配置 `FACETALK_SESSION_SECRET` 时签名逻辑整体旁路，不会影响现有用户；
+> 已配置后如需回退，删除该环境变量即回到旧模式（已签发的签名 token 在无 secret 时按裸 id 兼容查库）。
+
 ---
 
 Part of the [RCJ ecosystem](https://955827.xyz).

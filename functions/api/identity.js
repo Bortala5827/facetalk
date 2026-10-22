@@ -1,6 +1,7 @@
-import { json, err, genId, requireToken, getDB, nowSec } from '../_shared.js';
+import { json, err, genId, requireToken, getDB, nowSec, issueSessionToken } from '../_shared.js';
 
 // 匿名一次性身份：POST 发新 token；GET ?id= 取信誉/封禁状态
+// 配置 env.FACETALK_SESSION_SECRET 时 POST 返回签名 token（id.exp.sig），否则返回旧格式裸 id。
 export async function onRequest(context) {
   const { request, env } = context;
   const db = getDB(env);
@@ -10,7 +11,8 @@ export async function onRequest(context) {
     const id = 'u_' + genId(16);
     await db.prepare('INSERT INTO users (id, rep, banned, created) VALUES (?, 50, 0, ?)')
       .bind(id, nowSec()).run();
-    return json({ ok: true, id });
+    const signed = await issueSessionToken(env, id);
+    return json({ ok: true, id: signed || id });
   }
 
   if (request.method === 'GET') {

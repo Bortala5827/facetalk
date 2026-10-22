@@ -45,7 +45,7 @@ export async function onRequest(context) {
       const soloAt = (rAtA && !rAtB) ? rAtA : ((rAtB && !rAtA) ? rAtB : 0);
       const soloDue = p.status === 'matched' && soloAt > 0 && now >= soloAt + SOLO_GRACE;
       if (exitDue || settleDue || soloDue) {
-        await closeRoomDB(db, p.id);
+        await closeRoomDB(env, db, p.id);
         p.status = 'closed';
       }
       const other = r.id === p.a ? p.b : p.a;
@@ -303,7 +303,7 @@ export async function onRequest(context) {
       const p = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(body.pairId).first();
       if (!p) return err('pair_gone', 404);
       if (r.id !== p.a && r.id !== p.b) return err('not_party', 403);
-      await closeRoomDB(db, p.id);
+      await closeRoomDB(env, db, p.id);
       return json({ ok: true });
     }
 
@@ -323,7 +323,7 @@ function bothPass(ratings, idA, idB) { return !!(ratings && ratings[idA] && rati
 // 销毁房间：清对话 + 置 closed。GET 服务端兜底与前端 close 动作共用。
 // 把 closedAt 写进 ratings JSON（该 TEXT 列已存在，无需 ALTER），供每日清理按「关闭满 3 天」硬删。
 // 同时把当初被本场匹配挤掉的「已拒绝」申请恢复为 pending —— 解锁需求，房主可重新选人。
-async function closeRoomDB(db, id) {
+async function closeRoomDB(env, db, id) {
   const p = await db.prepare('SELECT intent_id, ratings FROM pairs WHERE id=?').bind(id).first();
   const rt = safeParse(p && p.ratings);
   const closedAt = nowSec();
@@ -346,6 +346,6 @@ async function closeRoomDB(db, id) {
       db.prepare("UPDATE pairs SET status='closed', ratings=?, expires=? WHERE id=?").bind(JSON.stringify(rt), lingerTo, id),
     ]));
   }
-  // 2.0：房间关闭 → 连带焚毁双方试音录音，云端不留存
-  await dropPairClips(db, id);
+  // 2.0：房间关闭 → 连带焚毁双方试音录音，云端不留存（env 用于取 R2 绑定）
+  await dropPairClips(env, db, id);
 }

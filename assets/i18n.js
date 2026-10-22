@@ -211,7 +211,7 @@
     wallDbNotReady: { zh: '留言墙服务未就绪', en: 'Message wall service not ready', ja: 'サービスが準備できていません' },
     wallPostFail: { zh: '发布失败，请重试', en: 'Failed to post — try again', ja: '投稿失敗。再試行してください' },
     wallPostNetErr: { zh: '网络异常，发布失败', en: 'Network error — post failed', ja: 'ネットワークエラー。投稿失敗' },
-    wallAdminPrompt: { zh: '输入管理员密码（与管理后台 ADMIN_KEY / 限流解锁 MS_ADMIN_KEY 一致；都没设时默认 rcj9527）。\n批量管理留言建议用 /admin 后台「留言墙」标签页，更顺手。', en: 'Enter the admin password (same as ADMIN_KEY / rate-limit unlock MS_ADMIN_KEY; default rcj9527 if unset).\nFor batch management use the "Message Wall" tab in /admin.', ja: '管理者パスワードを入力してください（管理用ADMIN_KEY / 制限解除MS_ADMIN_KEYと同じ。未設定なら既定 rcj9527）。\n大量管理は /admin の「メッセージウォール」タブを推奨。' },
+    wallAdminPrompt: { zh: '输入管理员密码（与管理后台 ADMIN_KEY / 限流解锁 MS_ADMIN_KEY 一致；未配置环境变量时无法删除）。\n批量管理留言建议用 /admin 后台「留言墙」标签页，更顺手。', en: 'Enter the admin password (same as ADMIN_KEY / rate-limit unlock MS_ADMIN_KEY; deletion is disabled when none is configured).\nFor batch management use the "Message Wall" tab in /admin.', ja: '管理者パスワードを入力してください（管理用ADMIN_KEY / 制限解除MS_ADMIN_KEYと同じ。未設定では削除不可）。\n大量管理は /admin の「メッセージウォール」タブを推奨。' },
     wallNeedAdmin: { zh: '请先点「 管理」并输入口令（或去 /admin 后台「留言墙」标签页批量管理）', en: 'Tap " Manage" and enter the key first (or use the Message Wall tab in /admin)', ja: '先に「 管理」をタップしてキーを入力してください（または /admin のタブで管理）' },
     wallDelConfirm: { zh: '确定删除这条留言？', en: 'Delete this message?', ja: 'このメッセージを削除しますか？' },
     wallDelFail: { zh: '删除失败，口令可能不对', en: 'Delete failed — the key may be wrong', ja: '削除失敗。キーが違う可能性があります' },

@@ -57,15 +57,77 @@ export function adminBypass(env, request, body) {
   }
   return !!key && key === String(env.MS_ADMIN_KEY);
 }
+// ======================== 签名会话 token（过渡式，可选启用） ========================
+// 配置 env.FACETALK_SESSION_SECRET 后：
+//   - 签发/校验新格式 `{id}.{expSec}.{hmacSig}`（HMAC-SHA256，base64url，7 天过期）
+//   - 纯旧格式 id 在已配置 secret 时被拒（客户端会重新 POST /api/identity 获取新 token）
+// 未配置 secret：完全走旧逻辑，线上现状不变（向后兼容）。
+export const SESSION_TTL_SEC = 7 * 24 * 3600;
+
+function b64urlEncode(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlDecode(s) {
+  s = String(s).replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) s += '=';
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+async function hmacSign(secret, data) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
+  return b64urlEncode(sig);
+}
+async function hmacVerify(secret, data, sig) {
+  try {
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+    return await crypto.subtle.verify('HMAC', key, b64urlDecode(sig), new TextEncoder().encode(data));
+  } catch (e) { return false; }
+}
+
+// 签发新格式 token；未配置 secret 返回 null（调用方退回旧格式，现状不变）
+export async function issueSessionToken(env, id) {
+  const secret = env && env.FACETALK_SESSION_SECRET ? String(env.FACETALK_SESSION_SECRET) : '';
+  if (!secret) return null;
+  const exp = nowSec() + SESSION_TTL_SEC;
+  const sig = await hmacSign(secret, id + '.' + exp);
+  return id + '.' + exp + '.' + sig;
+}
+
+// 解析并校验 token：返回 { id: 纯用户id } 或 { error, status }
+async function authenticateToken(env, token) {
+  const secret = env && env.FACETALK_SESSION_SECRET ? String(env.FACETALK_SESSION_SECRET) : '';
+  token = String(token == null ? '' : token).trim();
+  if (!token) return { error: 'NO_TOKEN', status: 401 };
+  if (token.includes('.')) {
+    // 新格式 id.exp.sig
+    const parts = token.split('.');
+    if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return { error: 'BAD_TOKEN', status: 401 };
+    const [id, expStr, sig] = parts;
+    if (!/^\d+$/.test(expStr) || nowSec() > Number(expStr)) return { error: 'TOKEN_EXPIRED', status: 401 };
+    if (secret && !(await hmacVerify(secret, id + '.' + expStr, sig))) return { error: 'BAD_TOKEN', status: 401 };
+    // secret 未配置却拿到点号 token：宽松退回按 id 查库（兼容旧缓存）
+    return { id };
+  }
+  if (secret) return { error: 'BAD_TOKEN', status: 401 }; // 已启用强会话：拒绝旧格式裸 id
+  return { id: token };
+}
+
 // 校验 token：返回 {user, id} 或 {error, status}
 export async function requireToken(env, me) {
-  if (!me) return { error: 'NO_TOKEN', status: 401 };
+  const auth = await authenticateToken(env, me);
+  if (auth.error) return auth;
   const db = getDB(env);
   if (!db) return { error: 'DB_NOT_BOUND', status: 503 };
-  const u = await db.prepare('SELECT id, rep, banned FROM users WHERE id=?').bind(me).first();
+  const u = await db.prepare('SELECT id, rep, banned FROM users WHERE id=?').bind(auth.id).first();
   if (!u) return { error: 'BAD_TOKEN', status: 401 };
   if (u.banned) return { error: 'BANNED', status: 403 };
-  return { user: { rep: (u.rep == null ? 50 : u.rep) | 0 }, id: me };
+  return { user: { rep: (u.rep == null ? 50 : u.rep) | 0 }, id: auth.id };
 }
 export function clampRep(v) { return Math.max(0, Math.min(100, v | 0)); }
 
