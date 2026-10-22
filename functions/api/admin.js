@@ -1,8 +1,12 @@
-import { json, err, getDB } from '../_shared.js';
+import { json, err, getDB, getIp, checkLoginLock, recordLoginFail, clearLoginFails } from '../_shared.js';
 
 // 管理员接口：POST {admin, action, target, intentId}
 // action: ban | unban | delete_intent | list_intents | list_users | delete_user | clear_all
 // admin 为 CF 环境变量 ADMIN_KEY（用户在控制台设置）
+// 登录失败锁定：同 IP 连续错 5 次锁 15 分钟（rate_limits 表），成功清零；表故障放行。
+const ADMIN_MAX_FAIL = 5;
+const ADMIN_LOCK_SEC = 15 * 60;
+
 export async function onRequest(context) {
   const { request, env } = context;
   const db = getDB(env);
@@ -12,9 +16,21 @@ export async function onRequest(context) {
   const key = env.ADMIN_KEY;
   if (!key) return err('ADMIN_NOT_SET', 503);
 
+  const ip = getIp(request);
+  const failKey = 'admin:fail:' + ip;
+
+  // 已在锁定窗内：直接 429，不再比较口令
+  const lock = await checkLoginLock(db, failKey, ADMIN_MAX_FAIL, ADMIN_LOCK_SEC);
+  if (lock.locked) return err('locked', 429);
+
   let body;
   try { body = await request.json(); } catch (e) { return err('bad_json'); }
-  if (body.admin !== key) return err('forbidden', 401);
+  if (body.admin !== key) {
+    await recordLoginFail(db, failKey, ADMIN_LOCK_SEC);
+    return err('forbidden', 401);
+  }
+  // 成功登录：清零失败计数
+  await clearLoginFails(db, failKey);
 
   const action = String(body.action || '');
 

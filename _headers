@@ -1,14 +1,21 @@
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://955827.xyz; font-src 'self'; base-uri 'self'; frame-ancestors 'self'
+
 /
   Cache-Control: public, max-age=0, must-revalidate
   Permissions-Policy: microphone=(self)
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
+
 /assets/*
   Cache-Control: public, max-age=0, must-revalidate
-  X-Content-Type-Options: nosniff
+
 /manifest.webmanifest
   Content-Type: application/manifest+json
   Cache-Control: public, max-age=0, must-revalidate
+
 /sw.js
   Content-Type: application/javascript
   Cache-Control: public, max-age=0, must-revalidate

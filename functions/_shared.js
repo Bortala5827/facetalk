@@ -46,6 +46,34 @@ export async function rateLimit(db, key, max, windowSec) {
     return true; // 限流器异常不阻断主流程
   }
 }
+// 登录失败锁定（敏感口令如 /api/admin 用）：复用 rate_limits 表，key 由调用方给定（建议 login:fail:<ip>）。
+// checkLoginLock：已达 max 次且在锁定窗内 → {locked:true,leftSec}；表故障视为未锁定（放行，不因表故障拒绝合法登录）。
+export async function checkLoginLock(db, key, max, lockSec) {
+  try {
+    const now = nowSec();
+    const row = await db.prepare('SELECT count, reset_at FROM rate_limits WHERE key=?').bind(key).first();
+    if (row && Number(row.reset_at) > now && Number(row.count) >= max) {
+      return { locked: true, leftSec: Number(row.reset_at) - now };
+    }
+    return { locked: false };
+  } catch (e) { return { locked: false }; }
+}
+// 记一次失败：窗口内累加 count，新窗口重置为 1 并重启 lockSec；表故障静默（不阻断）。
+export async function recordLoginFail(db, key, lockSec) {
+  try {
+    const now = nowSec();
+    const row = await db.prepare('SELECT count, reset_at FROM rate_limits WHERE key=?').bind(key).first();
+    if (!row || Number(row.reset_at) < now) {
+      await db.prepare('INSERT OR REPLACE INTO rate_limits (key,count,reset_at) VALUES (?,1,?)').bind(key, now + lockSec).run();
+    } else {
+      await db.prepare('UPDATE rate_limits SET count=count+1, reset_at=? WHERE key=?').bind(Number(row.reset_at), key).run();
+    }
+  } catch (e) { /* 表故障不阻断主流程 */ }
+}
+// 登录成功：清零该 key 的失败计数
+export async function clearLoginFails(db, key) {
+  try { await db.prepare('DELETE FROM rate_limits WHERE key=?').bind(key).run(); } catch (e) { /* ignore */ }
+}
 // 站点管理员密码解锁限流：设置环境变量 MS_ADMIN_KEY 后，超限请求带 admin key 可绕过限流（便于作者自测）。
 // POST 走 body.adminKey；GET 走 ?admin=。未设置 MS_ADMIN_KEY 时恒返回 false（限流照常生效）。
 export function adminBypass(env, request, body) {

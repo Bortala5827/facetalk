@@ -53,6 +53,23 @@ If the bucket is missing, the voice tryout auto-skips without breaking v1.0.
 
 Enable `.github/workflows/d1-cleanup.yml` for scheduled cleanup.
 
+### 定时清理密钥 CLEANUP_KEY（fail-closed，两处必须一致）
+
+`POST /api/cleanup` 不再内置默认密钥：仅认环境变量 `CLEANUP_KEY`，未配置或不符
+一律 403。定时任务要跑通需同时配置两处（建议同一随机值）：
+
+1. **CF Pages 环境变量**：控制台 Settings → Environment variables（Production）加 `CLEANUP_KEY`，
+   或 `npx wrangler pages secret put CLEANUP_KEY --project-name=facetalk`；
+2. **GitHub Secret**：仓库 Settings → Secrets and variables → Actions 加 `CLEANUP_KEY`
+   （`.github/workflows/d1-cleanup.yml` 通过 `secrets.CLEANUP_KEY` 读取）。
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
+
+> 未配置前定时清理会 403 停摆（fail-closed，比内置默认密钥更安全）；/api/admin 后台
+> 同 IP 连续错 5 次锁 15 分钟，成功登录清零（rate_limits 表，表故障放行）。
+
 ### 强会话 token（可选加固，过渡式）
 
 默认（未配置）：身份 token 就是裸用户 id，行为与现状完全一致。
