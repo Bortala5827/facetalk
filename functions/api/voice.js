@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips } from '../_shared.js';
+import { json, err, genId, requireToken, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips, BOT_ID } from '../_shared.js';
 
 // ============================================================
 // FaceTalk 2.0 「试音互评」
@@ -226,6 +226,22 @@ export async function onRequest(context) {
       if (!c) return err('clip_gone', 404);
       if (!c.ready) return err('clip_not_ready', 409);
       const isOwn = c.owner === m.r.id;
+      // Demo 搭子：bot 的试音不进 R2，直接读站点内置音频（assets/demo-voice.mp3），
+      // 免上传、永不失效、不占桶；回听计数与真人一致（上限 MAX_PLAYS 次）。
+      if (c.owner === BOT_ID) {
+        try {
+          const ares = await env.ASSETS.fetch(new URL('/assets/demo-voice.mp3', request.url));
+          if (ares && ares.ok) {
+            const abuf = await ares.arrayBuffer();
+            await db.prepare('UPDATE voice_clips SET plays=plays+1 WHERE id=?').bind(clipId).run();
+            return json({
+              ok: true, mime: 'audio/mpeg', dur: c.dur | 0, b64: bytesToB64(new Uint8Array(abuf)), own: false,
+              playsLeft: Math.max(0, MAX_PLAYS - ((c.plays | 0) + 1)),
+            });
+          }
+        } catch (e) { /* ASSETS 不可用则落到 404 */ }
+        return err('clip_gone', 404);
+      }
       if (!isOwn && (c.plays | 0) >= MAX_PLAYS) return err('no_plays_left', 409);
       // 录音本体在 R2：一个 GET 拉回（读一次 = 一个对象，不再读 15+ 行拼接）
       const bucket = getBucket(env);
@@ -353,6 +369,15 @@ export async function onRequest(context) {
         .bind(pairId, m.r.id, m.other, clamp5(body.clarity), clamp5(body.logic), clamp5(body.pace),
           String(body.comment || '').replace(/\s+/g, ' ').trim().slice(0, 100), willing, now).run();
 
+      // Demo 搭子：访客一交评价，bot 立即回评（全 5 分 + 愿意组队），下方 cnt>=2 的结算随之触发
+      if (m.other === BOT_ID) {
+        try {
+          await db.prepare(`INSERT OR IGNORE INTO voice_reviews (pair_id, reviewer, target, clarity, logic, pace, comment, willing, created)
+            VALUES (?, ?, ?, 5, 5, 5, ?, 1, ?)`)
+            .bind(pairId, BOT_ID, m.r.id, '表达很清楚，节奏也稳，愿意组队！', now).run();
+        } catch (e) { /* 已评过或表异常都静默 */ }
+      }
+
       // 双方都评完 → 结算 + 统一焚毁所有录音
       const cnt = await db.prepare('SELECT COUNT(*) AS c, COALESCE(SUM(willing),0) AS w FROM voice_reviews WHERE pair_id=?').bind(pairId).first();
       let settled = null;
@@ -393,6 +418,16 @@ async function metaOf(db, m, pairId, lang) {
   const mineClips = ((mineAll && mineAll.results) || []).map(function (c) {
     return { id: c.id, dur: c.dur | 0, ready: !!c.ready, created: c.created | 0 };
   });
+  // Demo 搭子：bot 的试音由服务端代录——房间里还没有 bot 的段时补一条 ready=1 的元数据
+  // （音频本体走 assets/demo-voice.wav，见 GET 的 fetch 分支；不碰 R2，不占桶）
+  if (other === BOT_ID && !ratings._voice) {
+    try {
+      const nowIns = nowSec();
+      await db.prepare(`INSERT OR IGNORE INTO voice_clips (id, pair_id, owner, mime, dur, bytes, plays, ready, created, expires)
+        VALUES (?, ?, ?, 'audio/mpeg', 26, 0, 0, 1, ?, ?)`)
+        .bind('vc_demo_' + pairId, pairId, BOT_ID, nowIns, nowIns + CLIP_TTL).run();
+    } catch (e) { /* 表未建时静默，前端按降级流程走 */ }
+  }
   const peerAll = await db.prepare('SELECT id, dur, ready, plays, created FROM voice_clips WHERE pair_id=? AND owner=? ORDER BY created ASC').bind(pairId, other).all();
   const peerRows = (peerAll && peerAll.results) || [];
   const peerClips = peerRows.filter(function (c) { return !!c.ready; }).map(function (c) {

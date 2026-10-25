@@ -159,6 +159,49 @@ export async function requireToken(env, me) {
 }
 export function clampRep(v) { return Math.max(0, Math.min(100, v | 0)); }
 
+// ======================== Demo 搭子（机器人） ========================
+// 目的：评审/新用户单人也能体验完整「申请 → 双向互选 → 房间 → 试音互评 → 互评结算」闭环。
+// bot 是 users 表里的真实用户行（固定 id），常挂一条 open 意图；访客申请它即秒同意（a_accepted），
+// 访客再点「我也同意」走真实 b-accept 建房——全流程与真人一致，只是 bot 那一侧由服务端代打。
+// bot 的其余行为分散在轮询钩子：pair.js GET（在线心跳 + 自动互评）、voice.js metaOf/review（试音 + 自动愿意组队）。
+export const BOT_ID = 'u_demo_bot';
+
+// 保证 bot 用户行存在（users 表列：id, rep, banned, created；last_seen 由 alter-online.sql 后加）
+export async function ensureDemoBot(db) {
+  const now = nowSec();
+  try {
+    await db.prepare('INSERT OR IGNORE INTO users (id, rep, banned, created) VALUES (?, 98, 0, ?)').bind(BOT_ID, now).run();
+  } catch (e) { /* 表异常静默，不阻断主流程 */ }
+}
+// 刷新 bot 心跳：让对端看到「对方在线」
+export async function touchBot(db) {
+  try { await db.prepare('UPDATE users SET last_seen=? WHERE id=?').bind(nowSec(), BOT_ID).run(); } catch (e) {}
+}
+// 保证 bot 当前有一条 open 意图（被配对/被清理后自动补一条新的）。返回意图行或 null。
+export async function ensureDemoIntent(db) {
+  const now = nowSec();
+  try {
+    const it = await db.prepare("SELECT * FROM intents WHERE owner=? AND status='open' AND expires > ? ORDER BY created DESC LIMIT 1")
+      .bind(BOT_ID, now).first();
+    if (it) return it;
+    await ensureDemoBot(db);
+    const id = 'i_demo_' + genId(8);
+    const role = 'Demo 搭子（演示）';
+    const note = '我是演示搭子小面 🤖 申请后我会秒同意，陪你走完互选 → 试音 → 房间的完整流程。';
+    try {
+      await db.prepare(`INSERT INTO intents (id, owner, role, city, mode, note, meet, status, created, expires, ip)
+        VALUES (?, ?, ?, '', 'voice', ?, '', 'open', ?, ?, 'demo')`)
+        .bind(id, BOT_ID, role, note, now, now + 86400).run();
+    } catch (e) {
+      // ip 列未 ALTER 的旧库：退回不带 ip 的写法
+      await db.prepare(`INSERT INTO intents (id, owner, role, city, mode, note, meet, status, created, expires)
+        VALUES (?, ?, ?, '', 'voice', ?, '', 'open', ?, ?)`)
+        .bind(id, BOT_ID, role, note, now, now + 86400).run();
+    }
+    return await db.prepare('SELECT * FROM intents WHERE id=?').bind(id).first();
+  } catch (e) { return null; }
+}
+
 // 清空一个房间里的全部试音录音：R2 对象（clips/{id}）+ D1 元数据行。
 // 结算 / 关房 / 每日清理都会调用，保证"云端不留存"。
 // voice_* 表未建或 R2 未绑定时静默跳过，不影响 1.0 的既有功能。

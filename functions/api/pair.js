@@ -1,4 +1,4 @@
-﻿import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips } from '../_shared.js';
+﻿import { json, err, genId, requireToken, clampRep, getDB, nowSec, rateLimit, getIp, adminBypass, dropPairClips, BOT_ID, touchBot } from '../_shared.js';
 
 // 单次互练「建议时长」软上限 20 分钟（秒）：倒计时归零只提示 + 弹评价卡，**不关房间**，
 // 双方在腾讯会议 / 飞书会议里练多久都行，回来照样能提交评价。
@@ -27,9 +27,45 @@ export async function onRequest(context) {
     const now = nowSec();
     // 心跳：每次轮询都刷新自己的 last_seen，供对方判断「是否在线」
     try { await db.prepare('UPDATE users SET last_seen=? WHERE id=?').bind(now, r.id).run(); } catch (e) {}
-    const p = await db.prepare('SELECT * FROM pairs WHERE (a=? OR b=?) AND expires > ? ORDER BY created DESC LIMIT 1')
+    let p = await db.prepare('SELECT * FROM pairs WHERE (a=? OR b=?) AND expires > ? ORDER BY created DESC LIMIT 1')
       .bind(r.id, r.id, now).first();
       if (!p) return json({ ok: true, pair: null });
+      // Demo 搭子：bot 侧行为由轮询钩子代打——保持心跳（对方看 bot 永远在线）+
+      // 访客一旦提交评价，bot 立即回评 5 分并触发结算（双方都评完 → done → 5 分钟后自动关房）。
+      const otherId = r.id === p.a ? p.b : p.a;
+      if (otherId === BOT_ID) {
+        await touchBot(db);
+        const rt0 = safeParse(p.ratings);
+        if (p.status === 'matched' && rt0[r.id] && !rt0[r.id].left && !rt0[BOT_ID]) {
+          const botKey = (BOT_ID === p.a) ? 'a' : 'b';
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const cur = await db.prepare('SELECT ratings FROM pairs WHERE id=?').bind(p.id).first();
+            if (!cur) break;
+            const rt = safeParse(cur.ratings);
+            if (rt[BOT_ID]) break;
+            if (!rt._evaluated) rt._evaluated = {};
+            rt._evaluated[botKey] = true;
+            rt[BOT_ID] = { score: 5, tags: ['演示搭子'], next: true, at: now };
+            const both = !!(rt._evaluated.a && rt._evaluated.b);
+            const res = await db.prepare('UPDATE pairs SET ratings=?, status=? WHERE id=? AND ratings=?')
+              .bind(JSON.stringify(rt), both ? 'done' : 'matched', p.id, cur.ratings).run();
+            if (res && res.meta && res.meta.changes === 1) {
+              if (both) { try { await db.prepare('UPDATE pairs SET closed_at=? WHERE id=?').bind(now + 300, p.id).run(); } catch (e) {} }
+              // bot 给访客的 5 分评价：声誉 +2 + 写 ratings 历史表（与真人评价口径一致）
+              try {
+                await db.batch([
+                  db.prepare('UPDATE users SET rep=? WHERE id=?').bind(clampRep(r.user.rep + 2), r.id),
+                  db.prepare('INSERT INTO ratings (id, pair_id, from_user, to_user, score, tags, next, created) VALUES (?, ?, ?, ?, 5, ?, 1, ?)')
+                    .bind('r_' + genId(12), p.id, BOT_ID, r.id, JSON.stringify(['演示搭子']), now),
+                ]);
+              } catch (e) {}
+              break;
+            }
+          }
+          const p2 = await db.prepare('SELECT * FROM pairs WHERE id=?').bind(p.id).first();
+          if (p2) p = p2;
+        }
+      }
       const ratings = safeParse(p.ratings);
       // 从 ratings JSON 的 at 时间推算兜底计时：即使 dissolve_at/closed_at 列未 ALTER 也能自动结算
       const leftAt = (ratings[p.a] && ratings[p.a].left ? (ratings[p.a].at || 0) : 0) || (ratings[p.b] && ratings[p.b].left ? (ratings[p.b].at || 0) : 0);
@@ -156,6 +192,22 @@ export async function onRequest(context) {
         db.prepare("UPDATE intents SET status='matched' WHERE id=?")
           .bind(intent.id),
       ]);
+      // Demo 搭子：建房后 bot 立即发 3 条引导留言（ stagger 1s，按时间正序展示）
+      if (intent.owner === BOT_ID) {
+        try {
+          const msgs = [
+            '你好呀，我是演示搭子小面 🤖 这个房间里的功能都可以放心试。',
+            '推荐顺序：先玩「试音互评」——录一段 30 秒以上的回答，我的试音已经放好了；双方都点「愿意组队」后联机信息自动解锁。',
+            '真实搭子时，这里会贴腾讯会议号直接连麦。体验完给我打个分就结算啦。',
+          ];
+          const now2 = nowSec();
+          await db.batch(msgs.map(function (text, i) {
+            return db.prepare('INSERT INTO messages (id, pair_id, sender, text, created) VALUES (?, ?, ?, ?, ?)')
+              .bind('m_' + genId(12), pairId, BOT_ID, text, now2 + i);
+          }));
+          await touchBot(db);
+        } catch (e) { /* 留言失败不阻断建房 */ }
+      }
       return json({ ok: true, pairId });
     }
 

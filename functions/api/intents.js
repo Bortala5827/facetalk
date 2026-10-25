@@ -1,4 +1,4 @@
-﻿import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass } from '../_shared.js';
+﻿import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass, ensureDemoBot, ensureDemoIntent, touchBot } from '../_shared.js';
 
 const MODES = ['voice', 'video', 'talk'];
 
@@ -65,6 +65,11 @@ export async function onRequest(context) {
     }
 
     if (!await rateLimit(db, 'rl:list:' + ip, 120, 600) && !adminBypass(env, request, null)) return err('rate_limited', 429);
+
+    // Demo 搭子：保证大厅里常有一条 bot 的 open 意图（评委/新用户单人也能体验全流程）
+    await ensureDemoBot(db);
+    await ensureDemoIntent(db);
+    await touchBot(db);
 
     // browse 列表：过滤掉「我屏蔽的人」发布的意图（LEFT JOIN blocks + WHERE NULL）
     const { results } = await db.prepare(`SELECT i.id, i.role, i.city, i.mode, i.note, i.created, i.owner, COALESCE(u.rep,50) AS rep

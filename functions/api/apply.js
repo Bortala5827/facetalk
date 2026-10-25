@@ -1,4 +1,4 @@
-import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass } from '../_shared.js';
+import { json, err, genId, requireToken, rateLimit, getIp, getDB, nowSec, adminBypass, BOT_ID, touchBot } from '../_shared.js';
 
 // 申请组队 + 收件箱 / 发件箱
 export async function onRequest(context) {
@@ -33,10 +33,13 @@ export async function onRequest(context) {
 
     const appId = 'a_' + genId(12);
     const now = nowSec();
+    // Demo 搭子：bot 作为意图方秒同意（直接 a_accepted），访客再点「我也同意」即走真实 b-accept 建房
+    const isDemo = intent.owner === BOT_ID;
     await db.prepare(`INSERT INTO applications (id, intent_id, applicant, status, created, expires)
-      VALUES (?, ?, ?, 'pending', ?, ?)`)
-      .bind(appId, intentId, r.id, now, now + 86400).run();
-    return json({ ok: true, appId, status: 'pending' });
+      VALUES (?, ?, ?, ?, ?, ?)`)
+      .bind(appId, intentId, r.id, isDemo ? 'a_accepted' : 'pending', now, now + 86400).run();
+    if (isDemo) await touchBot(db);
+    return json({ ok: true, appId, status: isDemo ? 'a_accepted' : 'pending', demo: isDemo });
   }
 
   if (request.method === 'DELETE') {

@@ -5,6 +5,7 @@
   var dissolveTimer = null;
   var roomDissolveToasted = false;
   var heartbeatTimer = null;
+  var BOT_ID = 'u_demo_bot'; // Demo 搭子（与 functions/_shared.js 保持一致）
 
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -201,6 +202,7 @@
     // 2.1 排序：在线 > 活跃 > 历史；同类内按发布时间倒序
     function statusWeight(it) {
       if (it.isOwn) return -1; // 自己的排最前
+      if (it.owner === BOT_ID) return -0.5; // Demo 搭子紧随其后置顶（评委/新用户第一眼看到）
       var s = onlineMap[it.owner];
       if (s === 'online') return 0;
       if (s === 'active') return 1;
@@ -234,9 +236,17 @@
 
       // 动作按钮：自己的 → 删除；别人的 → 申请组队
       // 试音/录音只在「进房间后」才能发起，大厅里只做组队（避免绕过互选导致混乱）
+      var isDemo = it.owner === BOT_ID;
+      // Demo 搭子强制显示「在线」绿灯（bot 心跳由服务端轮询钩子刷新）
+      if (isDemo && !statusDot) {
+        statusDot = '<span class="online-dot green"></span>';
+        statusText = '<span class="online-label green">' + t('onlineNow') + '</span>';
+      }
       var actionsHtml;
       if (it.isOwn) {
         actionsHtml = '<button class="btn-mini no" data-del-own="' + esc(it.id) + '">' + t('delete') + '</button>';
+      } else if (isDemo) {
+        actionsHtml = '<button class="btn-mini" data-apply="' + esc(it.id) + '">' + t('demoApply') + '</button>';
       } else {
         actionsHtml = '<button class="btn-mini" data-apply="' + esc(it.id) + '">' + t('applyTeam') + '</button>';
       }
@@ -247,6 +257,7 @@
         ' <span class="mode">' + modeLabel(it.mode) + '</span>' +
         statusText +
         (it.isOwn ? ' <span class="mode" style="background:#fff3cd;color:#856404">' + t('mineTag') + '</span>' : '') +
+        (isDemo ? ' <span class="mode" style="background:#e0e7ff;color:#3730a3">🤖 Demo</span>' : '') +
         '</div>' +
         (it.note ? '<p class="li-note">' + esc(it.note) + '</p>' : '') +
         '<div class="li-foot"><span class="rep">⭐ ' + (it.rep != null ? it.rep : '50') + '</span>' +
@@ -258,7 +269,7 @@
     box.querySelectorAll('[data-apply]').forEach(function (b) {
       b.addEventListener('click', async function () {
         var rr = await api('POST', '/api/apply', { intentId: b.getAttribute('data-apply') });
-        if (rr.status === 200 && rr.data.ok) toast(t('applied'));
+        if (rr.status === 200 && rr.data.ok) toast(rr.data.demo ? t('demoAccepted') : t('applied'));
         else toast(t('applyFail') + (rr.data.error || rr.status), true);
         loadOut();
       });
