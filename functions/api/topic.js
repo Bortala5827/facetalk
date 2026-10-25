@@ -14,7 +14,7 @@ export async function onRequest(context) {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        scene: 'api',
+        scene: 'talk',
         messages: [{ role: 'user', content: '请随机生成一个适合两个陌生人深夜匿名语音聊天的话题（一句话问题，15-30字，有思辨性但不沉重，不涉及政治/宗教/性/自残）。直接输出话题本身，不要解释，不要引号。' }],
       }),
     });
