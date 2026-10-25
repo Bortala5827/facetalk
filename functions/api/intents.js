@@ -80,7 +80,7 @@ export async function onRequest(context) {
       ORDER BY RANDOM() LIMIT 40`)
       .bind(r.id, nowSec(), r.id).all();
     const list = results.map(it => {
-      return { id: it.id, role: it.role, city: it.city, mode: it.mode, note: it.note, created: it.created, rep: it.rep, isOwn: false };
+      return { id: it.id, role: it.role, city: it.city, mode: it.mode, note: it.note, created: it.created, owner: it.owner, rep: it.rep, isOwn: false };
     });
 
     // 当前在线发需求人数：统计「当前仍开放且未过期」需求的去重 IP 数。
