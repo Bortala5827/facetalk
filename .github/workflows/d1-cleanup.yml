@@ -13,9 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 调用清理接口（带重试）
+        env:
+          CLEANUP_KEY: ${{ secrets.CLEANUP_KEY }}
         run: |
-          KEY="MAABa_kecoPJAKmqIKDwhUSC"
+          KEY="$CLEANUP_KEY"
           URL="https://facetalk.955827.xyz/api/cleanup"
+          if [ -z "$KEY" ]; then echo "未配置 GitHub Secret CLEANUP_KEY，跳过（需先在仓库 Settings → Secrets 配置，且与 CF Pages 环境变量 CLEANUP_KEY 一致）"; exit 1; fi
           for i in 1 2 3 4 5; do
             echo "尝试 $i ..."
             code=$(curl -sS -o /tmp/cleanup.json -w "%{http_code}" -X POST "$URL" -H "x-cleanup-key: $KEY" --max-time 30)
