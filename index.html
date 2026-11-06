@@ -7,7 +7,7 @@
   <link rel="canonical" href="https://facetalk.955827.xyz/" />
   <meta name="description" data-i18n-content="metaDesc" content="Facetalk 是一款主打零社交压力的陌生人面试与口语协作工具。无需加好友，通过60秒短语音互听互评，快速筛选合拍队友，专注纯粹的组队练习。" />
   <meta name="keywords" content="面试口语对练,60秒试音,AI面试筛选,陌生人协作练习,免社交口语练习,雅思模拟面试,无压力模拟面试,免社交口语对练" />
-  <script src="/assets/i18n.js?v=20261010a"></script>
+  <script src="/assets/i18n.js?v=20261106a"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -152,6 +152,14 @@
       transition: opacity .15s, transform .15s;
     }
     .lt-topic.rolling { opacity: .4; transform: scale(.98); }
+    .lt-topic-cat {
+      display: inline-block; margin: -22px 0 26px;
+      padding: 3px 12px; border-radius: 999px;
+      font-size: 11px; letter-spacing: .12em; font-weight: 600;
+      color: #c4b5fd; background: rgba(167,139,250,.12);
+      border: 1px solid rgba(167,139,250,.24);
+    }
+    .lt-topic-cat[hidden] { display: none; }
 
     .lt-spin {
       background: rgba(232,228,223,.1) !important; color: #E8E4DF !important;
@@ -167,6 +175,7 @@
     .lt-trending { max-width: 380px; margin: 0 auto 40px; }
     .lt-trending h3 { font-size: 11px; font-weight: 500; color: #6b6580; margin-bottom: 14px; letter-spacing: .1em; text-transform: uppercase; }
     .lt-chip {
+      padding: 8px 14px;
       background: rgba(139,126,200,.1) !important;
       border: 1px solid rgba(139,126,200,.2) !important;
       color: #c4b9a8 !important;
@@ -419,7 +428,8 @@
 
       <div class="lt-drum">
         <p class="lt-topic-label" data-i18n="ltTopicLabel">Your Topic</p>
-        <p class="lt-topic" id="lt-topic" data-i18n="ltTopicPlaceholder">点下面按钮，抽一个深夜话题</p>
+        <p class="lt-topic" id="lt-topic" data-i18n="ltTopicPlaceholder">点下面按钮，抽一个有点争议的话题</p>
+        <p class="lt-topic-cat" id="lt-topic-cat" hidden></p>
         <button class="lt-spin" id="lt-spin" type="button" data-i18n="ltSpinBtn">🎲 抽个话题</button>
         <button class="lt-go" id="lt-go" type="button" hidden data-i18n="ltGoBtn">开始匹配 →</button>
       </div>
@@ -427,10 +437,12 @@
       <div class="lt-trending">
         <h3 data-i18n="ltTrendingLabel">Trending Topics</h3>
         <div class="lt-chips" id="lt-chips">
-          <span class="lt-chip" data-i18n="ltTopic1">你最后一次哭是什么时候？</span>
-          <span class="lt-chip" data-i18n="ltTopic2">如果能重来，你会选另一条路吗？</span>
-          <span class="lt-chip" data-i18n="ltTopic3">你最怕别人发现你的什么？</span>
-          <span class="lt-chip" data-i18n="ltTopic4">今晚你最想吐槽谁？</span>
+          <span class="lt-chip" data-cat="world" data-i18n="ltTopic1">关税战打到最后，账单是谁在付？</span>
+          <span class="lt-chip" data-cat="tech" data-i18n="ltTopic2">AI 能替你干 80% 的活，你还剩什么价值？</span>
+          <span class="lt-chip" data-cat="eco" data-i18n="ltTopic3">掏空六个钱包买房，这笔账值不值？</span>
+          <span class="lt-chip" data-cat="drama" data-i18n="ltTopic4">《白色巨塔》里，财前五郎算好医生吗？</span>
+          <span class="lt-chip" data-cat="work" data-i18n="ltTopic5">35 岁危机，是能力问题还是结构问题？</span>
+          <span class="lt-chip" data-cat="soc" data-i18n="ltTopic6">结婚率越来越低，是自私还是社会在进步？</span>
         </div>
       </div>
     </div><!-- /talk-view -->
@@ -753,28 +765,59 @@
   window.addEventListener('hashchange', function(){ applyMode(fromHash()); });
   applyMode(fromHash());
 
-  var TOPICS = [
-    '你最后一次哭是什么时候？',
-    '如果能重来，你会选另一条路吗？',
-    '你最怕别人发现你的什么？',
-    '今晚你最想吐槽谁？',
-    '你最近一次心软是因为什么？',
-    '如果明天世界末日，你今晚想做什么？',
-    '你有没有一个从没告诉过别人的秘密？',
-    '你最想回到人生的哪个瞬间？'
-  ];
+  // ── 话题池：按领域分组（科技/经济/社会/国际/职场/影视/思辨）──
+  // 每条都是 i18n key，渲染走 FTI18N.t()，中英日同步；不再用纯情感/空想题
+  var TOPIC_CATS = {
+    tech:  ['tpTech1','tpTech2','tpTech3','tpTech4','tpTech5','tpTech6'],
+    eco:   ['tpEco1','tpEco2','tpEco3','tpEco4','tpEco5','tpEco6'],
+    soc:   ['tpSoc1','tpSoc2','tpSoc3','tpSoc4','tpSoc5','tpSoc6'],
+    world: ['tpWorld1','tpWorld2','tpWorld3','tpWorld4','tpWorld5','tpWorld6'],
+    work:  ['tpWork1','tpWork2','tpWork3','tpWork4','tpWork5','tpWork6'],
+    drama: ['tpDrama1','tpDrama2','tpDrama3','tpDrama4','tpDrama5','tpDrama6'],
+    mind:  ['tpMind1','tpMind2','tpMind3','tpMind4','tpMind5','tpMind6']
+  };
+  var CAT_KEYS = Object.keys(TOPIC_CATS);
+  var CAT_I18N = {
+    tech:'tpCatTech', eco:'tpCatEco', soc:'tpCatSoc', world:'tpCatWorld',
+    work:'tpCatWork', drama:'tpCatDrama', mind:'tpCatMind'
+  };
+  var FLAT = [];
+  CAT_KEYS.forEach(function(c){
+    TOPIC_CATS[c].forEach(function(k){ FLAT.push({ cat: c, key: k }); });
+  });
+  function tr(key){ return (window.FTI18N && FTI18N.t) ? FTI18N.t(key) : key; }
+  function randTopic(){ return FLAT[Math.floor(Math.random()*FLAT.length)]; }
+
   var spin = document.getElementById('lt-spin');
   var topic = document.getElementById('lt-topic');
   var goBtn = document.getElementById('lt-go');
-  function setTopic(t) {
-    topic.textContent = t;
+  var catEl = document.getElementById('lt-topic-cat');
+  var cur = null;   // { cat, key } | { cat, text }
+
+  function paintTopic() {
+    if (!cur) return;
+    topic.textContent = cur.key ? tr(cur.key) : cur.text;
+    if (catEl) {
+      if (cur.cat && CAT_I18N[cur.cat]) {
+        catEl.textContent = tr(CAT_I18N[cur.cat]);
+        catEl.hidden = false;
+      } else {
+        catEl.hidden = true;
+      }
+    }
+  }
+  function setTopic(t, cat) {
+    cur = (t && typeof t === 'object') ? { cat: t.cat || null, key: t.key || null } : { cat: cat || null, text: t };
+    paintTopic();
     topic.classList.remove('rolling');
     if (goBtn) goBtn.hidden = false;
   }
+  // 切语言后重绘当前话题（静态节点由 i18n 自动扫描，动态的得自己来）
+  if (window.FTI18N && FTI18N.onChange) FTI18N.onChange(function(){ paintTopic(); });
   if (spin && topic) {
     spin.addEventListener('click', function(){
       spin.disabled = true;
-      spin.textContent = '🎲 转动中…';
+      spin.textContent = tr('ltSpinRolling');
       topic.classList.add('rolling');
 
       // 老虎机滚动效果：快速切换话题，逐渐减速
@@ -782,21 +825,22 @@
       var rollTimes = 0;
       var maxRolls = 20;
       function roll() {
-        topic.textContent = TOPICS[Math.floor(Math.random()*TOPICS.length)];
+        topic.textContent = tr(FLAT[Math.floor(Math.random()*FLAT.length)].key);
         rollTimes++;
         if (rollTimes < maxRolls) {
           // 逐渐减速
           rollInterval = rollTimes < 10 ? 60 : rollTimes < 15 ? 100 : 160;
           setTimeout(roll, rollInterval);
         } else {
-          // 滚动结束，请求 AI 话题（失败则保持随机）
+          // 滚动结束：先落定一个本地题（保证一定有题），再请 AI 出一题覆盖
+          setTopic(randTopic());
           fetch('/api/topic', {method:'POST'}).then(function(r){ return r.json(); }).then(function(d){
-            if (d && d.topic) setTopic(d.topic);
+            if (d && d.topic) setTopic(d.topic, d.cat);
           }).catch(function(){})
           .finally(function(){
             topic.classList.remove('rolling');
             spin.disabled = false;
-            spin.textContent = '🎲 再转一次';
+            spin.textContent = tr('ltSpinAgain');
             if (goBtn) goBtn.hidden = false;
           });
         }
@@ -804,10 +848,12 @@
       roll();
     });
   }
-  // 热门话题 chips 点击直接选
+  // 热门话题 chips 点击直接选（带分类标签）
   var chips = document.querySelectorAll('.lt-chip');
   chips.forEach(function(ch){
-    ch.addEventListener('click', function(){ setTopic(ch.textContent.trim()); });
+    ch.addEventListener('click', function(){
+      setTopic(ch.textContent.trim(), ch.getAttribute('data-cat'));
+    });
   });
 
   // 开始匹配：发 mode=talk 的 intent

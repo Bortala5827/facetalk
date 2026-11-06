@@ -564,16 +564,85 @@
     // ───────────── Chat / Talk 深夜话题模式 ─────────────
     ltEyebrow: { zh: 'CHAT MODE', en: 'CHAT MODE', ja: 'チャットモード' },
     ltTitle: { zh: '随机话题，语音匹配', en: 'Random Topic, Voice Match', ja: 'ランダム話題・ボイスマッチ' },
-    ltSub: { zh: '转盘抽一个话题，遇到同样在聊这个的人，60 秒语音聊透它。', en: 'Spin the wheel, find someone on the same topic, talk it through in 60s.', ja: 'ルーレットで話題を引き、同じ話をしている人と出会い、60秒で語り尽くそう。' },
+    ltSub: { zh: '抽一个社会、经济、国际、科技或影视剧里的话题，遇到同样关心它的人，60 秒语音聊透它。', en: 'Spin a topic from tech, money, society, world affairs or film — meet someone who cares too, and talk it through in 60s.', ja: '社会・経済・国際・テック・ドラマから話題を引いて、同じ関心の人と60秒で語り尽くそう。' },
     ltTopicLabel: { zh: 'Your Topic', en: 'Your Topic', ja: 'あなたの話題' },
-    ltTopicPlaceholder: { zh: '点下面按钮，抽一个深夜话题', en: 'Tap the button below to spin a late-night topic', ja: '下のボタンを押して、夜の話題を引こう' },
-    ltSpinBtn: { zh: '抽个话题', en: 'Spin Topic', ja: '話題を引く' },
+    ltTopicPlaceholder: { zh: '点下面按钮，抽一个有点争议的话题', en: 'Tap the button below to spin a topic worth arguing about', ja: '下のボタンを押して、議論になる話題を引こう' },
+    ltSpinBtn: { zh: '🎲 抽个话题', en: '🎲 Spin Topic', ja: '🎲 話題を引く' },
+    ltSpinRolling: { zh: '🎲 转动中…', en: '🎲 Spinning…', ja: '🎲 回しています…' },
+    ltSpinAgain: { zh: '🎲 再转一次', en: '🎲 Spin again', ja: '🎲 もう一度' },
     ltGoBtn: { zh: '开始匹配', en: 'Start Matching', ja: 'マッチング開始' },
     ltTrendingLabel: { zh: 'Trending Topics', en: 'Trending Topics', ja: '人気の話題' },
-    ltTopic1: { zh: '你最后一次哭是什么时候？', en: 'When was the last time you cried?', ja: '最後に泣いたのはいつ？' },
-    ltTopic2: { zh: '如果能重来，你会选另一条路吗？', en: 'If you could start over, would you take a different path?', ja: 'やり直せるなら、別の道を選ぶ？' },
-    ltTopic3: { zh: '你最怕别人发现你的什么？', en: 'What are you most afraid others will discover about you?', ja: '人に知られるのが一番怖いことは？' },
-    ltTopic4: { zh: '今晚你最想吐槽谁？', en: 'Who do you most want to rant about tonight?', ja: '今夜一番愚痴りたい相手は？' },
+    ltTopic1: { zh: '关税战打到最后，账单是谁在付？', en: 'When the tariff war ends, who actually pays the bill?', ja: '関税戦争の最後、請求書を払うのは誰？' },
+    ltTopic2: { zh: 'AI 能替你干 80% 的活，你还剩什么价值？', en: 'If AI did 80% of your job, what value would you have left?', ja: 'AIが仕事の80%をやったら、あなたの価値は何？' },
+    ltTopic3: { zh: '掏空六个钱包买房，这笔账值不值？', en: 'Draining both families\' savings for a flat — is the math worth it?', ja: '两家の貯金を全部はたいて家を買う、割に合う？' },
+    ltTopic4: { zh: '《白色巨塔》里，财前五郎算好医生吗？', en: 'In The Great White Tower, is Zaizen a good doctor?', ja: '『白い巨塔』の財前は良い医者？' },
+    ltTopic5: { zh: '35 岁危机，是能力问题还是结构问题？', en: 'The age-35 cliff: a skill problem or a structural one?', ja: '35歳限界は能力の問題？構造の問題？' },
+    ltTopic6: { zh: '结婚率越来越低，是自私还是社会在进步？', en: 'Falling marriage rates: selfish, or social progress?', ja: '結婚率の低下はわがまま？それとも進歩？' },
+
+    // ───────────── Talk 话题池：分类标签 ─────────────
+    tpCatTech: { zh: '科技 · AI', en: 'Tech · AI', ja: 'テック・AI' },
+    tpCatEco: { zh: '经济 · 钱', en: 'Money · Economy', ja: '経済・お金' },
+    tpCatSoc: { zh: '社会', en: 'Society', ja: '社会' },
+    tpCatWorld: { zh: '国际', en: 'World', ja: '国際' },
+    tpCatWork: { zh: '职场', en: 'Work', ja: '仕事' },
+    tpCatDrama: { zh: '影视 · 现实', en: 'Film · Reality', ja: 'ドラマ・現実' },
+    tpCatMind: { zh: '思辨', en: 'Big Questions', ja: '思考' },
+
+    // ───────────── Talk 话题池：科技 · AI ─────────────
+    tpTech1: { zh: '如果 AI 能替你干 80% 的活，你还剩下什么价值？', en: 'If AI could do 80% of your job, what value would you have left?', ja: 'AIが仕事の80%を代わりにやったら、あなたの価値は何？' },
+    tpTech2: { zh: '用 AI 写简历、想面试答案，算作弊吗？', en: 'Is using AI to write your résumé and interview answers cheating?', ja: 'AIで履歴書や面接の答えを作るのはカンニング？' },
+    tpTech3: { zh: 'AI 生成的内容，该不该强制打上水印？', en: 'Should AI-generated content be required to carry a watermark?', ja: 'AI生成コンテンツに透かし表示を義務づけるべき？' },
+    tpTech4: { zh: '十年后，「会提问」会比「会答题」更值钱吗？', en: 'In ten years, will asking good questions beat knowing answers?', ja: '10年後、「問う力」は「答える力」より価値がある？' },
+    tpTech5: { zh: '算法推荐是懂你，还是在慢慢塑造你？', en: 'Does the algorithm understand you, or is it shaping you?', ja: 'レコメンドはあなたを理解している？それとも形づくっている？' },
+    tpTech6: { zh: '如果 AI 诊断准确率 95%，你还要真人医生吗？', en: 'If AI diagnosed correctly 95% of the time, would you still want a human doctor?', ja: 'AIの診断精度が95%なら、人間の医者が必要？' },
+
+    // ───────────── Talk 话题池：经济 · 钱 ─────────────
+    tpEco1: { zh: '月薪 3 万但随时可能被裁，和月薪 1 万很稳，你选哪个？', en: '30k a month but always at risk of layoff, or 10k and stable — which?', ja: '月収30万でいつ解雇されるか分からない、それとも月収10万で安定？' },
+    tpEco2: { zh: '消费降级，是真的变穷，还是人变清醒了？', en: 'Trading down: real poverty, or finally waking up?', ja: '消費ダウンは本当に貧しくなった？それとも目が覚めた？' },
+    tpEco3: { zh: '通胀和失业，哪个更可怕？', en: 'Which is scarier: inflation or unemployment?', ja: 'インフレと失業、怖いのはどっち？' },
+    tpEco4: { zh: '现在这个环境，存钱和及时行乐哪个更理性？', en: 'In this economy, is saving or living-now the rational choice?', ja: '今の経済で、貯金と今を楽しむのはどちらが合理的？' },
+    tpEco5: { zh: '「情绪价值」该不该明码标价？', en: 'Should emotional labor come with a price tag?', ja: '感情労働に値段をつけるべき？' },
+    tpEco6: { zh: '副业是普通人的出路，还是新的内卷？', en: 'Side hustles: a real way out, or just a new rat race?', ja: '副業は普通の人の出口？それとも新たな競争？' },
+
+    // ───────────── Talk 话题池：社会 ─────────────
+    tpSoc1: { zh: '大城市的合租房，和小城的自己有房，哪个更体面？', en: 'A shared flat in the big city, or owning a home in a small town?', ja: '大都市のシェアハウスと、地方の持ち家、どちらがまし？' },
+    tpSoc2: { zh: '学历在贬值，读研还是早点进场？', en: 'Degrees are worth less — grad school, or start working now?', ja: '学歴の価値が下がる中、大学院か、すぐ働くか？' },
+    tpSoc3: { zh: '算法在派单、限时、评分，它是在帮骑手还是在驯骑手？', en: 'Dispatch, countdowns, ratings: is the algorithm helping gig workers or taming them?', ja: '配車・タイマー・評価は配達員を助けている？それとも飼いならしている？' },
+    tpSoc4: { zh: '短视频是让人变笨了，还是只是让人更懒？', en: 'Has short video made us dumber, or just lazier?', ja: 'ショート動画でバカになった？それともただ怠けた？' },
+    tpSoc5: { zh: '地铁上外放视频，该不该被制止？', en: 'Should playing videos out loud on the subway be stopped?', ja: '地下鉄での音漏れ再生は止めるべき？' },
+    tpSoc6: { zh: '父母那一代的「稳定」，现在还成立吗？', en: 'Does the "stability" our parents grew up with still exist?', ja: '親の世代の「安定」は、まだ成り立つ？' },
+
+    // ───────────── Talk 话题池：国际 ─────────────
+    tpWorld1: { zh: '美国大选的结果，真的会改变普通中国人的生活吗？', en: 'Will the US election result really change ordinary lives in China?', ja: '米大統領選の結果は、普通の中国人の生活を本当に変える？' },
+    tpWorld2: { zh: '全球化在退潮，你觉得可逆吗？', en: 'Globalization is receding — do you think it can come back?', ja: 'グローバル化は後退中。戻ると思う？' },
+    tpWorld3: { zh: '同一件国际新闻，不同媒体说法差那么多，你怎么判断真假？', en: 'The same world event, opposite media takes — how do you judge what is true?', ja: '同じ国際ニュースで報道が真逆。どう真偽を判断する？' },
+    tpWorld4: { zh: '同一杯咖啡在不同国家差好几倍，价格到底由什么决定？', en: 'The same coffee costs 5x more in some countries — what sets the price?', ja: '同じコーヒーが国で何倍も違う。価格は何で決まる？' },
+    tpWorld5: { zh: '汇率一跌，普通人的钱包最先感受到什么？', en: 'When a currency slides, what do ordinary wallets feel first?', ja: '為替が下がると、普通の家計はまず何を感じる？' },
+    tpWorld6: { zh: '如果出国变得很容易，你还会留下来吗？', en: 'If leaving were easy, would you still stay?', ja: '海外に出るのが簡単になったら、それでも残る？' },
+
+    // ───────────── Talk 话题池：职场 ─────────────
+    tpWork1: { zh: '第一份工作，选钱多的还是选能学到东西的？', en: 'First job: the one that pays more, or the one where you learn more?', ja: '最初の仕事、給料か、学びか？' },
+    tpWork2: { zh: '30 岁裸辞转行，是勇气还是逃避？', en: 'Quitting at 30 to change careers — courage or escape?', ja: '30歳で辞めて転職。勇気？それとも現実逃避？' },
+    tpWork3: { zh: '该不该跟老板说真话？', en: 'Should you tell your boss the truth?', ja: '上司に本当のことを言うべき？' },
+    tpWork4: { zh: '加班到底是行业必然，还是管理无能？', en: 'Is overtime inevitable in this industry, or just bad management?', ja: '残業は業界の必然？それとも管理不能？' },
+    tpWork5: { zh: '同事之间，到底能不能做朋友？', en: 'Can coworkers really be friends?', ja: '同僚と本当に友だちになれる？' },
+    tpWork6: { zh: '如果涨薪 30% 但要搬到另一个城市，你走吗？', en: 'A 30% raise if you relocate to another city — do you go?', ja: '30%昇給で他都市へ転勤。行く？' },
+
+    // ───────────── Talk 话题池：影视 · 现实 ─────────────
+    tpDrama1: { zh: '《白色巨塔》里，财前五郎算好医生吗？', en: 'In The Great White Tower, is Zaizen a good doctor?', ja: '『白い巨塔』の財前は良い医者？' },
+    tpDrama2: { zh: '现实里，你会做财前还是里见？', en: 'In real life, would you be Zaizen or Satomi?', ja: '現実なら、財前と里見どちらを選ぶ？' },
+    tpDrama3: { zh: '《岁月》里那种「慢慢变成自己讨厌的人」，你见过吗？', en: 'In Years, the slow drift into someone you despise — have you seen it?', ja: '『歳月』の「嫌いな人間に変わっていく」、見たことある？' },
+    tpDrama4: { zh: '《我主沉浮》里的改革者，理想和手腕能同时要吗？', en: 'Can a reformer in I Rule the Tides keep both ideals and tactics?', ja: '『我主沈浮』の改革者、理想と駆け引きは両立する？' },
+    tpDrama5: { zh: '职场剧里的「站队」，现实里真躲得掉吗？', en: 'Everyone picks a side in workplace dramas — can you stay out of it in real life?', ja: '職場ドラマの「派閥選び」、現実で避けられる？' },
+    tpDrama6: { zh: '为什么国产职场剧里的普通人，总是活得那么不普通？', en: 'Why do "ordinary" characters in workplace dramas live such extraordinary lives?', ja: 'なぜ職場ドラマの「普通の人」は、そんなに普通じゃない？' },
+
+    // ───────────── Talk 话题池：思辨 ─────────────
+    tpMind1: { zh: '如果记忆能上传，那个「你」还是你吗？', en: 'If your memories were uploaded, would that copy still be you?', ja: '記憶をアップロードしたら、それはまだあなた？' },
+    tpMind2: { zh: '该不该给所有人无条件发钱？', en: 'Should everyone get a basic income, no strings attached?', ja: '全員に無条件でお金を配るべき？' },
+    tpMind3: { zh: '用隐私换便利，这笔交易你签吗？', en: 'Trading privacy for convenience — do you sign?', ja: 'プライバシーと引き換えの便利さ、契約する？' },
+    tpMind4: { zh: '成功这件事，运气和努力大概几几开？', en: 'Success: how much is luck versus effort?', ja: '成功は運と努力、何対何？' },
+    tpMind5: { zh: '如果明天所有社交平台都关了，你会更自由还是更慌？', en: 'If every social platform shut down tomorrow, freer or lost?', ja: '明日SNSが全部消えたら、自由？それとも不安？' },
+    tpMind6: { zh: '一个人的观点，该为他的立场负责吗？', en: 'Should people be held responsible for the views they hold?', ja: '人の意見は、その立場に責任を負うべき？' },
   };
 
   function detect() {
